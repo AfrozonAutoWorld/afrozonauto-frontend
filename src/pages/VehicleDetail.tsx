@@ -148,6 +148,8 @@ export function VehicleDetail() {
     { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity}, ${vehicle.dealerState}` },
   ];
 
+  const images = vehicle.images ?? [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200">
@@ -168,7 +170,7 @@ export function VehicleDetail() {
             <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm">
               <div className="relative aspect-[16/10]">
                 <img
-                  src={vehicle.images[currentImageIndex] || 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                  src={images[currentImageIndex] || 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800'}
                   alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                   className="w-full h-full object-cover"
                 />

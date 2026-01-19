@@ -5,9 +5,9 @@ import {
   VehicleMeta,
   VehiclesApiResponse,
   VehicleListResponse,
-  SingleVehicleApiResponse,
   VehicleModelsResponse,
 } from "../../types";
+
 export interface SaveVehiclePayload {
   vin: string;
   listing: {
@@ -34,6 +34,15 @@ export interface SaveVehiclePayload {
     horsepower: number;
     torque: number;
   };
+}
+
+export interface SingleVehicleRes<T> {
+  success: boolean;
+  message: string;
+  data: {
+    data: T;
+  };
+  timestamp: string;
 }
 
 export interface SaveVehicleResponse {
@@ -96,11 +105,17 @@ export const vehiclesApi = {
    */
   getById: async (id: string): Promise<Vehicle> => {
     try {
-      const response = await apiClient.get<SingleVehicleApiResponse>(
+      const response = await apiClient.get<SingleVehicleRes<Vehicle>>(
         `/vehicles/${id}`,
       );
 
-      return response.data;
+      const vehicle = response.data.data;
+
+      return {
+        ...vehicle,
+        images: vehicle.images ?? [],
+        features: vehicle.features ?? [],
+      };
     } catch (error) {
       console.error(`Error fetching vehicle ${id}:`, error);
       throw new Error(`Failed to fetch vehicle with ID: ${id}`);
