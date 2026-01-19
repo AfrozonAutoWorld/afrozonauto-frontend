@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calculator as CalcIcon, Ship, Truck, ArrowRight, Info } from 'lucide-react';

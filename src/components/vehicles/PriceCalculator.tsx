@@ -63,11 +63,10 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setShippingMethod('RoRo')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                shippingMethod === 'RoRo'
+              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RoRo'
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                   : 'border-gray-200 hover:border-gray-300'
-              }`}
+                }`}
             >
               <Ship className="w-5 h-5" />
               <div className="text-left">
@@ -77,11 +76,10 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
             </button>
             <button
               onClick={() => setShippingMethod('Container')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                shippingMethod === 'Container'
+              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'Container'
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                   : 'border-gray-200 hover:border-gray-300'
-              }`}
+                }`}
             >
               <Truck className="w-5 h-5" />
               <div className="text-left">

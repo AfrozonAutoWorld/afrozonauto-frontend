@@ -1,3 +1,33 @@
+export interface User {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  fullName: string | null;
+  phone: string;
+  role: "BUYER" | "SELLER" | string; // extend roles if needed
+  isActive: boolean;
+  isSuspended: boolean;
+  googleId: string | null;
+  appleId: string | null;
+  isDeleted: boolean;
+  suspensionReason: string | null;
+  suspensionUntil: string | null;
+  walletBalance: number;
+  currency: string;
+  language: string;
+  timezone: string;
+  notificationPreferences: any | null; // adjust type if you know the structure
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  online: boolean;
+  state?: string;
+  address?: string;
+}
+
+export interface Session {
+  token: string;
+}
 export interface Profile {
   id: string;
   email: string;
@@ -6,40 +36,229 @@ export interface Profile {
   country: string;
   state: string | null;
   address: string | null;
-  role: 'buyer' | 'admin';
+  role: "buyer" | "admin";
   wallet_balance: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface Vehicle {
-  id: string;
+export type VehicleType =
+  | "CAR"
+  | "TRUCK"
+  | "SUV"
+  | "VAN"
+  | "MOTORCYCLE"
+  | "COUPE"
+  | "SEDAN"
+  | "HATCHBACK"
+  | "WAGON"
+  | "CONVERTIBLE";
+type TransmissionType = "Automatic" | "Manual";
+type FuelType = "Hybrid" | "Regular Unleaded" | "Diesel" | "Electric";
+type DrivetrainType = "FWD" | "RWD" | "AWD" | "4WD";
+type VehicleStatus = "AVAILABLE" | "SOLD" | "PENDING" | "RESERVED";
+type ApiSyncStatus = "PENDING" | "SYNCED" | "FAILED";
+type VehicleSource = "API" | "MANUAL";
+interface VehicleDetails {
+  confidence?: number;
+  cylinders?: number;
+  doors?: number;
+  drivetrain: DrivetrainType;
+  engine: string;
+  exteriorColor?: string;
+  fuel: FuelType;
+  interiorColor?: string;
+  make: string;
+  model: string;
+  seats?: number;
+  squishVin: string;
+  transmission: TransmissionType;
+  trim?: string;
   vin: string;
+  year: number;
+  baseInvoice?: number;
+  baseMsrp?: number;
+  bodyStyle?: string;
+  series?: string;
+  style?: string;
+  type?: string;
+}
+
+interface RetailListing {
+  carfaxUrl: string;
+  city: string;
+  cpo: boolean;
+  dealer: string;
+  miles: number;
+  photoCount: number;
+  price: number;
+  primaryImage: string;
+  state: string;
+  used: boolean;
+  vdp: string;
+  zip: string;
+}
+
+interface WholesaleListing {
+  miles?: number;
+  price?: number;
+  primaryImage?: string;
+  [key: string]: any;
+}
+interface ApiListing {
+  "@id": string;
+  vin: string;
+  createdAt: string;
+  location: [number, number];
+  online: boolean;
+  vehicle: VehicleDetails;
+  wholesaleListing: WholesaleListing | null;
+  retailListing: RetailListing | null;
+  history: unknown | null;
+}
+
+export interface VehicleLocation {
+  longitude: number;
+  latitude: number;
+}
+
+interface RetailListing {
+  carfaxUrl: string;
+  city: string;
+  cpo: boolean;
+  dealer: string;
+  miles: number;
+  photoCount: number;
+  price: number;
+  primaryImage: string;
+  state: string;
+  used: boolean;
+  vdp: string;
+  zip: string;
+}
+
+interface ApiData {
+  listing: ApiListing;
+  raw: ApiListing;
+  isTemporary: boolean;
+  cached: boolean;
+}
+
+export interface Vehicle {
+  vin: string;
+  slug: string;
   make: string;
   model: string;
   year: number;
-  price_usd: number;
-  mileage: number | null;
-  vehicle_type: VehicleType;
-  engine_size: string | null;
-  transmission: string | null;
-  fuel_type: string | null;
-  exterior_color: string | null;
-  interior_color: string | null;
-  dealer_name: string | null;
-  dealer_state: string | null;
-  dealer_city: string | null;
+  priceUsd: number;
+  vehicleType: VehicleType;
+  transmission: TransmissionType;
+  fuelType: FuelType;
+  engineSize: string;
+  drivetrain: DrivetrainType;
+  dealerName: string;
+  dealerState: string;
+  dealerCity: string;
+  dealerZipCode: string;
   images: string[];
   features: string[];
-  source: string;
+  source: VehicleSource;
+  apiProvider: string;
+  apiListingId: string;
   status: VehicleStatus;
-  api_listing_id: string | null;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  isHidden: boolean;
+  apiData: ApiData;
+  apiSyncStatus: ApiSyncStatus;
+  id: string;
+  mileage?: number;
 }
 
-export type VehicleType = 'Car' | 'SUV' | 'Truck' | 'Van' | 'Coupe' | 'Sedan' | 'Hatchback' | 'Wagon' | 'Convertible';
-export type VehicleStatus = 'AVAILABLE' | 'PENDING' | 'SOLD' | 'UNAVAILABLE';
+export interface VehicleFilters {
+  // Basic filters
+  make?: string;
+  model?: string;
+  year?: number;
+  yearMin?: number;
+  yearMax?: number;
+
+  // Price and mileage
+  priceMin?: number;
+  priceMax?: number;
+  mileageMin?: number;
+  mileageMax?: number;
+
+  // Vehicle characteristics
+  vehicleType?: VehicleType;
+  transmission?: TransmissionType;
+  fuelType?: string;
+  drivetrain?: string;
+
+  // Status and location
+  status?: VehicleStatus;
+  state?: string;
+  city?: string;
+  zipCode?: string;
+
+  // Special filters
+  featured?: boolean;
+  isActive?: boolean;
+  source?: VehicleSource;
+
+  // Search
+  search?: string;
+
+  // Pagination
+  page?: number;
+  limit?: number;
+
+  // API options
+  includeApi?: boolean;
+
+  // Sorting
+  sortBy?: "price" | "year" | "mileage" | "createdAt";
+  sortOrder?: "asc" | "desc";
+}
+
+export interface VehicleMeta {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  fromApi: number;
+}
+
+export interface VehiclesApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    data: Vehicle[];
+    meta: VehicleMeta;
+  };
+  timestamp: string;
+}
+
+export interface VehicleListResponse {
+  vehicles: Vehicle[];
+  meta: VehicleMeta;
+}
+
+export interface SingleVehicleApiResponse {
+  success: boolean;
+  message: string;
+  data: Vehicle;
+  timestamp: string;
+}
+
+export interface VehicleMakesResponse {
+  success: boolean;
+  data: string[];
+}
+
+export interface VehicleModelsResponse {
+  success: boolean;
+  data: string[];
+}
 
 export interface SavedVehicle {
   id: string;
@@ -50,26 +269,26 @@ export interface SavedVehicle {
 }
 
 export type RequestStatus =
-  | 'pending_quote'
-  | 'quote_sent'
-  | 'deposit_pending'
-  | 'deposit_paid'
-  | 'inspection_pending'
-  | 'inspection_complete'
-  | 'awaiting_approval'
-  | 'approved'
-  | 'purchase_in_progress'
-  | 'purchased'
-  | 'export_pending'
-  | 'shipped'
-  | 'in_transit'
-  | 'arrived_port'
-  | 'customs_clearance'
-  | 'cleared'
-  | 'delivery_scheduled'
-  | 'delivered'
-  | 'cancelled'
-  | 'refunded';
+  | "pending_quote"
+  | "quote_sent"
+  | "deposit_pending"
+  | "deposit_paid"
+  | "inspection_pending"
+  | "inspection_complete"
+  | "awaiting_approval"
+  | "approved"
+  | "purchase_in_progress"
+  | "purchased"
+  | "export_pending"
+  | "shipped"
+  | "in_transit"
+  | "arrived_port"
+  | "customs_clearance"
+  | "cleared"
+  | "delivery_scheduled"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
 
 export interface CostBreakdown {
   vehicle_price: number;
@@ -98,7 +317,7 @@ export interface VehicleRequest {
   deposit_amount_usd: number | null;
   total_landed_cost_usd: number | null;
   total_landed_cost_ngn: number | null;
-  shipping_method: 'RoRo' | 'Container' | null;
+  shipping_method: "RoRo" | "Container" | null;
   destination_country: string;
   destination_state: string | null;
   destination_address: string | null;
@@ -113,10 +332,10 @@ export interface VehicleRequest {
   shipment?: Shipment;
 }
 
-export type PaymentType = 'deposit' | 'full_payment' | 'refund' | 'balance';
-export type PaymentMethod = 'card' | 'bank_transfer' | 'wallet';
-export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
-export type EscrowStatus = 'held' | 'released' | 'refunded';
+export type PaymentType = "deposit" | "full_payment" | "refund" | "balance";
+export type PaymentMethod = "card" | "bank_transfer" | "wallet";
+export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
+export type EscrowStatus = "held" | "released" | "refunded";
 
 export interface Payment {
   id: string;
@@ -133,7 +352,7 @@ export interface Payment {
   updated_at: string;
 }
 
-export type InspectionCondition = 'excellent' | 'good' | 'fair' | 'poor';
+export type InspectionCondition = "excellent" | "good" | "fair" | "poor";
 
 export interface InspectionFinding {
   category: string;
@@ -159,16 +378,16 @@ export interface Inspection {
 }
 
 export type ShipmentStatus =
-  | 'pending'
-  | 'booked'
-  | 'at_port'
-  | 'loaded'
-  | 'in_transit'
-  | 'arrived'
-  | 'customs_hold'
-  | 'cleared'
-  | 'out_for_delivery'
-  | 'delivered';
+  | "pending"
+  | "booked"
+  | "at_port"
+  | "loaded"
+  | "in_transit"
+  | "arrived"
+  | "customs_hold"
+  | "cleared"
+  | "out_for_delivery"
+  | "delivered";
 
 export interface TrackingUpdate {
   date: string;
@@ -180,7 +399,7 @@ export interface TrackingUpdate {
 export interface Shipment {
   id: string;
   request_id: string;
-  shipping_method: 'RoRo' | 'Container' | null;
+  shipping_method: "RoRo" | "Container" | null;
   origin_port: string | null;
   destination_port: string | null;
   vessel_name: string | null;
@@ -242,7 +461,7 @@ export interface VehicleSearchFilters {
 export interface CalculatorInputs {
   vehiclePrice: number;
   vehicleType: VehicleType;
-  shippingMethod: 'RoRo' | 'Container';
+  shippingMethod: "RoRo" | "Container";
   destinationState: string;
   engineSize?: string;
   vehicleYear?: number;

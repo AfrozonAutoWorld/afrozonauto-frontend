@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -46,7 +45,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 export function Dashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
   const [activeTab, setActiveTab] = useState<'requests' | 'saved' | 'payments' | 'profile'>('requests');
   const [requests, setRequests] = useState<(VehicleRequest & { vehicle: Vehicle })[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -60,26 +58,16 @@ export function Dashboard() {
 
   useEffect(() => {
     if (user) {
-      loadDashboardData();
+      fetchData();
     }
   }, [user]);
 
-  /**
-   * 🔧 BACKEND PLACEHOLDER
-   * Replace this function with your Node.js API calls
-   */
-  async function loadDashboardData() {
+  async function fetchData() {
     setLoading(true);
     try {
-      // TODO: Replace with API calls
-      // Example:
-      // const res = await fetch('/api/dashboard');
-      // const data = await res.json();
 
-      setRequests([]); // temporary
-      setPayments([]); // temporary
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -117,9 +105,7 @@ export function Dashboard() {
     },
     {
       label: 'Total Spent',
-      value: formatCurrency(
-        payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount_usd, 0)
-      ),
+      value: formatCurrency(payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount_usd, 0)),
       icon: CreditCard,
       color: 'bg-gray-500',
     },
@@ -175,11 +161,10 @@ export function Dashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium whitespace-nowrap transition-colors ${activeTab === tab.id
                   ? 'border-emerald-600 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
@@ -323,13 +308,12 @@ export function Dashboard() {
                         {formatCurrency(payment.amount_usd)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          payment.status === 'completed'
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${payment.status === 'completed'
                             ? 'bg-green-100 text-green-700'
                             : payment.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
                           {payment.status}
                         </span>
                       </td>

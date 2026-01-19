@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Heart,
@@ -9,42 +9,91 @@ import {
   Calendar,
   Fuel,
   Settings,
-  Palette,
   Shield,
   AlertCircle,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { mockVehicles } from '../lib/mockVehicles';
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../lib/pricingCalculator';
-import type { Vehicle, CostBreakdown } from '../types';
+import type { CostBreakdown } from '../types';
+import { useVehicle } from '../hooks/useVehicles';
+import { useToggleSaveVehicle } from '../hooks/useVehicleMutate';
+import { showToast } from '../lib/showNotification';
+
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [calculatedCost, setCalculatedCost] = useState<CostBreakdown | null>(null);
   const [deliveryDays, setDeliveryDays] = useState(45);
   const [isSaved, setIsSaved] = useState(false);
 
-  useEffect(() => {
-    const found = mockVehicles.find((v) => v.id === id);
-    if (found) {
-      setVehicle(found);
-    }
-  }, [id]);
+  const { vehicle, isLoading, isError, error } = useVehicle(id || '');
 
-  if (!vehicle) {
+  const { toggleSave, isLoading: isSaving } = useToggleSaveVehicle({
+
+    onSuccess: (saved) => {
+      setIsSaved(saved);
+
+      showToast({ type: "success", message: saved ? "Vehicle saved" : "Vehicle removed" })
+    },
+    onError: (error) => {
+      setIsSaved(!isSaved);
+      console.error('Failed to save vehicle:', error);
+      showToast({ type: "error", message: "Failed to save vehicle" })
+    },
+  });
+
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading vehicle details...</p>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Vehicle</h2>
+          <p className="text-gray-600 mb-6">{error?.message || 'Failed to load vehicle details'}</p>
+          <button
+            onClick={() => navigate('/vehicles')}
+            className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Back to Vehicles
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (!vehicle) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h2>
+          <p className="text-gray-600 mb-6">The vehicle you're looking for doesn't exist or has been removed.</p>
+          <button
+            onClick={() => navigate('/vehicles')}
+            className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Browse Vehicles
+          </button>
         </div>
       </div>
     );
@@ -63,6 +112,23 @@ export function VehicleDetail() {
     setDeliveryDays(days);
   };
 
+  const handleToggleSave = () => {
+    if (!user) {
+      navigate('/login', { state: { from: `/vehicles/${vehicle.id}` } });
+      return;
+    }
+
+    // Optimistic update
+    setIsSaved(!isSaved);
+
+    // Call API
+    toggleSave({
+      vehicleId: vehicle.id,
+      isSaved: !isSaved,
+    });
+  };
+
+
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
   };
@@ -75,11 +141,11 @@ export function VehicleDetail() {
     { icon: Calendar, label: 'Year', value: vehicle.year },
     { icon: Gauge, label: 'Mileage', value: `${vehicle.mileage?.toLocaleString()} mi` },
     { icon: Settings, label: 'Transmission', value: vehicle.transmission },
-    { icon: Fuel, label: 'Fuel Type', value: vehicle.fuel_type },
-    { icon: Settings, label: 'Engine', value: vehicle.engine_size },
-    { icon: Palette, label: 'Exterior', value: vehicle.exterior_color },
-    { icon: Palette, label: 'Interior', value: vehicle.interior_color },
-    { icon: MapPin, label: 'Location', value: `${vehicle.dealer_city}, ${vehicle.dealer_state}` },
+    { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },
+    { icon: Settings, label: 'Engine', value: vehicle.engineSize },
+    // { icon: Palette, label: 'Exterior', value: vehicle.exteriorColor },
+    // { icon: Palette, label: 'Interior', value: vehicle.interiorColor },
+    { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity}, ${vehicle.dealerState}` },
   ];
 
   return (
@@ -129,9 +195,8 @@ export function VehicleDetail() {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
                     />
                   ))}
                 </div>
@@ -139,12 +204,12 @@ export function VehicleDetail() {
 
               <div className="absolute top-4 right-4 flex gap-2">
                 <button
-                  onClick={() => setIsSaved(!isSaved)}
-                  className={`p-3 rounded-full transition-colors ${
-                    isSaved
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white/90 text-gray-600 hover:bg-red-500 hover:text-white'
-                  }`}
+                  onClick={handleToggleSave}
+                  disabled={isSaving}
+                  className={`p-3 rounded-full transition-colors ${isSaved
+                    ? 'bg-red-500 text-white'
+                    : 'bg-white/90 text-gray-600 hover:bg-red-500 hover:text-white'
+                    }`}
                 >
                   <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                 </button>
@@ -159,7 +224,7 @@ export function VehicleDetail() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="bg-emerald-100 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
-                      {vehicle.vehicle_type}
+                      {vehicle.vehicleType}
                     </span>
                     <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
                       {vehicle.status}
@@ -170,13 +235,13 @@ export function VehicleDetail() {
                   </h1>
                   <div className="flex items-center gap-2 text-gray-500 mt-2">
                     <MapPin className="w-4 h-4" />
-                    <span>{vehicle.dealer_name} - {vehicle.dealer_city}, {vehicle.dealer_state}</span>
+                    <span>{vehicle.dealerName} - {vehicle.dealerCity}, {vehicle.dealerState}</span>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">US Price</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(vehicle.price_usd)}
+                    {formatCurrency(vehicle.priceUsd)}
                   </p>
                 </div>
               </div>
@@ -238,8 +303,8 @@ export function VehicleDetail() {
 
           <div className="space-y-6">
             <PriceCalculator
-              vehiclePrice={vehicle.price_usd}
-              vehicleType={vehicle.vehicle_type}
+              vehiclePrice={vehicle.priceUsd}
+              vehicleType={vehicle.vehicleType}
               onCalculate={handleCalculate}
             />
 
