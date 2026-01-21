@@ -19,15 +19,16 @@ const DEFAULT_CONFIG: PricingConfig = {
 };
 
 const VEHICLE_TYPE_MULTIPLIERS: Record<VehicleType, number> = {
-  Car: 1.0,
-  Sedan: 1.0,
-  Coupe: 1.0,
-  Hatchback: 1.0,
-  Wagon: 1.05,
-  Convertible: 1.05,
+  CAR: 1.0,
+  SEDAN: 1.0,
+  COUPE: 1.0,
+  HATCHBACK: 1.0,
+  WAGON: 1.05,
+  CONVERTIBLE: 1.05,
   SUV: 1.15,
-  Truck: 1.25,
-  Van: 1.20,
+  TRUCK: 1.25,
+  VAN: 1.20,
+  MOTORCYCLE: 0,
 };
 
 const STATE_DELIVERY_COSTS: Record<string, number> = {

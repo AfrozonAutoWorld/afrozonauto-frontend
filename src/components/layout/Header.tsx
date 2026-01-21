@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Car, User, LogOut, LayoutDashboard, Shield } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Menu, X, Car, LogOut, LayoutDashboard } from 'lucide-react';
+import { useAuthQuery } from '../../hooks/useAuth';
+import { useAuthStore } from '../../lib/authStore';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const { signOut } = useAuthQuery();
+  const user = useAuthStore((state) => state.user);
+
+
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -49,17 +53,9 @@ export function Header() {
                   <LayoutDashboard className="w-5 h-5" />
                   <span>Dashboard</span>
                 </Link>
-                {profile?.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
-                  >
-                    <Shield className="w-5 h-5" />
-                    <span>Admin</span>
-                  </Link>
-                )}
+
                 <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                  <span className="text-sm text-gray-600">{profile?.full_name || user.email}</span>
+                  <span className="text-sm text-gray-600">{user?.fullName || user.email}</span>
                   <button
                     onClick={handleSignOut}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"
@@ -77,7 +73,7 @@ export function Header() {
                   Sign In
                 </Link>
                 <Link
-                  to="/register"
+                  to="/onboarding"
                   className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
                 >
                   Get Started
@@ -131,16 +127,7 @@ export function Header() {
                     <LayoutDashboard className="w-5 h-5" />
                     <span>Dashboard</span>
                   </Link>
-                  {profile?.role === 'admin' && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Shield className="w-5 h-5" />
-                      <span>Admin</span>
-                    </Link>
-                  )}
+
                   <button
                     onClick={() => {
                       handleSignOut();
@@ -162,7 +149,7 @@ export function Header() {
                     Sign In
                   </Link>
                   <Link
-                    to="/register"
+                    to="/onbaording"
                     className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium text-center hover:bg-emerald-700"
                     onClick={() => setMobileMenuOpen(false)}
                   >

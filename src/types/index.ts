@@ -1,14 +1,30 @@
+export enum UserRole {
+  BUYER = "BUYER",
+  ADMIN = "ADMIN",
+  SELLER = "SELLER",
+  AGENT = "AGENT",
+}
+export interface NotificationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  orderUpdates: boolean;
+  promotions: boolean;
+  newsletter: boolean;
+}
 export interface User {
   id: string;
   email: string;
   emailVerified: boolean;
   fullName: string | null;
+  firstName?: string;
+  lastName?: string;
   phone: string;
-  role: "BUYER" | "SELLER" | string; // extend roles if needed
+  role: UserRole;
   isActive: boolean;
   isSuspended: boolean;
-  googleId: string | null;
-  appleId: string | null;
+  googleId: string;
+  appleId: string;
   isDeleted: boolean;
   suspensionReason: string | null;
   suspensionUntil: string | null;
@@ -16,13 +32,23 @@ export interface User {
   currency: string;
   language: string;
   timezone: string;
-  notificationPreferences: any | null; // adjust type if you know the structure
+  notificationPreferences: NotificationPreferences | null;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
   online: boolean;
-  state?: string;
+
+  // Optional fields that might be added later
   address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipCode?: string;
+  avatar?: string;
+  dateOfBirth?: string;
+  gender?: "male" | "female" | "other" | "prefer_not_to_say";
+  phoneVerified?: boolean;
+  twoFactorEnabled?: boolean;
 }
 
 export interface Session {

@@ -16,9 +16,6 @@ import type {
 export function useAuthQuery() {
   const queryClient = useQueryClient();
 
-  // -----------------------------
-  // Get current user
-  // -----------------------------
   const { data, isLoading, error } = useQuery<User | null>({
     queryKey: ["auth", "me"],
     queryFn: async () => {
@@ -36,9 +33,6 @@ export function useAuthQuery() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // -----------------------------
-  // Onboarding
-  // -----------------------------
   const onboardingMutation = useMutation({
     mutationFn: (data: OnboardingInput) => authApi.startRegistration(data),
 
@@ -52,9 +46,6 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Verify email
-  // -----------------------------
   const verifyMutation = useMutation({
     mutationFn: (data: VerifyInput) => authApi.verifyCode(data),
 
@@ -69,9 +60,6 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Complete profile
-  // -----------------------------
   const completeProfileMutation = useMutation({
     mutationFn: (data: CompleteProfileInput) => {
       const fullName = `${data.firstName} ${data.lastName}`;
@@ -97,21 +85,21 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Sign in
-  // -----------------------------
   const signInMutation = useMutation({
     mutationFn: (data: LoginInput) => authApi.signIn(data),
 
     onSuccess: (response) => {
-      if (response.status === true && response.data?.user) {
-        const { user, accessToken, refreshToken } = response.data.user;
+      if (response.success && response.data?.data) {
+        const { user, accessToken, refreshToken } = response.data.data;
 
         apiClient.setAuthToken(accessToken);
+        localStorage.setItem("auth_token", accessToken);
+
         if (refreshToken) {
           localStorage.setItem("refresh_token", refreshToken);
         }
 
+        // Update query cache with user data
         queryClient.setQueryData(["auth", "me"], user);
 
         showToast({ type: "success", message: "Login successful!" });
@@ -119,13 +107,10 @@ export function useAuthQuery() {
     },
 
     onError: (error: ApiError) => {
-      showToast({ type: "error", message: error.message });
+      showToast({ type: "error", message: error.message || "Login failed" });
     },
   });
 
-  // -----------------------------
-  // Forgot password
-  // -----------------------------
   const forgotPasswordMutation = useMutation({
     mutationFn: (data: ForgotPasswordInput) => authApi.forgotPassword(data),
 
@@ -135,9 +120,6 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Reset password
-  // -----------------------------
   const resetPasswordMutation = useMutation({
     mutationFn: (data: ResetPasswordInput) => authApi.resetPassword(data),
 
@@ -147,9 +129,6 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Update profile
-  // -----------------------------
   const updateProfileMutation = useMutation({
     mutationFn: (updates: Partial<Profile>) => authApi.updateProfile(updates),
 
@@ -161,9 +140,6 @@ export function useAuthQuery() {
     },
   });
 
-  // -----------------------------
-  // Sign out
-  // -----------------------------
   const signOut = () => {
     apiClient.setAuthToken(null);
     localStorage.removeItem("refresh_token");

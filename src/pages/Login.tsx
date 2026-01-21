@@ -4,22 +4,30 @@ import { Car, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
 import { loginSchema } from '../lib/validation/auth.schema';
 import { useAuthQuery } from '../hooks/useAuth';
-
+import { useAuthStore } from '../lib/authStore';
 
 export function Login() {
   const navigate = useNavigate();
   const { signIn } = useAuthQuery();
   const [showPassword, setShowPassword] = useState(false);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const form = useForm({
     schema: loginSchema,
-    initialValues: {
-      email: '',
-      password: '',
-    },
+    initialValues: { email: '', password: '' },
     onSubmit: async (values) => {
-      await signIn(values);
-      navigate('/dashboard');
+      try {
+        const response = await signIn(values);
+
+        // Fixed: Access nested data structure correctly
+        // Response structure: { success, message, data: { data: { user, accessToken, refreshToken } } }
+        const { user, accessToken, refreshToken } = response.data.data;
+
+        setAuth(user, accessToken, refreshToken);
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Login failed:', error);
+      }
     },
   });
 

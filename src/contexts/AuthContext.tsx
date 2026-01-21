@@ -1,35 +1,99 @@
-import { createContext, useContext, ReactNode } from 'react';
-import type { User } from '../types';
-import { useAuthQuery } from '../hooks/useAuth';
+import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { User } from '../types';
+import { authApi } from '../lib/api/auth';
 
-interface AuthContextType {
+type AuthState = {
   user: User | null;
-  loading: boolean;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
+  loading: boolean;
+};
+
+type AuthAction =
+  | { type: 'LOGIN'; payload: { user: User; accessToken: string; refreshToken: string } }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_LOADING'; payload: boolean };
+
+const AuthContext = createContext<{
+  state: AuthState;
+  login: (user: User, accessToken: string, refreshToken: string) => void;
+  logout: () => void;
+} | null>(null);
+
+function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case 'LOGIN':
+      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      return {
+        ...state,
+        user: action.payload.user,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
+        isAuthenticated: true,
+        loading: false,
+      };
+    case 'LOGOUT':
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      return {
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        isAuthenticated: false,
+        loading: false,
+      };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    default:
+      return state;
+  }
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuthQuery();
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    accessToken: localStorage.getItem('accessToken'),
+    refreshToken: localStorage.getItem('refreshToken'),
+    isAuthenticated: false,
+    loading: true,
+  });
+
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          const user = await authApi.getCurrentUser();
+          dispatch({ type: 'LOGIN', payload: { user, accessToken: token, refreshToken: token } });
+        } catch {
+          dispatch({ type: 'LOGOUT' });
+        }
+      }
+      dispatch({ type: 'SET_LOADING', payload: false });
+    };
+
+    initAuth();
+  }, []);
+
+  const login = (user: User, accessToken: string, refreshToken: string) => {
+    dispatch({ type: 'LOGIN', payload: { user, accessToken, refreshToken } });
+  };
+
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-      }}
-    >
+    <AuthContext.Provider value={{ state, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
-}
+};

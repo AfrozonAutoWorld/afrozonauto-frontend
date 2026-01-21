@@ -15,6 +15,7 @@ import { Dashboard } from './pages/Dashboard';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/api/queryClient';
 import { Toaster } from 'sonner';
+import { ResetPassword } from './pages/ResetPassword';
 
 function App() {
   return (
@@ -25,8 +26,10 @@ function App() {
             {/* Public auth routes */}
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/verify" element={<Verify />} />
-            <Route path="/regsiter" element={<CompleteProfile />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
 
             {/* Main app routes with layout */}
             <Route
