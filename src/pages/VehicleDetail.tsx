@@ -16,18 +16,18 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
-import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../lib/pricingCalculator';
 import type { CostBreakdown } from '../types';
 import { useVehicle } from '../hooks/useVehicles';
 import { useToggleSaveVehicle } from '../hooks/useVehicleMutate';
 import { showToast } from '../lib/showNotification';
+import { useAuthQuery } from '../hooks/useAuth';
 
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthQuery();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [calculatedCost, setCalculatedCost] = useState<CostBreakdown | null>(null);
   const [deliveryDays, setDeliveryDays] = useState(45);

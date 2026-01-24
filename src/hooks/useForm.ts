@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { z, ZodObject, ZodError, ZodTypeAny } from "zod";
+import { z, ZodObject, ZodRawShape } from "zod";
 
-interface UseFormOptions<T extends ZodObject<any>> {
-  schema: T;
-  initialValues: z.infer<T>;
-  onSubmit: (values: z.infer<T>) => Promise<void> | void;
+interface UseFormOptions<TShape extends ZodRawShape> {
+  schema: ZodObject<TShape>;
+  initialValues: z.infer<ZodObject<TShape>>;
+  onSubmit: (values: z.infer<ZodObject<TShape>>) => Promise<void> | void;
 }
 
-export function useForm<T extends ZodObject<any>>({
+export function useForm<TShape extends ZodRawShape>({
   schema,
   initialValues,
   onSubmit,
-}: UseFormOptions<T>) {
-  type FormData = z.infer<T>;
+}: UseFormOptions<TShape>) {
+  type FormData = z.infer<typeof schema>;
   type FieldName = keyof FormData;
 
   const [values, setValues] = useState<FormData>(initialValues);
@@ -20,65 +20,62 @@ export function useForm<T extends ZodObject<any>>({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = (): boolean => {
-    try {
-      schema.parse(values);
-      setErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const fieldErrors: Partial<Record<FieldName, string>> = {};
-        error.issues.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as FieldName] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-      }
+    const result = schema.safeParse(values);
+
+    if (!result.success) {
+      const fieldErrors: Partial<Record<FieldName, string>> = {};
+      result.error.issues.forEach((err) => {
+        const field = err.path[0] as FieldName;
+        if (field) fieldErrors[field] = err.message;
+      });
+      setErrors(fieldErrors);
       return false;
     }
+
+    setErrors({});
+    return true;
   };
 
   const validateField = (name: FieldName): boolean => {
-    try {
-      const fieldSchema = schema.shape[name as string] as ZodTypeAny;
-      if (fieldSchema) {
-        fieldSchema.parse(values[name]);
-        setErrors((prev) => ({ ...prev, [name]: undefined }));
-        return true;
-      }
-      return true;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        setErrors((prev) => ({
-          ...prev,
-          [name]: error.issues[0]?.message,
-        }));
-      }
+    const fieldSchema = schema.shape[name];
+    const result = fieldSchema.safeParse(values[name]);
+
+    if (!result.success) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: result.error.issues[0]?.message,
+      }));
       return false;
     }
+
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+    return true;
   };
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
-    const { name, value, type } = e.target;
+    const { name, type } = e.target;
     const fieldName = name as FieldName;
+
+    const value =
+      type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : e.target.value;
 
     setValues((prev) => ({
       ...prev,
-      [fieldName]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [fieldName]: value,
     }));
 
-    // Clear error for this field
     if (errors[fieldName]) {
       setErrors((prev) => ({ ...prev, [fieldName]: undefined }));
     }
   };
 
-  const setFieldValue = (name: FieldName, value: any) => {
+  const setFieldValue = (name: FieldName, value: FormData[FieldName]) => {
     setValues((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -89,9 +86,7 @@ export function useForm<T extends ZodObject<any>>({
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  const clearErrors = () => {
-    setErrors({});
-  };
+  const clearErrors = () => setErrors({});
 
   const reset = () => {
     setValues(initialValues);
@@ -102,16 +97,11 @@ export function useForm<T extends ZodObject<any>>({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
-
     try {
       await onSubmit(values);
-    } catch (error) {
-      console.error("Form submission error:", error);
     } finally {
       setIsSubmitting(false);
     }

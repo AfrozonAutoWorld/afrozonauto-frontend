@@ -44,9 +44,25 @@ export const resetPasswordSchema = z.object({
   email: z.string().email("Invalid email"),
   token: z.string().min(6, "Token is required"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm password is required"),
 });
 
+export const addressSchema = z.object({
+  type: z.enum(["NORMAL", "BILLING", "SHIPPING"]),
+  street: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  isDefault: z.boolean(),
+  additionalInfo: z.string().optional(),
+  phoneNumber: z.string(),
+  additionalPhoneNumber: z.string().optional(),
+});
+
+export type AddressFormValues = z.infer<typeof addressSchema>;
+export type AddressInput = z.infer<typeof addressSchema>;
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
 export type VerifyInput = z.infer<typeof verifySchema>;
 export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;

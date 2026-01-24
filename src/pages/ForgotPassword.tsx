@@ -1,22 +1,20 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Car, Mail, AlertCircle } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
-import { loginSchema } from '../lib/validation/auth.schema';
+import { forgotPasswordSchema } from '../lib/validation/auth.schema';
 import { useAuthQuery } from '../hooks/useAuth';
 
-export function Login() {
+export function ForgotPassword() {
   const navigate = useNavigate();
-  const { signIn } = useAuthQuery();
-  const [showPassword, setShowPassword] = useState(false);
+  const { forgotPassword } = useAuthQuery();
 
   const form = useForm({
-    schema: loginSchema,
-    initialValues: { email: '', password: '' },
+    schema: forgotPasswordSchema,
+    initialValues: { email: '' },
     onSubmit: async (values) => {
       try {
-        await signIn(values);
-        navigate('/dashboard');
+        await forgotPassword(values);
+        navigate('/login');
       } catch (error) {
         console.error('Login failed:', error);
       }
@@ -36,8 +34,8 @@ export function Login() {
               <span className="text-2xl font-light text-emerald-400"> AutoGlobal</span>
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Forgot Your Password?</h1>
+          <p className="text-gray-400">Get a new one!</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -66,53 +64,6 @@ export function Login() {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={form.values.password}
-                  onChange={form.handleChange}
-                  placeholder="Enter your password"
-                  className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${form.errors.password ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {form.errors.password && (
-                <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{form.errors.password}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-                />
-                <span className="text-sm text-gray-600">Remember me</span>
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
             <button
               type="submit"
               disabled={form.isSubmitting}
@@ -121,18 +72,18 @@ export function Login() {
               {form.isSubmitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Signing in...
+                  Sending code...
                 </>
               ) : (
-                'Sign In'
+                'Forgot Password'
               )}
             </button>
           </form>
 
           <p className="text-center text-gray-600 mt-6">
-            Don't have an account?{' '}
-            <Link to="/onboarding" className="text-emerald-600 font-medium hover:text-emerald-700">
-              Get started
+            Know your password??{' '}
+            <Link to="/login" className="text-emerald-600 font-medium hover:text-emerald-700">
+              Login
             </Link>
           </p>
         </div>

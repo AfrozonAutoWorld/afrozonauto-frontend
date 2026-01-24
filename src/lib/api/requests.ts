@@ -15,16 +15,15 @@ export interface CreateRequestData {
 }
 
 export const requestsApi = {
-  getAll: () => apiClient.get<RequestWithVehicle[]>("/requests", true),
+  getAll: () => apiClient.get<RequestWithVehicle[]>("/requests"),
 
-  getById: (id: string) =>
-    apiClient.get<RequestWithVehicle>(`/requests/${id}`, true),
+  getById: (id: string) => apiClient.get<RequestWithVehicle>(`/requests/${id}`),
 
   create: (data: CreateRequestData) =>
-    apiClient.post<RequestWithVehicle>("/requests", data, true),
+    apiClient.post<RequestWithVehicle>("/requests", data),
 
   updateStatus: (id: string, status: string) =>
-    apiClient.patch<RequestWithVehicle>(`/requests/${id}`, { status }, true),
+    apiClient.patch<RequestWithVehicle>(`/requests/${id}`, { status }),
 
-  delete: (id: string) => apiClient.delete<void>(`/requests/${id}`, true),
+  delete: (id: string) => apiClient.delete<void>(`/requests/${id}`),
 };

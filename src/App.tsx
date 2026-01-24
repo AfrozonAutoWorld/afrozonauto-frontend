@@ -16,8 +16,39 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/api/queryClient';
 import { Toaster } from 'sonner';
 import { ResetPassword } from './pages/ResetPassword';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from './lib/authStore';
 
 function App() {
+
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      setIsHydrated(true);
+    });
+
+    if (useAuthStore.persist.hasHydrated()) {
+      setIsHydrated(true);
+    }
+
+    return unsubscribe;
+  }, []);
+
+  // Show loading spinner while hydrating
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
@@ -29,6 +60,7 @@ function App() {
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
 
             {/* Main app routes with layout */}
@@ -48,7 +80,18 @@ function App() {
                 </Layout>
               }
             />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
+
         </AuthProvider>
         <Toaster position="top-right" richColors />
       </QueryClientProvider>

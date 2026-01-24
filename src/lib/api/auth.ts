@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { Profile, User } from "../../types";
+import type { User } from "../../types";
 import {
   ForgotPasswordInput,
   ResetPasswordInput,
@@ -87,17 +87,21 @@ export const authApi = {
   },
 
   // Get current user
-  getCurrentUser: async (): Promise<User> => {
-    return apiClient.get<User>("/auth/me");
+  getUserById: async (id: string): Promise<User> => {
+    return apiClient.get<User>(`/auth/users/user-id/${id}`);
+  },
+
+  getUserByEmail: async (email: string): Promise<User> => {
+    return apiClient.get<User>(`/auth/users/user-email/${email}`);
   },
 
   // Update profile
-  updateProfile: async (updates: Partial<Profile>): Promise<Profile> => {
-    return apiClient.patch<Profile>("/auth/profile", updates);
+  updateProfile: async (updates: Partial<User>): Promise<User> => {
+    return apiClient.patch<User>("/auth/profile", updates);
   },
 
   // Refresh token
-  refreshToken: async (): Promise<{ accessToken: string }> => {
+  refreshToken: async () => {
     return apiClient.post("/auth/refresh-token");
   },
 

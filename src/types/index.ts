@@ -19,7 +19,7 @@ export interface User {
   fullName: string | null;
   firstName?: string;
   lastName?: string;
-  phone: string;
+  phone: string | null;
   role: UserRole;
   isActive: boolean;
   isSuspended: boolean;
@@ -39,7 +39,7 @@ export interface User {
   online: boolean;
 
   // Optional fields that might be added later
-  address?: string;
+  address: string | null;
   city?: string;
   state?: string;
   country?: string;
@@ -62,7 +62,7 @@ export interface Profile {
   country: string;
   state: string | null;
   address: string | null;
-  role: "buyer" | "admin";
+  role: UserRole;
   wallet_balance: number;
   created_at: string;
   updated_at: string;
