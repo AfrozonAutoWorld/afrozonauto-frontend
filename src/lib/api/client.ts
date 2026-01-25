@@ -1,0 +1,229 @@
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+} from "axios";
+import { useAuthStore } from "../authStore";
+import { isTokenExpiringSoon } from "../authStore";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public data?: any,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+class ApiClient {
+  private client: AxiosInstance;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
+
+  constructor(baseUrl: string) {
+    this.client = axios.create({
+      baseURL: baseUrl,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 15000,
+    });
+
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors() {
+    this.client.interceptors.request.use(
+      async (config: InternalAxiosRequestConfig) => {
+        const { accessToken, isAuthenticated, refreshToken } =
+          useAuthStore.getState();
+
+        if (config.url?.includes("/auth/refresh-token")) {
+          return config;
+        }
+
+        if (isAuthenticated && accessToken) {
+          if (
+            isTokenExpiringSoon(accessToken, 60) &&
+            refreshToken &&
+            !this.isRefreshing
+          ) {
+            try {
+              this.isRefreshing = true;
+              console.log("Proactively refreshing token...");
+
+              const response = await axios.post(
+                `${API_BASE_URL}/auth/refresh-token`,
+                { refreshToken },
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                },
+              );
+
+              const {
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+              } = response.data.data;
+
+              useAuthStore
+                .getState()
+                .setAuth(
+                  useAuthStore.getState().user!,
+                  newAccessToken,
+                  newRefreshToken,
+                );
+
+              config.headers.Authorization = `Bearer ${newAccessToken}`;
+              console.log("Token refreshed proactively");
+            } catch (error) {
+              console.error("Proactive token refresh failed:", error);
+              // Continue with old token, 401 interceptor will handle if expired
+              config.headers.Authorization = `Bearer ${accessToken}`;
+            } finally {
+              this.isRefreshing = false;
+            }
+          } else {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+          }
+        }
+
+        return config;
+      },
+      (error) => Promise.reject(error),
+    );
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & {
+          _retry?: boolean;
+        };
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then(() => this.client(originalRequest))
+              .catch((err) => Promise.reject(err));
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            const { refreshToken } = useAuthStore.getState();
+
+            if (!refreshToken) {
+              throw new Error("No refresh token available");
+            }
+
+            const response = await axios.post(
+              `${API_BASE_URL}/auth/refresh-token`,
+              { refreshToken },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              },
+            );
+
+            const { accessToken, refreshToken: newRefreshToken } =
+              response.data.data;
+
+            useAuthStore
+              .getState()
+              .setAuth(
+                useAuthStore.getState().user!,
+                accessToken,
+                newRefreshToken,
+              );
+
+            this.processQueue(null);
+
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            }
+            return this.client(originalRequest);
+          } catch (refreshError) {
+            this.processQueue(refreshError);
+            this.handleLogout();
+            return Promise.reject(refreshError);
+          } finally {
+            this.isRefreshing = false;
+          }
+        }
+
+        return Promise.reject(error);
+      },
+    );
+  }
+
+  private processQueue(error: any) {
+    this.failedQueue.forEach((promise) => {
+      error ? promise.reject(error) : promise.resolve();
+    });
+    this.failedQueue = [];
+  }
+
+  private handleLogout() {
+    const { clearAuth } = useAuthStore.getState();
+    clearAuth();
+
+    const protectedRoutes = ["/dashboard"];
+    const currentPath = window.location.pathname;
+
+    if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
+      window.location.href = "/login";
+    }
+  }
+
+  async get<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.get<T>(endpoint, config);
+    return response.data;
+  }
+
+  async post<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response = await this.client.post<T>(endpoint, data, config);
+    return response.data;
+  }
+
+  async put<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response = await this.client.put<T>(endpoint, data, config);
+    return response.data;
+  }
+
+  async patch<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response = await this.client.patch<T>(endpoint, data, config);
+    return response.data;
+  }
+
+  async delete<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.delete<T>(endpoint, config);
+    return response.data;
+  }
+}
+
+export const apiClient = new ApiClient(API_BASE_URL);

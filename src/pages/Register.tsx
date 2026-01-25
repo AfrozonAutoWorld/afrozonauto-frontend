@@ -1,56 +1,79 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, Mail, Lock, Eye, EyeOff, AlertCircle, User, Phone, CheckCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Car, User, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { completeProfileSchema, type CompleteProfileInput } from '../lib/validation/auth.schema';
+import { useAuthQuery } from '../hooks/useAuth';
 
-export function Register() {
+
+export function CompleteProfile() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { completeProfile } = useAuthQuery();
 
-  const [formData, setFormData] = useState({
-    fullName: '',
+
+  const [formData, setFormData] = useState<CompleteProfileInput>({
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    role: 'BUYER',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<keyof CompleteProfileInput, string>>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  useEffect(() => {
+    const verifiedEmail = sessionStorage.getItem('verified_email');
+    if (!verifiedEmail) {
+      navigate('/onboarding');
+      return;
+    }
+    setFormData((prev) => ({ ...prev, email: verifiedEmail }));
+  }, [navigate]);
+
+  const validateForm = () => {
+    try {
+      completeProfileSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      const fieldErrors: Partial<Record<keyof CompleteProfileInput, string>> = {};
+      error.errors?.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as keyof CompleteProfileInput] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return false;
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name as keyof CompleteProfileInput]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.fullName);
-      if (error) throw error;
+      await completeProfile(formData);
       setSuccess(true);
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/login');
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+    } catch (err) {
+      // Error handled in context
     } finally {
       setLoading(false);
     }
@@ -63,11 +86,11 @@ export function Register() {
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Complete!</h2>
           <p className="text-gray-600 mb-4">
-            Welcome to Afrozon AutoGlobal. You can now start browsing and importing vehicles.
+            Your account has been created successfully
           </p>
-          <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+          <p className="text-sm text-gray-500">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -75,7 +98,7 @@ export function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
+      <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
@@ -86,52 +109,53 @@ export function Register() {
               <span className="text-2xl font-light text-emerald-400"> AutoGlobal</span>
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400">Join thousands of satisfied customers</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Complete Your Profile</h1>
+          <p className="text-gray-400">Just a few more details to get started</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-700">{error}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="John"
+                    className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.firstName ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                  />
+                </div>
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                )}
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                  placeholder="John Doe"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="you@example.com"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Doe"
+                    className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.lastName ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                  />
+                </div>
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -147,9 +171,13 @@ export function Register() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="+234 800 000 0000"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
                 />
               </div>
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+              )}
             </div>
 
             <div>
@@ -163,9 +191,9 @@ export function Register() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
-                  placeholder="Create a password"
-                  className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  placeholder="Create a strong password"
+                  className={`w-full pl-12 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.password ? 'border-red-300' : 'border-gray-300'
+                    }`}
                 />
                 <button
                   type="button"
@@ -175,6 +203,9 @@ export function Register() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
             </div>
 
             <div>
@@ -188,11 +219,29 @@ export function Register() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  required
                   placeholder="Confirm your password"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
                 />
               </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                I am a
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                <option value="BUYER">Buyer</option>
+                <option value="SELLER">Seller</option>
+              </select>
             </div>
 
             <label className="flex items-start gap-3 cursor-pointer">
@@ -224,17 +273,10 @@ export function Register() {
                   Creating account...
                 </>
               ) : (
-                'Create Account'
+                'Complete Registration'
               )}
             </button>
           </form>
-
-          <p className="text-center text-gray-600 mt-6">
-            Already have an account?{' '}
-            <Link to="/login" className="text-emerald-600 font-medium hover:text-emerald-700">
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>

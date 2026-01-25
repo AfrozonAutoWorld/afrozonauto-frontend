@@ -12,9 +12,11 @@ import {
   MapPin,
   Star,
   Car,
+  AlertCircle,
 } from 'lucide-react';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
-import { mockVehicles } from '../lib/mockVehicles';
+import { useVehicles } from '../hooks/useVehicles';
+
 
 const features = [
   {
@@ -97,7 +99,32 @@ const testimonials = [
 ];
 
 export function Home() {
-  const featuredVehicles = mockVehicles.slice(0, 6);
+
+  const { vehicles, isLoading, isError, error, refetch } = useVehicles();
+
+  const featuredVehicles = vehicles.slice(0, 6);
+
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full">
+          <div className="flex items-center gap-3 text-red-600 mb-4">
+            <AlertCircle className="w-6 h-6" />
+            <h2 className="text-xl font-semibold">Error Loading Vehicles</h2>
+          </div>
+          <p className="text-gray-600 mb-6">{error?.message || 'Something went wrong'}</p>
+          <button
+            onClick={() => refetch()}
+            className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div>
@@ -177,19 +204,33 @@ export function Home() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Featured Vehicles
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Browse our selection of verified US vehicles ready for import to Nigeria
+
+            <p className="text-lg text-gray-300 mb-6">
+              {isLoading ? (
+                'Loading vehicles...'
+              ) : (
+                <>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    Featured Vehicles
+                  </h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+                    Browse our selection of verified US vehicles ready for import to Nigeria
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featuredVehicles.map((vehicle) => (
+                      <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                    ))}
+                  </div>
+                </>
+              )}
+
+
             </p>
+
+
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
-            ))}
-          </div>
+
 
           <div className="text-center mt-10">
             <Link

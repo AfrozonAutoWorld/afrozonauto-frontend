@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-import type { VehicleSearchFilters, VehicleType } from '../../types';
+import { SlidersHorizontal, X } from 'lucide-react';
+import type { VehicleFilters, VehicleType } from '../../types';
 import { VEHICLE_MAKES, US_STATES } from '../../lib/pricingCalculator';
 
 interface VehicleFiltersProps {
-  filters: VehicleSearchFilters;
-  onFilterChange: (filters: VehicleSearchFilters) => void;
+  filters: VehicleFilters;
+  onFilterChange: (filters: VehicleFilters) => void;
+  //makes: string[]
 }
 
-const vehicleTypes: VehicleType[] = ['Car', 'SUV', 'Truck', 'Van', 'Sedan', 'Coupe', 'Hatchback', 'Wagon', 'Convertible'];
+const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE'];
+
 const priceRanges = [
   { label: 'Under $10,000', min: 0, max: 10000 },
   { label: '$10,000 - $20,000', min: 10000, max: 20000 },
@@ -33,9 +35,22 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
     onFilterChange({ ...filters, make: make || undefined });
   };
 
-  const handleTypeChange = (type: string) => {
-    onFilterChange({ ...filters, vehicleType: type as VehicleType || undefined });
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    onFilterChange({ ...filters, search: value || undefined });
   };
+
+
+  const handleTypeChange = (type: VehicleType | '') => {
+    const allowedTypes: VehicleFilters['vehicleType'][] = ["CAR", "TRUCK", "SUV", "VAN", "MOTORCYCLE"];
+
+    onFilterChange({
+      ...filters,
+      vehicleType: allowedTypes.includes(type as any) ? (type as any) : undefined,
+    });
+  };
+
+
 
   const handlePriceChange = (rangeIndex: number) => {
     if (rangeIndex === -1) {
@@ -86,7 +101,7 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
         <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
         <select
           value={filters.vehicleType || ''}
-          onChange={(e) => handleTypeChange(e.target.value)}
+          onChange={(e) => handleTypeChange(e.target.value as VehicleType | '')}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         >
           <option value="">All Types</option>
@@ -151,8 +166,9 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
         <input
           type="number"
           placeholder="e.g., 50000"
-          value={filters.mileageMax || ''}
-          onChange={(e) => onFilterChange({ ...filters, mileageMax: e.target.value ? parseInt(e.target.value) : undefined })}
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          // onChange={(e) => onFilterChange({ ...filters, mileageMax: e.target.value ? parseInt(e.target.value) : undefined })}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         />
       </div>

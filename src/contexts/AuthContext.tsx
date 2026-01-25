@@ -1,147 +1,99 @@
-import { createContext, useContext, useEffect, useState, ReactNode, } from 'react';
-import type { Profile } from '../types';
+import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { User } from '../types';
+import { authApi } from '../lib/api/auth';
 
-/**
- * Temporary User & Session types
- * (replace later with your backend response types)
- */
-export interface User {
-  id: string;
-  email: string;
-}
-
-export interface Session {
-  token: string;
-}
-
-interface AuthContextType {
+type AuthState = {
   user: User | null;
-  profile: Profile | null;
-  session: Session | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
-}
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+type AuthAction =
+  | { type: 'LOGIN'; payload: { user: User; accessToken: string; refreshToken: string } }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_LOADING'; payload: boolean };
+
+const AuthContext = createContext<{
+  state: AuthState;
+  login: (user: User, accessToken: string, refreshToken: string) => void;
+  logout: () => void;
+} | null>(null);
+
+function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case 'LOGIN':
+      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      return {
+        ...state,
+        user: action.payload.user,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
+        isAuthenticated: true,
+        loading: false,
+      };
+    case 'LOGOUT':
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      return {
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        isAuthenticated: false,
+        loading: false,
+      };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    default:
+      return state;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    accessToken: localStorage.getItem('accessToken'),
+    refreshToken: localStorage.getItem('refreshToken'),
+    isAuthenticated: false,
+    loading: true,
+  });
 
-  /**
-   * 🔧 INITIAL AUTH CHECK (LOCAL STORAGE PLACEHOLDER)
-   */
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
+    const initAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          const user = await authApi.getCurrentUser();
+          dispatch({ type: 'LOGIN', payload: { user, accessToken: token, refreshToken: token } });
+        } catch {
+          dispatch({ type: 'LOGOUT' });
+        }
+      }
+      dispatch({ type: 'SET_LOADING', payload: false });
+    };
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setSession({ token: storedToken });
-    }
-
-    setLoading(false);
+    initAuth();
   }, []);
 
-  /**
-   * 🔧 SIGN UP (NODE BACKEND PLACEHOLDER)
-   */
-  async function signUp(email: string, password: string, fullName: string) {
-    try {
-      // TODO: Replace with Node API
-      // const res = await fetch('/api/auth/register', {...})
-
-      const fakeUser = { id: crypto.randomUUID(), email };
-
-      setUser(fakeUser);
-      setSession({ token: 'mock-token' });
-      setProfile({ full_name: fullName, email });
-
-      localStorage.setItem('user', JSON.stringify(fakeUser));
-      localStorage.setItem('token', 'mock-token');
-
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  }
-
-  /**
-   * 🔧 SIGN IN (NODE BACKEND PLACEHOLDER)
-   */
-  async function signIn(email: string, password: string) {
-    try {
-      // TODO: Replace with Node API
-      // const res = await fetch('/api/auth/login', {...})
-
-      const fakeUser = { id: crypto.randomUUID(), email };
-
-      setUser(fakeUser);
-      setSession({ token: 'mock-token' });
-
-      localStorage.setItem('user', JSON.stringify(fakeUser));
-      localStorage.setItem('token', 'mock-token');
-
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  }
-
-  /**
-   * 🔧 SIGN OUT
-   */
-  async function signOut() {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-  }
-
-  /**
-   * 🔧 UPDATE PROFILE (NODE BACKEND PLACEHOLDER)
-   */
-  async function updateProfile(updates: Partial<Profile>) {
-    if (!user) {
-      return { error: new Error('No user logged in') };
-    }
-
-    try {
-      // TODO: Replace with Node API
-      // await fetch(`/api/profile/${user.id}`, {...})
-
-      setProfile(prev => (prev ? { ...prev, ...updates } : null));
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
-  }
-
-  const value: AuthContextType = {
-    user,
-    profile,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    updateProfile,
+  const login = (user: User, accessToken: string, refreshToken: string) => {
+    dispatch({ type: 'LOGIN', payload: { user, accessToken, refreshToken } });
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
+
+  return (
+    <AuthContext.Provider value={{ state, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
-}
+};
