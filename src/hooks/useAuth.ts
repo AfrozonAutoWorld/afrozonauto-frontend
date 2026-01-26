@@ -103,9 +103,12 @@ export function useAuthQuery() {
     },
 
     onError: (error: ApiError) => {
+      const errorMessage =
+        error.errors?.[0] || error.message || "Verification failed";
+
       showToast({
         type: "error",
-        message: error.message || "Registration failed",
+        message: errorMessage,
       });
     },
   });
@@ -121,9 +124,12 @@ export function useAuthQuery() {
     },
 
     onError: (error: ApiError) => {
+      const errorMessage =
+        error.errors?.[0] || error.message || "Verification failed";
+
       showToast({
         type: "error",
-        message: error.message || "Verification failed",
+        message: errorMessage,
       });
     },
   });

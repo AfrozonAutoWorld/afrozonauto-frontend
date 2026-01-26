@@ -43,6 +43,13 @@ export function VehicleListing() {
 
   const { vehicles, meta, isLoading, isError, error, refetch } = useVehicles(filters);
 
+
+  const handlePageChange = (newPage: number) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+
   const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
     setFilters(prev => ({
       ...prev,
@@ -51,9 +58,15 @@ export function VehicleListing() {
     }));
   };
 
-  const handlePageChange = (newPage: number) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleClearFilters = () => {
+    setSearchQuery(''); // Clear the search bar
+    setSortBy('newest'); // Reset sort
+    setFilters({
+      page: 1,
+      limit: 50,
+      includeApi: true,
+      status: 'AVAILABLE',
+    });
   };
 
   if (isError) {
@@ -75,6 +88,8 @@ export function VehicleListing() {
       </div>
     );
   }
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,7 +132,7 @@ export function VehicleListing() {
             <VehicleFilters
               filters={filters}
               onFilterChange={handleFilterChange}
-            //makes={makes}
+              onClearFilters={handleClearFilters}
             />
           </div>
 
@@ -196,6 +211,7 @@ export function VehicleListing() {
                 <button
                   onClick={() => {
                     setSearchQuery('');
+                    setSortBy('newest');
                     setFilters({
                       page: 1,
                       limit: 50,
@@ -207,6 +223,7 @@ export function VehicleListing() {
                 >
                   Clear All Filters
                 </button>
+
               </div>
             )}
 

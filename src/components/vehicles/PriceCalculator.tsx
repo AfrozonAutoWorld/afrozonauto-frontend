@@ -20,27 +20,27 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
   const [destinationState, setDestinationState] = useState('Lagos');
   const [showBreakdown, setShowBreakdown] = useState(false);
 
-  const result = calculateLandedCost(vehiclePrice, vehicleType, shippingMethod, destinationState);
+  const result = calculateLandedCost(vehiclePrice, vehicleType, shippingMethod);
   const { breakdown, estimatedDeliveryDays, depositAmount } = result;
 
   useEffect(() => {
     if (onCalculate) {
       onCalculate(breakdown, estimatedDeliveryDays);
     }
-  }, [vehiclePrice, vehicleType, shippingMethod, destinationState]);
+  }, [vehiclePrice, vehicleType, shippingMethod]);
 
   const costItems = [
     { label: 'Vehicle Price', value: breakdown.vehicle_price, info: 'Base price of the vehicle in USD' },
     { label: 'Afrozon Sourcing Fee', value: breakdown.sourcing_fee, info: '5% of vehicle price (min $500)' },
     { label: 'Pre-Purchase Inspection', value: breakdown.inspection_fee, info: 'Professional vehicle inspection' },
     { label: 'US Handling Fee', value: breakdown.us_handling_fee, info: 'Documentation and export prep' },
-    { label: 'Shipping Cost', value: breakdown.shipping_cost, info: `${shippingMethod} shipping to Nigeria` },
-    { label: 'Import Duty (35%)', value: breakdown.customs_duty, info: 'Nigerian customs duty' },
-    { label: 'VAT (7.5%)', value: breakdown.vat, info: 'Value Added Tax' },
-    { label: 'CISS Levy (15%)', value: breakdown.levy, info: 'Comprehensive Import Supervision Scheme' },
-    { label: 'Clearing & Documentation', value: breakdown.clearing_fee, info: 'Port clearance services' },
-    { label: 'Port Charges', value: breakdown.port_charges, info: 'Terminal handling charges' },
-    { label: 'Local Delivery', value: breakdown.local_delivery, info: `Delivery to ${destinationState}` },
+    //{ label: 'VAT (7.5%)', value: breakdown.vat, info: 'Value Added Tax' },
+    // { label: 'Shipping Cost', value: breakdown.shipping_cost, info: `${shippingMethod} shipping to Nigeria` },
+    // { label: 'Import Duty (35%)', value: breakdown.customs_duty, info: 'Nigerian customs duty' },
+    // { label: 'CISS Levy (15%)', value: breakdown.levy, info: 'Comprehensive Import Supervision Scheme' },
+    // { label: 'Clearing & Documentation', value: breakdown.clearing_fee, info: 'Port clearance services' },
+    // { label: 'Port Charges', value: breakdown.port_charges, info: 'Terminal handling charges' },
+    //{ label: 'Local Delivery', value: breakdown.local_delivery, info: `Delivery to ${destinationState}` },
   ];
 
   return (
@@ -64,8 +64,8 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
             <button
               onClick={() => setShippingMethod('RoRo')}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RoRo'
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 hover:border-gray-300'
                 }`}
             >
               <Ship className="w-5 h-5" />
@@ -77,8 +77,8 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
             <button
               onClick={() => setShippingMethod('Container')}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'Container'
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 hover:border-gray-300'
                 }`}
             >
               <Truck className="w-5 h-5" />

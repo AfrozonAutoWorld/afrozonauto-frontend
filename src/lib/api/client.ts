@@ -13,6 +13,9 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public code?: string,
+    public errors?: string[],
+    public details?: any,
     public data?: any,
   ) {
     super(message);
@@ -109,6 +112,7 @@ class ApiClient {
           _retry?: boolean;
         };
 
+        // Handle 401 errors with token refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
@@ -158,15 +162,42 @@ class ApiClient {
           } catch (refreshError) {
             this.processQueue(refreshError);
             this.handleLogout();
-            return Promise.reject(refreshError);
+            return Promise.reject(
+              this.transformError(refreshError as AxiosError),
+            );
           } finally {
             this.isRefreshing = false;
           }
         }
 
-        return Promise.reject(error);
+        // Transform all errors to ApiError
+        return Promise.reject(this.transformError(error));
       },
     );
+  }
+
+  // Transform Axios errors to ApiError
+  private transformError(error: AxiosError): ApiError {
+    if (error.response) {
+      const { data, status } = error.response;
+      const errorData = data as any;
+
+      return new ApiError(
+        errorData?.message || `Request failed with status ${status}`,
+        status,
+        errorData?.code,
+        errorData?.errors,
+        errorData?.details,
+        errorData,
+      );
+    }
+
+    // Network or timeout errors
+    if (error.code === "ECONNABORTED") {
+      return new ApiError("Request timeout", 0);
+    }
+
+    return new ApiError(error.message || "Network error", 0);
   }
 
   private processQueue(error: any) {

@@ -7,11 +7,10 @@ import {
   formatDate,
   getEstimatedDeliveryDate,
   NIGERIAN_STATES,
-  VEHICLE_MAKES,
 } from '../lib/pricingCalculator';
 import type { VehicleType } from '../types';
 
-const vehicleTypes: VehicleType[] = ['Car', 'SUV', 'Truck', 'Van', 'Sedan', 'Coupe'];
+const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE'];
 
 export function Calculator() {
   const [vehiclePrice, setVehiclePrice] = useState<number>(20000);
@@ -19,7 +18,7 @@ export function Calculator() {
   const [shippingMethod, setShippingMethod] = useState<'RoRo' | 'Container'>('RoRo');
   const [destinationState, setDestinationState] = useState('Lagos');
 
-  const result = calculateLandedCost(vehiclePrice, vehicleType, shippingMethod, destinationState);
+  const result = calculateLandedCost(vehiclePrice, vehicleType, shippingMethod);
   const { breakdown, estimatedDeliveryDays, depositAmount } = result;
 
   const costItems = [
@@ -28,12 +27,12 @@ export function Calculator() {
     { label: 'Pre-Purchase Inspection', value: breakdown.inspection_fee, description: 'Professional 150+ point inspection' },
     { label: 'US Handling Fee', value: breakdown.us_handling_fee, description: 'Export prep and documentation' },
     { label: `Shipping (${shippingMethod})`, value: breakdown.shipping_cost, description: `${shippingMethod} shipping to Nigeria` },
-    { label: 'Import Duty (35%)', value: breakdown.customs_duty, description: 'Nigerian customs duty on CIF value' },
-    { label: 'VAT (7.5%)', value: breakdown.vat, description: 'Value Added Tax' },
-    { label: 'CISS Levy (15%)', value: breakdown.levy, description: 'Comprehensive Import Supervision Scheme' },
-    { label: 'Clearing & Documentation', value: breakdown.clearing_fee, description: 'Port clearance services' },
-    { label: 'Port Charges', value: breakdown.port_charges, description: 'Terminal handling charges' },
-    { label: `Delivery to ${destinationState}`, value: breakdown.local_delivery, description: 'Door-to-door delivery' },
+    //   { label: 'Import Duty (35%)', value: breakdown.customs_duty, description: 'Nigerian customs duty on CIF value' },
+    //   { label: 'VAT (7.5%)', value: breakdown.vat, description: 'Value Added Tax' },
+    //   { label: 'CISS Levy (15%)', value: breakdown.levy, description: 'Comprehensive Import Supervision Scheme' },
+    //   { label: 'Clearing & Documentation', value: breakdown.clearing_fee, description: 'Port clearance services' },
+    //   { label: 'Port Charges', value: breakdown.port_charges, description: 'Terminal handling charges' },
+    //   { label: `Delivery to ${destinationState}`, value: breakdown.local_delivery, description: 'Door-to-door delivery' },
   ];
 
   return (
@@ -78,11 +77,10 @@ export function Calculator() {
                       <button
                         key={price}
                         onClick={() => setVehiclePrice(price)}
-                        className={`px-3 py-1 rounded-full text-sm ${
-                          vehiclePrice === price
+                        className={`px-3 py-1 rounded-full text-sm ${vehiclePrice === price
                             ? 'bg-emerald-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         ${price.toLocaleString()}
                       </button>
@@ -114,11 +112,10 @@ export function Calculator() {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => setShippingMethod('RoRo')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      shippingMethod === 'RoRo'
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'RoRo'
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Ship className={`w-6 h-6 ${shippingMethod === 'RoRo' ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -130,11 +127,10 @@ export function Calculator() {
 
                   <button
                     onClick={() => setShippingMethod('Container')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${
-                      shippingMethod === 'Container'
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'Container'
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <Truck className={`w-6 h-6 ${shippingMethod === 'Container' ? 'text-emerald-600' : 'text-gray-400'}`} />

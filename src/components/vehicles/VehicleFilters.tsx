@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { VehicleFilters, VehicleType } from '../../types';
 import { VEHICLE_MAKES, US_STATES } from '../../lib/pricingCalculator';
@@ -6,13 +6,13 @@ import { VEHICLE_MAKES, US_STATES } from '../../lib/pricingCalculator';
 interface VehicleFiltersProps {
   filters: VehicleFilters;
   onFilterChange: (filters: VehicleFilters) => void;
-  //makes: string[]
+  onClearFilters?: () => void;
 }
 
 const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE'];
 
 const priceRanges = [
-  { label: 'Under $10,000', min: 0, max: 10000 },
+  { label: 'Under $10,000', min: 1, max: 10000 },
   { label: '$10,000 - $20,000', min: 10000, max: 20000 },
   { label: '$20,000 - $30,000', min: 20000, max: 30000 },
   { label: '$30,000 - $50,000', min: 30000, max: 50000 },
@@ -20,26 +20,49 @@ const priceRanges = [
 ];
 
 const yearRanges = [
-  { label: '2023+', min: 2023, max: 2025 },
-  { label: '2020 - 2022', min: 2020, max: 2022 },
+  { label: '2024-2025', min: 2024, max: 2025 },
+  { label: '2020 - 2023', min: 2020, max: 2023 },
   { label: '2017 - 2019', min: 2017, max: 2019 },
   { label: '2014 - 2016', min: 2014, max: 2016 },
-  { label: 'Before 2014', min: 2000, max: 2013 },
+  { label: 'Before 2014', min: 1990, max: 2013 },
 ];
 
-export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps) {
+export function VehicleFilters({ filters, onFilterChange, onClearFilters }: VehicleFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [localMileage, setLocalMileage] = useState<string>(filters.mileageMax?.toString() || '');
+  const [debouncedMileage, setDebouncedMileage] = useState<string>(filters.mileageMax?.toString() || '');
+
+  // Sync local mileage with filters when filters are cleared externally
+  useEffect(() => {
+    const externalMileage = filters.mileageMax?.toString() || '';
+    if (externalMileage !== localMileage) {
+      setLocalMileage(externalMileage);
+      setDebouncedMileage(externalMileage);
+    }
+  }, [filters.mileageMax]);
+
+  // Debounce the mileage input - only updates after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMileage(localMileage);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localMileage]);
+
+  // Apply the debounced mileage to filters
+  useEffect(() => {
+    const mileage = debouncedMileage ? parseInt(debouncedMileage) : undefined;
+
+    // Only update if valid and different from current filter
+    if ((mileage === undefined || !isNaN(mileage)) && mileage !== filters.mileageMax) {
+      onFilterChange({ ...filters, mileageMax: mileage });
+    }
+  }, [debouncedMileage]);
 
   const handleMakeChange = (make: string) => {
     onFilterChange({ ...filters, make: make || undefined });
   };
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    onFilterChange({ ...filters, search: value || undefined });
-  };
-
 
   const handleTypeChange = (type: VehicleType | '') => {
     const allowedTypes: VehicleFilters['vehicleType'][] = ["CAR", "TRUCK", "SUV", "VAN", "MOTORCYCLE"];
@@ -49,8 +72,6 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
       vehicleType: allowedTypes.includes(type as any) ? (type as any) : undefined,
     });
   };
-
-
 
   const handlePriceChange = (rangeIndex: number) => {
     if (rangeIndex === -1) {
@@ -74,12 +95,40 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
     onFilterChange({ ...filters, state: state || undefined });
   };
 
-  const clearFilters = () => {
-    onFilterChange({});
-    setSearchTerm('');
+  const handleMileageChange = (value: string) => {
+    // Only allow numbers
+    if (value === '' || /^\d+$/.test(value)) {
+      setLocalMileage(value);
+    }
   };
 
-  const activeFiltersCount = Object.values(filters).filter(v => v !== undefined).length;
+  const clearFilters = () => {
+    setLocalMileage('');
+    setDebouncedMileage('');
+
+    if (onClearFilters) {
+      onClearFilters();
+    } else {
+      onFilterChange({
+        page: filters.page,
+        limit: filters.limit,
+        includeApi: filters.includeApi,
+        status: filters.status,
+      });
+    }
+  };
+
+  const activeFiltersCount = [
+    filters.make,
+    filters.vehicleType,
+    filters.priceMin,
+    filters.priceMax,
+    filters.yearMin,
+    filters.yearMax,
+    filters.state,
+    filters.mileageMax,
+    filters.search,
+  ].filter(v => v !== undefined).length;
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -112,7 +161,7 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Price Range (USD)</label>
         <select
           value={
             filters.priceMin !== undefined
@@ -162,21 +211,31 @@ export function VehicleFilters({ filters, onFilterChange }: VehicleFiltersProps)
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Max Mileage</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Max Mileage
+          {debouncedMileage && parseInt(debouncedMileage) > 0 && (
+            <span className="text-emerald-600 font-normal ml-2">
+              (≤ {parseInt(debouncedMileage).toLocaleString()} miles)
+            </span>
+          )}
+        </label>
         <input
-          type="number"
+          type="text"
+          inputMode="numeric"
           placeholder="e.g., 50000"
-          value={searchTerm}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          // onChange={(e) => onFilterChange({ ...filters, mileageMax: e.target.value ? parseInt(e.target.value) : undefined })}
+          value={localMileage}
+          onChange={(e) => handleMileageChange(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Type and pause - filters apply automatically
+        </p>
       </div>
 
       {activeFiltersCount > 0 && (
         <button
           onClick={clearFilters}
-          className="w-full text-sm text-red-600 hover:text-red-700 font-medium"
+          className="w-full text-sm text-red-600 hover:text-red-700 font-medium py-2 px-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
         >
           Clear All Filters ({activeFiltersCount})
         </button>
