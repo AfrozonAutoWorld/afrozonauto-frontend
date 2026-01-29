@@ -53,7 +53,7 @@ export interface CalculationResult {
 export function calculateLandedCost(
   vehiclePrice: number,
   vehicleType: VehicleType,
-  shippingMethod: "RoRo" | "Container",
+  shippingMethod: "RORO" | "CONTAINER" | "AIR_FREIGHT" | "EXPRESS",
   //destinationState: string,
   config: PricingConfig = DEFAULT_CONFIG,
 ): CalculationResult {
@@ -68,7 +68,7 @@ export function calculateLandedCost(
   const usHandlingFee = config.us_handling_fee_usd;
 
   const baseShipping =
-    shippingMethod === "RoRo"
+    shippingMethod === "RORO"
       ? config.shipping_roro_base_usd
       : config.shipping_container_base_usd;
   const shippingCost = baseShipping * typeMultiplier;
@@ -113,7 +113,7 @@ export function calculateLandedCost(
   };
 
   const estimatedDeliveryDays =
-    shippingMethod === "RoRo"
+    shippingMethod === "RORO"
       ? config.timeline_days_roro!
       : config.timeline_days_container!;
 

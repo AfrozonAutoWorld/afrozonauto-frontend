@@ -20,6 +20,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './lib/authStore';
+import { RequestDetail } from './pages/RequestDetails';
 
 function App() {
 
@@ -86,6 +87,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/request-details/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <RequestDetail />
                   </Layout>
                 </ProtectedRoute>
               }

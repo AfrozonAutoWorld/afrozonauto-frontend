@@ -9,7 +9,7 @@ interface VehicleFiltersProps {
   onClearFilters?: () => void;
 }
 
-const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE'];
+const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE', 'MOTORCYCLE'];
 
 const priceRanges = [
   { label: 'Under $10,000', min: 1, max: 10000 },
@@ -65,7 +65,7 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   };
 
   const handleTypeChange = (type: VehicleType | '') => {
-    const allowedTypes: VehicleFilters['vehicleType'][] = ["CAR", "TRUCK", "SUV", "VAN", "MOTORCYCLE"];
+    const allowedTypes: VehicleFilters['vehicleType'][] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE', 'MOTORCYCLE'];
 
     onFilterChange({
       ...filters,

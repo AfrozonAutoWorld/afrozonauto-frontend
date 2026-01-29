@@ -16,7 +16,7 @@ interface PriceCalculatorProps {
 }
 
 export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: PriceCalculatorProps) {
-  const [shippingMethod, setShippingMethod] = useState<'RoRo' | 'Container'>('RoRo');
+  const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
   const [destinationState, setDestinationState] = useState('Lagos');
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -62,8 +62,8 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setShippingMethod('RoRo')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RoRo'
+              onClick={() => setShippingMethod('RORO')}
+              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RORO'
                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -75,8 +75,8 @@ export function PriceCalculator({ vehiclePrice, vehicleType, onCalculate }: Pric
               </div>
             </button>
             <button
-              onClick={() => setShippingMethod('Container')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'Container'
+              onClick={() => setShippingMethod('CONTAINER')}
+              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'CONTAINER'
                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 hover:border-gray-300'
                 }`}

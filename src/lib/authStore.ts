@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
       isHydrated: false,
 
       setAuth: (user, accessToken, refreshToken) => {
-        console.log("Setting auth:", { user, hasAccessToken: !!accessToken });
+        //console.log("Setting auth:", { user, hasAccessToken: !!accessToken });
         set({
           user,
           accessToken,

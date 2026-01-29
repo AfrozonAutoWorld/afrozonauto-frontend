@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi, SaveVehiclePayload } from "../lib/api/vehicle";
+import { ordersApi, RequestVehicle, VehicleOrder } from "../lib/api/orders";
 import type { Vehicle } from "../types/";
+import { showToast } from "../lib/showNotification";
+import { ApiError } from "../lib/api/client";
+import { useNavigate } from "react-router-dom";
 
 interface UseSaveVehicleOptions {
   onSuccess?: (data: Vehicle) => void;
@@ -76,3 +80,33 @@ export function useToggleSaveVehicle(options?: {
     error: mutation.error,
   };
 }
+
+export const useRequestOrderVehicle = () => {
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: (data: RequestVehicle) => ordersApi.requestVehicle(data),
+
+    onSuccess: (order: VehicleOrder) => {
+      const requestNumber = order.requestNumber;
+
+      if (requestNumber) {
+        showToast({
+          type: "success",
+          message: "Request sent successfully!",
+        });
+
+        navigate("/dashboard", {
+          state: { newRequest: requestNumber },
+        });
+      }
+    },
+
+    onError: (error: ApiError) => {
+      showToast({
+        type: "error",
+        message: error.message || "Failed to submit request. Please try again.",
+      });
+    },
+  });
+};

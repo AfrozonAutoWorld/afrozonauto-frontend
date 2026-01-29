@@ -70,15 +70,16 @@ export interface Profile {
 
 export type VehicleType =
   | "CAR"
-  | "TRUCK"
   | "SUV"
+  | "TRUCK"
   | "VAN"
-  | "MOTORCYCLE"
-  | "COUPE"
   | "SEDAN"
+  | "COUPE"
   | "HATCHBACK"
   | "WAGON"
-  | "CONVERTIBLE";
+  | "CONVERTIBLE"
+  | "MOTORCYCLE";
+
 type TransmissionType = "Automatic" | "Manual";
 type FuelType = "Hybrid" | "Regular Unleaded" | "Diesel" | "Electric";
 type DrivetrainType = "FWD" | "RWD" | "AWD" | "4WD";
