@@ -101,7 +101,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 export function Dashboard() {
-  const { forgotPassword } = useAuthQuery();
+  const { user, loading: authLoading, isAuthenticated, forgotPassword } = useAuthQuery();
+
   const { deleteAddress } = useAddressMutate();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'saved' | 'payments' | 'profile'>('requests');
@@ -143,7 +144,6 @@ export function Dashboard() {
     ? addresses.filter((a: any) => a.id !== primaryDefault?.id)
     : [];
 
-  const { user, isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
@@ -184,7 +184,7 @@ export function Dashboard() {
     setDelAddModal(true);
   };
 
-  if (ordersLoading) {
+  if (authLoading || ordersLoading || defaultLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

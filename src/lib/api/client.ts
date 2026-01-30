@@ -49,11 +49,13 @@ class ApiClient {
         const { accessToken, isAuthenticated, refreshToken } =
           useAuthStore.getState();
 
+        // Skip token logic for refresh endpoint
         if (config.url?.includes("/auth/refresh-token")) {
           return config;
         }
 
         if (isAuthenticated && accessToken) {
+          // ✅ Proactive refresh: Check if token expires soon (within 60 seconds)
           if (
             isTokenExpiringSoon(accessToken, 60) &&
             refreshToken &&
@@ -61,7 +63,9 @@ class ApiClient {
           ) {
             try {
               this.isRefreshing = true;
-              console.log("Proactively refreshing token...");
+              console.log(
+                "🔄 API Interceptor: Proactively refreshing token before request...",
+              );
 
               const response = await axios.post(
                 `${API_BASE_URL}/auth/refresh-token`,
@@ -70,6 +74,7 @@ class ApiClient {
                   headers: {
                     "Content-Type": "application/json",
                   },
+                  timeout: 10000,
                 },
               );
 
@@ -87,9 +92,12 @@ class ApiClient {
                 );
 
               config.headers.Authorization = `Bearer ${newAccessToken}`;
-              console.log("Token refreshed proactively");
+              console.log("✅ API Interceptor: Token refreshed proactively");
             } catch (error) {
-              console.error("Proactive token refresh failed:", error);
+              console.error(
+                "❌ API Interceptor: Proactive token refresh failed:",
+                error,
+              );
               // Continue with old token, 401 interceptor will handle if expired
               config.headers.Authorization = `Bearer ${accessToken}`;
             } finally {
@@ -112,13 +120,24 @@ class ApiClient {
           _retry?: boolean;
         };
 
-        // Handle 401 errors with token refresh
+        // ✅ Handle 401 errors with token refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // If already refreshing, queue this request
           if (this.isRefreshing) {
+            console.log(
+              "🔄 API Interceptor: Queueing request while refresh in progress",
+            );
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
             })
-              .then(() => this.client(originalRequest))
+              .then(() => {
+                // After refresh completes, retry with new token
+                const { accessToken } = useAuthStore.getState();
+                if (originalRequest.headers && accessToken) {
+                  originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                }
+                return this.client(originalRequest);
+              })
               .catch((err) => Promise.reject(err));
           }
 
@@ -129,9 +148,15 @@ class ApiClient {
             const { refreshToken } = useAuthStore.getState();
 
             if (!refreshToken) {
+              console.warn(
+                "⚠️ API Interceptor: No refresh token available for 401 retry",
+              );
               throw new Error("No refresh token available");
             }
 
+            console.log(
+              "🔄 API Interceptor: Attempting to refresh token after 401...",
+            );
             const response = await axios.post(
               `${API_BASE_URL}/auth/refresh-token`,
               { refreshToken },
@@ -139,6 +164,7 @@ class ApiClient {
                 headers: {
                   "Content-Type": "application/json",
                 },
+                timeout: 10000,
               },
             );
 
@@ -153,13 +179,23 @@ class ApiClient {
                 newRefreshToken,
               );
 
+            console.log(
+              "✅ API Interceptor: Token refreshed after 401, retrying original request",
+            );
+
+            // Process queued requests
             this.processQueue(null);
 
+            // Retry original request with new token
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             }
             return this.client(originalRequest);
           } catch (refreshError) {
+            console.error(
+              "❌ API Interceptor: Token refresh failed after 401:",
+              refreshError,
+            );
             this.processQueue(refreshError);
             this.handleLogout();
             return Promise.reject(
@@ -208,13 +244,15 @@ class ApiClient {
   }
 
   private handleLogout() {
+    console.log("🚪 API Interceptor: Logging out user due to auth failure");
     const { clearAuth } = useAuthStore.getState();
     clearAuth();
 
-    const protectedRoutes = ["/dashboard"];
+    const protectedRoutes = ["/dashboard", "/request-details"];
     const currentPath = window.location.pathname;
 
     if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
+      console.log("🚪 Redirecting to login page");
       window.location.href = "/login";
     }
   }

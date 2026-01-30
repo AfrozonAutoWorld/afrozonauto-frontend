@@ -2,12 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   PaymenInit,
   Payment,
-  PaymentByIdResponse,
+  PaymentInitResponse,
   paymentsApi,
   PaymentVerification,
-  VerifyPayment,
 } from "../lib/api/payment";
-import { VehicleOrder } from "../lib/api/orders";
 import { showToast } from "../lib/showNotification";
 import { useNavigate } from "react-router";
 import { ApiError } from "../lib/api/client";
@@ -69,39 +67,37 @@ export function usePaymentById(paymentId: string) {
     isFetching: queryResult.isFetching,
   };
 }
-
 export const usePaymentInit = () => {
-  const navigate = useNavigate();
+  return useMutation<PaymentInitResponse["data"]["data"], ApiError, PaymenInit>(
+    {
+      mutationFn: async (data: PaymenInit) => {
+        const res = await paymentsApi.paymentInit(data);
+        // res.data.data.data contains { authorizationUrl, reference, accessCode }
+        return res.data.data;
+      },
+      onSuccess: (data) => {
+        showToast({
+          type: "success",
+          message: "Payment initialized successfully!",
+        });
 
-  return useMutation<Payment, ApiError, PaymenInit>({
-    // mutationFn returns Payment
-    mutationFn: async (data: PaymenInit) => {
-      const res = await paymentsApi.paymentInit(data);
-      return res.data.data[0]; // unwrap the Payment from PaymentResponse
+        // Automatically redirect to payment gateway
+        if (data.authorizationUrl) {
+          window.location.href = data.authorizationUrl;
+        }
+      },
+      onError: (error: ApiError) => {
+        showToast({
+          type: "error",
+          message:
+            error.message || "Failed to initialize payment. Please try again.",
+        });
+      },
     },
-    onSuccess: (payment: Payment) => {
-      showToast({
-        type: "success",
-        message: "Payment initialized successfully!",
-      });
-
-      navigate("/dashboard", {
-        state: { paymentId: payment.id },
-      });
-    },
-    onError: (error: ApiError) => {
-      showToast({
-        type: "error",
-        message:
-          error.message || "Failed to initialize payment. Please try again.",
-      });
-    },
-  });
+  );
 };
 
 export const useVerifyPayment = () => {
-  const navigate = useNavigate();
-
   return useMutation<
     PaymentVerification,
     ApiError,
@@ -109,19 +105,21 @@ export const useVerifyPayment = () => {
   >({
     mutationFn: async ({ paymentId, provider }) => {
       const res = await paymentsApi.paymentVerify(paymentId, provider);
-      return res.data.data; // ✅ returns PaymentVerification
+      // res.data.data.data contains PaymentVerification
+      return res.data.data;
     },
 
     onSuccess: ({ success, payment, message }) => {
       if (success) {
         showToast({
           type: "success",
-          message: "Payment verified successfully!",
+          message: message || "Payment verified successfully!",
         });
 
-        navigate("/dashboard", {
-          state: { paymentId: payment.id },
-        });
+        // Don't navigate away, let the parent component handle refresh
+        // navigate("/dashboard", {
+        //   state: { paymentId: payment.id },
+        // });
       } else {
         showToast({
           type: "error",

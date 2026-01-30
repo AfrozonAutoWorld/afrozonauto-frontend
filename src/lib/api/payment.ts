@@ -57,12 +57,15 @@ export interface Payment {
   completedAt: string | null;
   order: Order;
 }
-
-export interface PaymentResponse {
+export interface PaymentInitResponse {
   success: boolean;
   message: string;
   data: {
-    data: Payment[];
+    data: {
+      authorizationUrl: string;
+      reference: string;
+      accessCode: string;
+    };
   };
 }
 
@@ -108,7 +111,7 @@ export const paymentsApi = {
     apiClient.get<PaymentByIdResponse>(`/payments/payment-id/${paymentId}`),
 
   paymentInit: (data: PaymenInit) =>
-    apiClient.post<PaymentResponse>("/payments/init", data),
+    apiClient.post<PaymentInitResponse>("/payments/init", data),
 
   paymentVerify: (paymentId: string, provider: string) =>
     apiClient.post<PaymentVerifyResponse>(

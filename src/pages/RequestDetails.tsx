@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   AlertCircle,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
 import { useGetOrder } from '../hooks/useOrders';
+import { usePaymentInit, useVerifyPayment } from '../hooks/usePayments';
 
 // Helper to get primary image from order
 function getOrderPrimaryImage(order: any): string {
@@ -69,16 +70,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; d
     description: 'Quote has been sent. Please review and approve'
   },
   DEPOSIT_PENDING: {
-    label: 'Deposit Pending',
+    label: 'Payment Pending',
     color: 'bg-orange-100 text-orange-700 border-orange-200',
     icon: CreditCard,
-    description: 'Waiting for deposit payment'
+    description: 'Waiting for payment'
   },
   DEPOSIT_PAID: {
-    label: 'Deposit Paid',
+    label: 'Payment Received',
     color: 'bg-green-100 text-green-700 border-green-200',
     icon: CheckCircle,
-    description: 'Deposit received. Processing your order'
+    description: 'Payment received. Processing your order'
   },
   INSPECTION_PENDING: {
     label: 'Inspection Pending',
@@ -169,17 +170,40 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; d
 export function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentType, setPaymentType] = useState<'deposit' | 'balance' | 'full'>('deposit');
 
-  const { order, isLoading, isError } = useGetOrder(id ?? '');
+  const { order, isLoading, isError, refetch } = useGetOrder(id ?? '');
+  const { mutateAsync: verifyPayment, isPending: isVerifying } = useVerifyPayment();
 
-  if (isLoading) {
+  // Check for payment callback
+  useEffect(() => {
+    const reference = searchParams.get('reference');
+    const provider = searchParams.get('provider') || 'paystack';
+
+    if (reference && order?.id) {
+      handlePaymentVerification(reference, provider);
+    }
+  }, [searchParams, order?.id]);
+
+  const handlePaymentVerification = async (paymentId: string, provider: string) => {
+    try {
+      await verifyPayment({ paymentId, provider });
+      // Refetch order to get updated payment status
+      await refetch();
+    } catch (error) {
+      console.error('Payment verification failed:', error);
+    }
+  };
+
+  if (isLoading || isVerifying) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading order details...</p>
+          <p className="text-gray-600">
+            {isVerifying ? 'Verifying payment...' : 'Loading order details...'}
+          </p>
         </div>
       </div>
     );
@@ -212,31 +236,26 @@ export function RequestDetail() {
 
   // Calculate payment amounts
   const totalCost = order.totalLandedCostUsd || order.quotedPriceUsd || order.vehicleSnapshot?.priceUsd || 0;
-  const depositAmount = totalCost * 0.3; // 30% deposit
-  const balanceAmount = totalCost * 0.7; // 70% balance
+  const halfPayment = totalCost * 0.5; // 50% upfront payment
 
   const totalPaid = order.payments?.reduce((sum: number, payment: any) => {
-    return payment.status === 'completed' ? sum + payment.amount_usd : sum;
+    return payment.status === 'completed' ? sum + payment.amountUsd : sum;
   }, 0) || 0;
 
   const remainingBalance = totalCost - totalPaid;
 
-  // Allow deposit payment for these statuses when nothing has been paid
-  const canPayDeposit = [
+  // Allow payment for these statuses when there's a remaining balance
+  const canMakePayment = [
     'PENDING_QUOTE',
     'QUOTE_SENT',
-    'DEPOSIT_PENDING'
-  ].includes(order.status) && totalPaid === 0 && totalCost > 0;
-
-  // Allow balance payment for these statuses when there's a remaining balance
-  const canPayBalance = [
+    'DEPOSIT_PENDING',
     'DEPOSIT_PAID',
     'INSPECTION_COMPLETE',
     'AWAITING_APPROVAL',
     'APPROVED',
     'PURCHASE_IN_PROGRESS',
     'PURCHASED'
-  ].includes(order.status) && remainingBalance > 0;
+  ].includes(order.status) && remainingBalance > 0 && totalCost > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -531,33 +550,15 @@ export function RequestDetail() {
                 </div>
               )}
 
-              {(canPayDeposit || canPayBalance) && totalCost > 0 && (
-                <div className="mt-6 space-y-3">
-                  {canPayDeposit && (
-                    <button
-                      onClick={() => {
-                        setPaymentType('deposit');
-                        setShowPaymentModal(true);
-                      }}
-                      className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <CreditCard className="w-5 h-5" />
-                      Pay Deposit ({formatCurrency(depositAmount)})
-                    </button>
-                  )}
-
-                  {canPayBalance && (
-                    <button
-                      onClick={() => {
-                        setPaymentType('balance');
-                        setShowPaymentModal(true);
-                      }}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <DollarSign className="w-5 h-5" />
-                      Pay Balance ({formatCurrency(remainingBalance)})
-                    </button>
-                  )}
+              {canMakePayment && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Make Payment
+                  </button>
                 </div>
               )}
             </div>
@@ -647,12 +648,14 @@ export function RequestDetail() {
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && (
+      {showPaymentModal && order && (
         <PaymentModal
           orderId={order.id}
-          amount={paymentType === 'deposit' ? depositAmount : remainingBalance}
-          paymentType={paymentType}
+          totalCost={totalCost}
+          halfPayment={halfPayment}
+          remainingBalance={remainingBalance}
           onClose={() => setShowPaymentModal(false)}
+          onSuccess={refetch}
         />
       )}
     </div>
@@ -662,29 +665,51 @@ export function RequestDetail() {
 // Payment Modal Component
 function PaymentModal({
   orderId,
-  amount,
-  paymentType,
-  onClose
+  totalCost,
+  halfPayment,
+  remainingBalance,
+  onClose,
+  onSuccess,
 }: {
   orderId: string;
-  amount: number;
-  paymentType: 'deposit' | 'balance' | 'full';
+  totalCost: number;
+  halfPayment: number;
+  remainingBalance: number;
   onClose: () => void;
+  onSuccess: () => void;
 }) {
+  const [paymentOption, setPaymentOption] = useState<'half' | 'full'>('half');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer'>('card');
-  const [processing, setProcessing] = useState(false);
+  const { mutateAsync: initializePayment, isPending } = usePaymentInit();
+
+  // Calculate the actual amount to pay based on selected option
+  const paymentAmount = paymentOption === 'full' ? remainingBalance : Math.min(halfPayment, remainingBalance);
 
   const handlePayment = async () => {
-    setProcessing(true);
+    try {
+      // Determine payment type based on option and what's been paid
+      let paymentType: string;
 
-    // TODO: Implement actual payment processing
-    // This would typically integrate with Paystack, Flutterwave, or similar
+      if (paymentOption === 'full') {
+        // If paying full remaining amount
+        paymentType = 'FULL_PAYMENT';
+      } else {
+        // If paying 50% upfront
+        paymentType = 'DEPOSIT';
+      }
 
-    setTimeout(() => {
-      setProcessing(false);
-      onClose();
-      // Show success message and refresh order data
-    }, 2000);
+      await initializePayment({
+        orderId,
+        paymentType,
+        provider: 'paystack', // or 'flutterwave'
+      });
+
+      // Note: The hook automatically redirects to authorizationUrl in onSuccess
+      // No need to manually redirect here
+    } catch (error) {
+      console.error('Payment initialization failed:', error);
+      // Error toast is shown by the hook
+    }
   };
 
   return (
@@ -696,32 +721,97 @@ function PaymentModal({
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
+              disabled={isPending}
             >
               ✕
             </button>
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="bg-emerald-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-emerald-800 mb-1">
-              {paymentType === 'deposit' ? 'Deposit Payment' : 'Balance Payment'}
-            </p>
-            <p className="text-3xl font-bold text-emerald-900">{formatCurrency(amount)}</p>
+        <div className="p-4">
+          {/* Payment Option Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Choose Payment Option
+            </label>
+            <div className="space-y-3">
+              {/* 50% Option */}
+              <button
+                onClick={() => setPaymentOption('half')}
+                disabled={isPending || halfPayment > remainingBalance}
+                className={`w-full p-2 border-2 rounded-lg text-left transition-all ${paymentOption === 'half'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                  } ${isPending || halfPayment > remainingBalance ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">Pay 50% Upfront</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Pay half now, rest later
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-emerald-600">
+                      {formatCurrency(Math.min(halfPayment, remainingBalance))}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Full Payment Option */}
+              <button
+                onClick={() => setPaymentOption('full')}
+                disabled={isPending}
+                className={`w-full p-2 border-2 rounded-lg text-left transition-all ${paymentOption === 'full'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                  } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">Pay Full Amount</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Complete payment now
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-emerald-600">
+                      {formatCurrency(remainingBalance)}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-4 mb-6">
+          {/* Amount Summary */}
+          <div className="bg-emerald-50 rounded-lg p-2 mb-6">
+            <p className="text-sm text-emerald-800 mb-1">
+              {paymentOption === 'half' ? 'Paying 50% Now' : 'Full Payment'}
+            </p>
+            <p className="text-2xl font-bold text-emerald-900">{formatCurrency(paymentAmount)}</p>
+            {paymentOption === 'half' && remainingBalance > halfPayment && (
+              <p className="text-xs text-emerald-700 mt-2">
+                Remaining after payment: {formatCurrency(remainingBalance - halfPayment)}
+              </p>
+            )}
+          </div>
+
+          {/* Payment Method Selection */}
+          <div className="space-y-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Payment Method
               </label>
               <div className="space-y-2">
                 <button
                   onClick={() => setPaymentMethod('card')}
-                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${paymentMethod === 'card'
+                  disabled={isPending}
+                  className={`w-full p-2 border-2 rounded-lg text-left transition-all ${paymentMethod === 'card'
                     ? 'border-emerald-500 bg-emerald-50'
                     : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -734,10 +824,11 @@ function PaymentModal({
 
                 <button
                   onClick={() => setPaymentMethod('bank_transfer')}
-                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${paymentMethod === 'bank_transfer'
+                  disabled={isPending}
+                  className={`w-full p-2 border-2 rounded-lg text-left transition-all ${paymentMethod === 'bank_transfer'
                     ? 'border-emerald-500 bg-emerald-50'
                     : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <DollarSign className={`w-5 h-5 ${paymentMethod === 'bank_transfer' ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -751,7 +842,7 @@ function PaymentModal({
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="bg-gray-50 rounded-lg p-2 mb-4">
             <p className="text-xs text-gray-600">
               Your payment is secured with industry-standard encryption.
               You will receive a confirmation email once the payment is processed.
@@ -761,16 +852,17 @@ function PaymentModal({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              disabled={isPending}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handlePayment}
-              disabled={processing}
+              disabled={isPending}
               className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {processing ? (
+              {isPending ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Processing...
@@ -778,7 +870,7 @@ function PaymentModal({
               ) : (
                 <>
                   <Shield className="w-5 h-5" />
-                  Pay {formatCurrency(amount)}
+                  Pay {formatCurrency(paymentAmount)}
                 </>
               )}
             </button>
