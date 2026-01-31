@@ -55,7 +55,6 @@ class ApiClient {
         }
 
         if (isAuthenticated && accessToken) {
-          // ✅ Proactive refresh: Check if token expires soon (within 60 seconds)
           if (
             isTokenExpiringSoon(accessToken, 60) &&
             refreshToken &&
@@ -63,13 +62,9 @@ class ApiClient {
           ) {
             try {
               this.isRefreshing = true;
-              console.log(
-                "🔄 API Interceptor: Proactively refreshing token before request...",
-              );
-
               const response = await axios.post(
                 `${API_BASE_URL}/auth/refresh-token`,
-                { refreshToken },
+                { token: refreshToken },
                 {
                   headers: {
                     "Content-Type": "application/json",
@@ -92,7 +87,6 @@ class ApiClient {
                 );
 
               config.headers.Authorization = `Bearer ${newAccessToken}`;
-              console.log("✅ API Interceptor: Token refreshed proactively");
             } catch (error) {
               console.error(
                 "❌ API Interceptor: Proactive token refresh failed:",
@@ -120,13 +114,8 @@ class ApiClient {
           _retry?: boolean;
         };
 
-        // ✅ Handle 401 errors with token refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
-          // If already refreshing, queue this request
           if (this.isRefreshing) {
-            console.log(
-              "🔄 API Interceptor: Queueing request while refresh in progress",
-            );
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
             })
@@ -153,13 +142,9 @@ class ApiClient {
               );
               throw new Error("No refresh token available");
             }
-
-            console.log(
-              "🔄 API Interceptor: Attempting to refresh token after 401...",
-            );
             const response = await axios.post(
               `${API_BASE_URL}/auth/refresh-token`,
-              { refreshToken },
+              { token: refreshToken },
               {
                 headers: {
                   "Content-Type": "application/json",
@@ -179,11 +164,6 @@ class ApiClient {
                 newRefreshToken,
               );
 
-            console.log(
-              "✅ API Interceptor: Token refreshed after 401, retrying original request",
-            );
-
-            // Process queued requests
             this.processQueue(null);
 
             // Retry original request with new token
@@ -244,7 +224,6 @@ class ApiClient {
   }
 
   private handleLogout() {
-    console.log("🚪 API Interceptor: Logging out user due to auth failure");
     const { clearAuth } = useAuthStore.getState();
     clearAuth();
 
@@ -252,7 +231,6 @@ class ApiClient {
     const currentPath = window.location.pathname;
 
     if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
-      console.log("🚪 Redirecting to login page");
       window.location.href = "/login";
     }
   }

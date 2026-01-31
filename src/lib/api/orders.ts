@@ -151,14 +151,6 @@ export interface VehicleOrder {
   vehicle: any | null;
 }
 
-export interface ApiSuccessResponse<T> {
-  success: boolean;
-  message: string;
-  data: {
-    data: T;
-  };
-}
-
 export interface PaginatedOrders {
   orders: VehicleOrder[];
   total: number;
@@ -205,6 +197,7 @@ export interface Order {
     };
     [key: string]: any;
   };
+  paymentBreakdown: PaymentPricing | null;
   status: string;
   quotedPriceUsd: number | null;
   depositAmountUsd: number | null;
@@ -261,6 +254,46 @@ export interface Payment {
   [key: string]: any;
 }
 
+export interface DefualtPrices {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  importDutyPercent: number;
+  vatPercent: number;
+  cissPercent: number;
+  sourcingFee: number;
+  prePurchaseInspectionUsd: number;
+  usHandlingFeeUsd: number;
+  shippingCostUsd: number;
+  clearingFeeUsd: number;
+  portChargesUsd: number;
+  localDeliveryUsd: number;
+}
+
+export interface PaymentPricing {
+  totalUsd: number;
+  breakdown: {
+    vehiclePriceUsd: number;
+    prePurchaseInspectionUsd: number;
+    usHandlingFeeUsd: number;
+    sourcingFee: number;
+    shippingCostUsd: number;
+  };
+}
+
+export interface CostBreakdown {
+  defaultPricing: DefualtPrices;
+  paymentBreakdown: PaymentPricing;
+}
+
+export interface ApiSuccessResponse<T> {
+  success: boolean;
+  message: string;
+  data: {
+    data: T;
+  };
+}
+
 export const ordersApi = {
   getAllOrder: async (): Promise<PaginatedOrders> => {
     const response =
@@ -273,7 +306,7 @@ export const ordersApi = {
 
   requestVehicle: async (payload: RequestVehicle): Promise<VehicleOrder> => {
     const response = await apiClient.post<ApiSuccessResponse<VehicleOrder>>(
-      "/orders/my-orders",
+      "/orders",
       payload,
     );
 
@@ -283,6 +316,17 @@ export const ordersApi = {
   getOrderById: async (id: string): Promise<Order> => {
     const response = await apiClient.get<ApiSuccessResponse<Order>>(
       `/orders/${id}`,
+    );
+
+    return response.data.data;
+  },
+
+  getPredefinePrices: async (
+    id: string,
+    shippingMethod: string,
+  ): Promise<CostBreakdown> => {
+    const response = await apiClient.get<ApiSuccessResponse<CostBreakdown>>(
+      `/orders/order-summary/${id}/?shippingMethod=${shippingMethod}`,
     );
 
     return response.data.data;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   AlertCircle,
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
 import { useGetOrder } from '../hooks/useOrders';
-import { usePaymentInit, useVerifyPayment } from '../hooks/usePayments';
+import { usePaymentInit } from '../hooks/usePayments';
 
 // Helper to get primary image from order
 function getOrderPrimaryImage(order: any): string {
@@ -170,44 +170,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; d
 export function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const { order, isLoading, isError, refetch } = useGetOrder(id ?? '');
-  const { mutateAsync: verifyPayment, isPending: isVerifying } = useVerifyPayment();
+  const { order, isError, refetch } = useGetOrder(id ?? '');
 
-  // Check for payment callback
-  useEffect(() => {
-    const reference = searchParams.get('reference');
-    const provider = searchParams.get('provider') || 'paystack';
 
-    if (reference && order?.id) {
-      handlePaymentVerification(reference, provider);
-    }
-  }, [searchParams, order?.id]);
-
-  const handlePaymentVerification = async (paymentId: string, provider: string) => {
-    try {
-      await verifyPayment({ paymentId, provider });
-      // Refetch order to get updated payment status
-      await refetch();
-    } catch (error) {
-      console.error('Payment verification failed:', error);
-    }
-  };
-
-  if (isLoading || isVerifying) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">
-            {isVerifying ? 'Verifying payment...' : 'Loading order details...'}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (isError || !order) {
     return (
@@ -234,8 +201,7 @@ export function RequestDetail() {
   const vehicleName = getOrderVehicleName(order);
   const vehicleImage = getOrderPrimaryImage(order);
 
-  // Calculate payment amounts
-  const totalCost = order.totalLandedCostUsd || order.quotedPriceUsd || order.vehicleSnapshot?.priceUsd || 0;
+  const totalCost = order.paymentBreakdown?.totalUsd || order.totalLandedCostUsd || order.quotedPriceUsd || order.vehicleSnapshot?.priceUsd || 0;
   const halfPayment = totalCost * 0.5; // 50% upfront payment
 
   const totalPaid = order.payments?.reduce((sum: number, payment: any) => {
@@ -465,23 +431,27 @@ export function RequestDetail() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Summary</h3>
 
-              {order.costBreakdown ? (
+              {order.paymentBreakdown?.breakdown ? (
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vehicle Price</span>
-                    <span className="font-medium">{formatCurrency(order.costBreakdown.vehicle_price)}</span>
+                    <span className="font-medium">{formatCurrency(order.paymentBreakdown.breakdown.vehiclePriceUsd)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Sourcing Fee</span>
-                    <span className="font-medium">{formatCurrency(order.costBreakdown.sourcing_fee)}</span>
+                    <span className="font-medium">{formatCurrency(order.paymentBreakdown.breakdown.sourcingFee)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Inspection</span>
-                    <span className="font-medium">{formatCurrency(order.costBreakdown.inspection_fee)}</span>
+                    <span className="font-medium">{formatCurrency(order.paymentBreakdown.breakdown.prePurchaseInspectionUsd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">US Handling Fee</span>
+                    <span className="font-medium">{formatCurrency(order.paymentBreakdown.breakdown.usHandlingFeeUsd)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">{formatCurrency(order.costBreakdown.shipping_cost)}</span>
+                    <span className="font-medium">{formatCurrency(order.paymentBreakdown.breakdown.shippingCostUsd)}</span>
                   </div>
                 </div>
               ) : (
@@ -502,7 +472,7 @@ export function RequestDetail() {
               <div className="border-t border-gray-100 pt-3 mt-3">
                 <div className="flex justify-between text-lg mb-2">
                   <span className="font-semibold text-gray-900">Total Cost</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(totalCost)}</span>
+                  <span className="font-bold text-gray-900">{formatCurrency(order.paymentBreakdown?.totalUsd ?? 0)}</span>
                 </div>
 
                 {order.totalLandedCostLocal && order.localCurrency && (
@@ -651,7 +621,7 @@ export function RequestDetail() {
       {showPaymentModal && order && (
         <PaymentModal
           orderId={order.id}
-          totalCost={totalCost}
+          totalCost={order.paymentBreakdown?.totalUsd || totalCost}
           halfPayment={halfPayment}
           remainingBalance={remainingBalance}
           onClose={() => setShowPaymentModal(false)}
@@ -665,11 +635,9 @@ export function RequestDetail() {
 // Payment Modal Component
 function PaymentModal({
   orderId,
-  totalCost,
   halfPayment,
   remainingBalance,
   onClose,
-  onSuccess,
 }: {
   orderId: string;
   totalCost: number;
@@ -691,24 +659,22 @@ function PaymentModal({
       let paymentType: string;
 
       if (paymentOption === 'full') {
-        // If paying full remaining amount
         paymentType = 'FULL_PAYMENT';
       } else {
-        // If paying 50% upfront
         paymentType = 'DEPOSIT';
       }
 
       await initializePayment({
         orderId,
         paymentType,
-        provider: 'paystack', // or 'flutterwave'
+        provider: 'paystack',
+        callbackUrl: `${import.meta.env.VITE_PAY_CALLBACK_URL}`,
       });
 
-      // Note: The hook automatically redirects to authorizationUrl in onSuccess
-      // No need to manually redirect here
+
     } catch (error) {
       console.error('Payment initialization failed:', error);
-      // Error toast is shown by the hook
+
     }
   };
 

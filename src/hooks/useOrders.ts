@@ -41,3 +41,22 @@ export function useGetOrder(orderId: string) {
     isFetching: queryResult.isFetching,
   };
 }
+
+export const useCostBreakdown = (
+  vehicleId: string | undefined,
+  shippingMethod: "RORO" | "CONTAINER" | "AIR_FREIGHT" | "EXPRESS",
+) => {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["costBreakdown", vehicleId, shippingMethod],
+    queryFn: () => ordersApi.getPredefinePrices(vehicleId!, shippingMethod),
+    enabled: !!vehicleId && !!shippingMethod,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return {
+    costBreakdown: data,
+    isLoading,
+    isError,
+    error,
+  };
+};

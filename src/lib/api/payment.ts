@@ -10,6 +10,7 @@ export interface PaymenInit {
   orderId: string;
   provider: string;
   paymentType: string; // FULL_PAYMENT | DEPOSIT | BALANCE
+  callbackUrl?: string;
 }
 export interface CreatePaymentData {
   requestId: string;
@@ -86,26 +87,27 @@ export interface PaymentVerification {
 }
 
 export interface PaymentVerification {
-  success: boolean; // payment success
-  payment: Payment; // payment object
-  verification?: any; // provider raw data
-  message?: string; // failure message
+  success: boolean;
+  payment: Payment;
+  verification?: any;
+  message?: string;
 }
 
 export interface PaymentVerifyResponse {
-  success: boolean; // API success
+  success: boolean;
   message: string;
   data: {
-    data: PaymentVerification; // ✅ correct wrapper
+    data: PaymentVerification;
   };
   timestamp: string;
 }
 
 export const paymentsApi = {
   getAllPayments: () =>
-    apiClient.get<ApiSuccessResponse<Payment[]>>("/payments"),
+    apiClient.get<ApiSuccessResponse<Payment[]>>("/payments/all"),
 
-  getCurrentUserPayment: () => apiClient.get<PaymentResponse>(`/payments/all/`),
+  getCurrentUserPayment: () =>
+    apiClient.get<PaymentResponse>(`/payments/user-mine`),
 
   getPaymentById: (paymentId: string) =>
     apiClient.get<PaymentByIdResponse>(`/payments/payment-id/${paymentId}`),
@@ -113,9 +115,9 @@ export const paymentsApi = {
   paymentInit: (data: PaymenInit) =>
     apiClient.post<PaymentInitResponse>("/payments/init", data),
 
-  paymentVerify: (paymentId: string, provider: string) =>
-    apiClient.post<PaymentVerifyResponse>(
-      `/payments/verify/${paymentId}?provider=${provider}`,
+  paymentVerify: (reference: string) =>
+    apiClient.patch<PaymentVerifyResponse>(
+      `/payments/verify/${reference}?provider=paystack`,
       {},
     ),
 };

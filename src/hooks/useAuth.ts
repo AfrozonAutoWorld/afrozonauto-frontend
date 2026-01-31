@@ -43,11 +43,11 @@ export function useAuthQuery() {
     queryFn: async () => {
       try {
         if (!storedUser?.id) {
-          console.log("No user ID found in store, using stored user data");
+          //console.log("No user ID found in store, using stored user data");
           return storedUser;
         }
 
-        console.log("Fetching fresh user data from API");
+        // console.log("Fetching fresh user data from API");
         const user = await authApi.getUserById(storedUser.id);
 
         if (user) {
@@ -70,11 +70,11 @@ export function useAuthQuery() {
           return null; // Add explicit return
         }
 
-        // Return stored user on error (offline fallback)
         return storedUser;
       }
     },
     enabled: isHydrated && isAuthenticated && isProtectedRoute,
+
     retry: 1, // Changed from false to 1
     staleTime: 5 * 60 * 1000,
     // Add these options:

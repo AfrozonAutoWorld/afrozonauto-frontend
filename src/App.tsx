@@ -23,6 +23,7 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { RequestDetail } from "./pages/RequestDetails";
 
 import { useTokenRefresh } from "./hooks/useAuth";
+import { VerifyPaymentCallback } from "./pages/VerifyPayment";
 
 function App() {
   return (
@@ -100,6 +101,14 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/payment/verify"
+        element={
+          <ProtectedRoute>
+            <VerifyPaymentCallback />
+          </ProtectedRoute>
+        }
+      />
       {/* 🔒 Protected routes */}
       <Route
         path="/dashboard"

@@ -7,7 +7,6 @@ import {
   PaymentVerification,
 } from "../lib/api/payment";
 import { showToast } from "../lib/showNotification";
-import { useNavigate } from "react-router";
 import { ApiError } from "../lib/api/client";
 
 export function useAllPayments() {
@@ -22,7 +21,7 @@ export function useAllPayments() {
   });
 
   return {
-    order: queryResult.data,
+    allPayments: queryResult.data,
     isLoading: queryResult.isLoading,
     isError: queryResult.isError,
     error: queryResult.error,
@@ -98,13 +97,9 @@ export const usePaymentInit = () => {
 };
 
 export const useVerifyPayment = () => {
-  return useMutation<
-    PaymentVerification,
-    ApiError,
-    { paymentId: string; provider: string }
-  >({
-    mutationFn: async ({ paymentId, provider }) => {
-      const res = await paymentsApi.paymentVerify(paymentId, provider);
+  return useMutation<PaymentVerification, ApiError, { reference: string }>({
+    mutationFn: async ({ reference }) => {
+      const res = await paymentsApi.paymentVerify(reference);
       // res.data.data.data contains PaymentVerification
       return res.data.data;
     },
