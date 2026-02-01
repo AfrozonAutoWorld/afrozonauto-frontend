@@ -18,7 +18,6 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
 
-// Define which routes require authentication
 const PROTECTED_ROUTES = ["/dashboard", "/request-details"];
 
 export function useAuthQuery() {
@@ -83,13 +82,11 @@ export function useAuthQuery() {
   });
 
   const forceLogout = () => {
-    console.log("Force logout triggered");
     clearAuth();
     queryClient.removeQueries({ queryKey: ["auth", "user-id"] });
     navigate("/login", { replace: true });
   };
 
-  // SIGN IN
   const signInMutation = useMutation({
     mutationFn: (data: LoginInput) => authApi.signIn(data),
 
@@ -97,7 +94,6 @@ export function useAuthQuery() {
       if (response.success && response.data?.data) {
         const { user, accessToken, refreshToken } = response.data.data;
 
-        console.log("Sign in successful, setting auth");
         setAuth(user, accessToken, refreshToken);
         queryClient.setQueryData(["auth", "user-id"], user);
 
@@ -118,7 +114,6 @@ export function useAuthQuery() {
     },
   });
 
-  // ONBOARDING (Start Registration)
   const onboardingMutation = useMutation({
     mutationFn: (data: OnboardingInput) => authApi.startRegistration(data),
 
@@ -144,7 +139,6 @@ export function useAuthQuery() {
     },
   });
 
-  // VERIFY CODE
   const verifyMutation = useMutation({
     mutationFn: (data: VerifyInput) => authApi.verifyCode(data),
 
@@ -168,7 +162,6 @@ export function useAuthQuery() {
     },
   });
 
-  // COMPLETE PROFILE (Sign Up)
   const completeProfileMutation = useMutation({
     mutationFn: (data: CompleteProfileInput) => {
       const fullName = `${data.firstName} ${data.lastName}`.trim();
@@ -201,7 +194,6 @@ export function useAuthQuery() {
     },
   });
 
-  // FORGOT PASSWORD
   const forgotPasswordMutation = useMutation({
     mutationFn: (data: ForgotPasswordInput) => authApi.forgotPassword(data),
 
@@ -223,7 +215,6 @@ export function useAuthQuery() {
     },
   });
 
-  // RESET PASSWORD
   const resetPasswordMutation = useMutation({
     mutationFn: (data: ResetPasswordInput) => authApi.resetPassword(data),
 
@@ -248,7 +239,6 @@ export function useAuthQuery() {
     },
   });
 
-  // UPDATE PROFILE
   const updateProfileMutation = useMutation({
     mutationFn: (updates: Partial<User>) => authApi.updateProfile(updates),
 
@@ -256,16 +246,11 @@ export function useAuthQuery() {
       const { user, updateUser } = useAuthStore.getState();
 
       if (user) {
-        // Merge old user data with the new profile data
         const updatedUser = { ...user, ...profileData };
 
-        // 1. Update Zustand store (syncs UI immediately)
         updateUser(updatedUser);
 
-        // 2. Update React Query cache (keeps cache in sync)
         queryClient.setQueryData(["auth", "user-id"], updatedUser);
-
-        console.log("Profile updated successfully");
       }
 
       showToast({
@@ -283,6 +268,11 @@ export function useAuthQuery() {
     },
   });
 
+  const signOut = () => {
+    clearAuth();
+    queryClient.removeQueries({ queryKey: ["auth", "user"] });
+    navigate("/", { replace: true });
+  };
   return {
     // User data
     user: data ?? null,
@@ -298,6 +288,7 @@ export function useAuthQuery() {
     signIn: signInMutation.mutateAsync,
     forgotPassword: forgotPasswordMutation.mutateAsync,
     resetPassword: resetPasswordMutation.mutateAsync,
+    signOut,
 
     // Profile actions
     updateProfile: updateProfileMutation.mutateAsync,
@@ -336,22 +327,17 @@ export function useTokenRefresh() {
 
   useEffect(() => {
     if (!isAuthenticated || !accessToken || !refreshToken) {
-      console.log("Token refresh: Not authenticated or missing tokens");
       return;
     }
 
     const checkAndRefresh = async () => {
-      // Prevent multiple simultaneous refresh attempts
       if (isRefreshingRef.current) {
-        console.log("Token refresh: Already refreshing, skipping");
         return;
       }
 
-      // Check if token expires in next 5 minutes (300 seconds)
       if (isTokenExpiringSoon(accessToken, 300)) {
         try {
           isRefreshingRef.current = true;
-          console.log("🔄 Background token refresh triggered (expires soon)");
 
           const response = await axios.post(
             `${API_BASE_URL}/auth/refresh-token`,
@@ -371,39 +357,28 @@ export function useTokenRefresh() {
           }
 
           setAuth(user, newAccessToken, newRefreshToken);
-          console.log("✅ Background token refresh successful");
         } catch (error) {
           console.error("❌ Background token refresh failed:", error);
 
-          // Only logout if the refresh token itself is invalid (401/403)
           if (axios.isAxiosError(error)) {
             const status = error.response?.status;
             if (status === 401 || status === 403) {
               console.warn("Refresh token invalid, logging out user");
               clearAuth();
             } else {
-              console.log(
-                "Refresh failed due to network/server error, will retry",
-              );
             }
           }
         } finally {
           isRefreshingRef.current = false;
         }
-      } else {
-        console.log("Token refresh: Token still valid, no refresh needed");
       }
     };
 
-    // Run immediately on mount
-    console.log("Token refresh: Starting background refresh service");
     checkAndRefresh();
 
-    // Then check every 2 minutes
     intervalRef.current = setInterval(checkAndRefresh, 2 * 60 * 1000);
 
     return () => {
-      console.log("Token refresh: Stopping background refresh service");
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -411,6 +386,5 @@ export function useTokenRefresh() {
     };
   }, [accessToken, refreshToken, user, setAuth, clearAuth, isAuthenticated]);
 
-  // Return nothing - this is a side-effect only hook
   return null;
 }

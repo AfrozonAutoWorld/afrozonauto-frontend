@@ -16,7 +16,7 @@ interface AuthState {
   isTokenExpired: () => boolean;
 }
 
-function isJWTExpired(token: string | null): boolean {
+export function isJWTExpired(token: string | null): boolean {
   if (!token) return true;
 
   try {
@@ -79,10 +79,6 @@ export const useAuthStore = create<AuthState>()(
       isHydrated: false,
 
       setAuth: (user, accessToken, refreshToken) => {
-        console.log("Setting auth:", {
-          user: user.email,
-          hasAccessToken: !!accessToken,
-        });
         set({
           user,
           accessToken,
@@ -101,7 +97,6 @@ export const useAuthStore = create<AuthState>()(
       setAccessToken: (accessToken) => set({ accessToken }),
 
       clearAuth: () => {
-        console.log("Clearing auth");
         set({
           user: null,
           accessToken: null,
@@ -128,30 +123,21 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log(
-          "Rehydrating state:",
-          state ? "Found stored auth" : "No stored auth",
-        );
         if (state) {
           state.isHydrated = true;
 
-          // ✅ Improved logic: Don't logout immediately, let refresh mechanism handle it
           if (state.isAuthenticated && state.accessToken) {
             const isExpired = isJWTExpired(state.accessToken);
             const hasRefreshToken = !!state.refreshToken;
 
-            if (isExpired && hasRefreshToken) {
-              console.log(
-                "Access token expired but refresh token available - will attempt refresh",
-              );
-              // Don't clear auth - let the API interceptor or background refresh handle it
-            } else if (isExpired && !hasRefreshToken) {
+            if (isExpired && !hasRefreshToken) {
               console.warn(
                 "Token expired and no refresh token available, clearing auth",
               );
-              state.clearAuth();
-            } else {
-              console.log("Auth rehydrated successfully with valid token");
+              state.user = null;
+              state.accessToken = null;
+              state.refreshToken = null;
+              state.isAuthenticated = false;
             }
           }
         }

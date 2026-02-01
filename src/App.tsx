@@ -24,6 +24,8 @@ import { RequestDetail } from "./pages/RequestDetails";
 
 import { useTokenRefresh } from "./hooks/useAuth";
 import { VerifyPaymentCallback } from "./pages/VerifyPayment";
+import { isJWTExpired, useAuthStore } from "./lib/authStore";
+import { useEffect } from "react";
 
 function App() {
   return (
@@ -39,6 +41,21 @@ function App() {
 }
 
 function AppRoutes() {
+  const { isAuthenticated, accessToken, refreshToken, clearAuth, isHydrated } = useAuthStore();
+
+  // Clear auth if tokens are expired on mount
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      const isExpired = isJWTExpired(accessToken);
+      const hasRefresh = !!refreshToken;
+
+      // If access token expired and no refresh token, clear auth immediately
+      if (isExpired && !hasRefresh) {
+        clearAuth();
+      }
+    }
+  }, [isHydrated, isAuthenticated, accessToken, refreshToken, clearAuth]);
+
   useTokenRefresh(); // safe globally
 
   return (

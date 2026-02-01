@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import {
   Car, Clock, CheckCircle, Package, Ship, CreditCard, Heart, User,
-  ChevronRight, AlertCircle, FileText, Truck, MapPin,
+  ChevronRight, ChevronLeft, AlertCircle, FileText, Truck, MapPin,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
-import type { VehicleRequest, Vehicle, Payment } from '../types';
-import { useAuthStore } from '../lib/authStore';
 import { useAuthQuery } from '../hooks/useAuth';
 import { useAddressMutate, useGetAddresses, useGetDefaultAddress } from '../hooks/useAddress';
 import { AddAddressModal } from './AddAddressModal';
@@ -15,23 +13,96 @@ import { UpdateAddressModal } from './UpdateAddressModal';
 import { showToast } from '../lib/showNotification';
 import { useAllOrders } from '../hooks/useOrders';
 import { useAllPayments } from '../hooks/usePayments';
+import { Payment } from '../lib/api/payment';
 
-// Helper function to get primary image from order
+const PAGE_SIZE = 10;
+
+// ---------------------------------------------------------------------------
+// Reusable pagination component
+// ---------------------------------------------------------------------------
+function Paginator({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  // Build the page numbers to render, with ellipsis logic
+  const getPageNumbers = (): (number | '...')[] => {
+    const pages: (number | '...')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
+    }
+    pages.push(1);
+    if (currentPage > 3) pages.push('...');
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (currentPage < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-1 px-6 py-4 bg-gray-50 border-t border-gray-200">
+      {/* Prev */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+
+      {getPageNumbers().map((page, idx) =>
+        page === '...' ? (
+          <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm select-none">…</span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${currentPage === page
+              ? 'bg-emerald-600 text-white'
+              : 'text-gray-600 hover:bg-gray-200'
+              }`}
+          >
+            {page}
+          </button>
+        )
+      )}
+
+      {/* Next */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="p-1.5 rounded-md text-gray-600 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function getOrderPrimaryImage(order: any): string {
   const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
 
-  // Try to get from vehicleSnapshot.apiData
   const primaryImage = order.vehicleSnapshot?.apiData?.listing?.retailListing?.primaryImage
     || order.vehicleSnapshot?.apiData?.listing?.wholesaleListing?.primaryImage;
 
   if (primaryImage) return primaryImage;
 
-  // Try to get from vehicleSnapshot.images array
   if (order.vehicleSnapshot?.images && order.vehicleSnapshot.images.length > 0) {
     return order.vehicleSnapshot.images[0];
   }
 
-  // Fallback to vehicle.images if exists
   if (order.vehicle?.images && order.vehicle.images.length > 0) {
     return order.vehicle.images[0];
   }
@@ -39,22 +110,18 @@ function getOrderPrimaryImage(order: any): string {
   return fallbackImage;
 }
 
-// Helper function to get vehicle name from order
 function getOrderVehicleName(order: any): string {
   const snapshot = order.vehicleSnapshot;
   const vehicle = order.vehicle;
 
-  // Try vehicleSnapshot first
   if (snapshot?.year && snapshot?.make && snapshot?.model) {
     return `${snapshot.year} ${snapshot.make} ${snapshot.model}`;
   }
 
-  // Fallback to vehicle object
   if (vehicle?.year && vehicle?.make && vehicle?.model) {
     return `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
   }
 
-  // Last resort - use order number or ID
   return order.requestNumber || `Order #${order.id}`;
 }
 
@@ -67,6 +134,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   DEPOSIT_PENDING: { label: 'Deposit Pending', color: 'bg-orange-100 text-orange-700', icon: CreditCard },
   deposit_paid: { label: 'Deposit Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   DEPOSIT_PAID: { label: 'Deposit Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  balance_paid: { label: 'Balance Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  BALANCE_PAID: { label: 'Balance Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   inspection_pending: { label: 'Inspection Pending', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
   INSPECTION_PENDING: { label: 'Inspection Pending', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
   inspection_complete: { label: 'Inspection Complete', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
@@ -101,13 +170,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   REFUNDED: { label: 'Refunded', color: 'bg-gray-100 text-gray-700', icon: CreditCard },
 };
 
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
 export function Dashboard() {
   const { user, loading: authLoading, isAuthenticated, forgotPassword } = useAuthQuery();
 
   const { deleteAddress } = useAddressMutate();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'saved' | 'payments' | 'profile'>('requests');
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
@@ -115,6 +186,10 @@ export function Dashboard() {
   const [updateAddModal, setUpdateAddModal] = useState(false);
   const [delAddModal, setDelAddModal] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
+
+  // Pagination state — one per paginated tab
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
 
   const {
     defaultAddresses,
@@ -133,8 +208,7 @@ export function Dashboard() {
   const {
     orders,
     isLoading: ordersLoading,
-    isError: ordersError,
-    refetch: refetchOrders,
+    isError: ordersError
   } = useAllOrders();
 
   const {
@@ -152,22 +226,43 @@ export function Dashboard() {
     ? addresses.filter((a: any) => a.id !== primaryDefault?.id)
     : [];
 
+  // ---------------------------------------------------------------------------
+  // Sorted & paginated slices — memoised so they only recompute when the
+  // source data or the current page changes.
+  // ---------------------------------------------------------------------------
+
+  // Orders: sort newest first by createdAt
+  const sortedOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    return [...orders].sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [orders]);
+
+  const ordersTotalPages = Math.ceil(sortedOrders.length / PAGE_SIZE);
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * PAGE_SIZE;
+    return sortedOrders.slice(start, start + PAGE_SIZE);
+  }, [sortedOrders, ordersPage]);
+
+  // Payments: sort newest first by createdAt
+  const sortedPayments = useMemo(() => {
+    if (!Array.isArray(paymentsData)) return [];
+    return [...paymentsData].sort(
+      (a: Payment, b: Payment) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [paymentsData]);
+
+  const paymentsTotalPages = Math.ceil(sortedPayments.length / PAGE_SIZE);
+  const paginatedPayments = useMemo(() => {
+    const start = (paymentsPage - 1) * PAGE_SIZE;
+    return sortedPayments.slice(start, start + PAGE_SIZE);
+  }, [sortedPayments, paymentsPage]);
+
+  // ---------------------------------------------------------------------------
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
-  }
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
-    try {
-      // Fetch payments if needed
-      // Payment fetching logic here
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
   }
 
   const handleConfirmChangePassword = async () => {
@@ -203,6 +298,10 @@ export function Dashboard() {
     );
   }
 
+  const totalSpent = paymentsData
+    ?.filter((p: Payment) => p.paymentType === 'FULL_PAYMENT' || p.paymentType === 'DEPOSIT')
+    .reduce((sum: number, p: Payment) => sum + (p.metadata?.calculation?.paymentAmount || 0), 0) || 0;
+
   const stats = [
     {
       label: 'Active Orders',
@@ -230,7 +329,7 @@ export function Dashboard() {
     },
     {
       label: 'Total Spent',
-      value: formatCurrency(payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount_usd, 0)),
+      value: formatCurrency(totalSpent),
       icon: CreditCard,
       color: 'bg-gray-500',
     },
@@ -291,6 +390,9 @@ export function Dashboard() {
             ))}
           </div>
 
+          {/* ================================================================
+              MY REQUESTS TAB
+              ================================================================ */}
           {activeTab === 'requests' && (
             <div className="space-y-4">
               {ordersError ? (
@@ -303,7 +405,7 @@ export function Dashboard() {
                     </div>
                   </div>
                 </div>
-              ) : orders.length === 0 ? (
+              ) : sortedOrders.length === 0 ? (
                 <div className="bg-white rounded-xl p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Car className="w-8 h-8 text-gray-400" />
@@ -321,90 +423,114 @@ export function Dashboard() {
                   </Link>
                 </div>
               ) : (
-                orders.map((order: any) => {
-                  const statusConfig = STATUS_CONFIG[order.status];
-                  const StatusIcon = statusConfig?.icon || Clock;
-                  const vehicleName = getOrderVehicleName(order);
-                  const vehicleImage = getOrderPrimaryImage(order);
+                <>
+                  {paginatedOrders.map((order: any) => {
+                    const statusConfig = STATUS_CONFIG[order.status];
+                    const StatusIcon = statusConfig?.icon || Clock;
+                    const vehicleName = getOrderVehicleName(order);
+                    const vehicleImage = getOrderPrimaryImage(order);
 
-                  return (
-                    <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                      <div className="p-6">
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <img
-                            src={vehicleImage}
-                            alt={vehicleName}
-                            className="w-full md:w-48 h-32 object-cover rounded-lg"
-                          />
+                    return (
+                      <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-6">
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <img
+                              src={vehicleImage}
+                              alt={vehicleName}
+                              className="w-full md:w-48 h-32 object-cover rounded-lg"
+                            />
 
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
-                              <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                  Order #{order.requestNumber || order.id}
-                                </p>
-                                <h3 className="text-xl font-semibold text-gray-900">
-                                  {vehicleName}
-                                </h3>
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
+                                <div>
+                                  <p className="text-sm text-gray-500 mb-1">
+                                    Order #{order.requestNumber || order.id}
+                                  </p>
+                                  <h3 className="text-xl font-semibold text-gray-900">
+                                    {vehicleName}
+                                  </h3>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig?.color || 'bg-gray-100 text-gray-700'}`}>
+                                  <StatusIcon className="w-4 h-4" />
+                                  {statusConfig?.label || order.status}
+                                </span>
                               </div>
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig?.color || 'bg-gray-100 text-gray-700'}`}>
-                                <StatusIcon className="w-4 h-4" />
-                                {statusConfig?.label || order.status}
-                              </span>
-                            </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <p className="text-gray-500">Total Cost</p>
-                                <p className="font-semibold text-gray-900">
-                                  {formatCurrency(order.totalLandedCostUsd || order.quotedPriceUsd || order.vehicleSnapshot?.priceUsd || 0)}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Shipping</p>
-                                <p className="font-semibold text-gray-900">
-                                  {order.shippingMethod || 'N/A'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Destination</p>
-                                <p className="font-semibold text-gray-900">
-                                  {order.destinationState || 'N/A'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500">Est. Delivery</p>
-                                <p className="font-semibold text-gray-900">
-                                  {order.estimatedDeliveryDate
-                                    ? formatDate(order.estimatedDeliveryDate)
-                                    : 'TBD'}
-                                </p>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <p className="text-gray-500">Total Cost</p>
+                                  <p className="font-semibold text-gray-900">
+                                    {formatCurrency(
+                                      order.paymentBreakdown?.totalUsd ||
+                                      order.totalLandedCostUsd ||
+                                      order.quotedPriceUsd ||
+                                      order.vehicleSnapshot?.priceUsd ||
+                                      0
+                                    )}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500">Shipping</p>
+                                  <p className="font-semibold text-gray-900">
+                                    {order.shippingMethod || 'N/A'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500">Destination</p>
+                                  <p className="font-semibold text-gray-900">
+                                    {order.destinationState || 'N/A'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500">Est. Delivery</p>
+                                  <p className="font-semibold text-gray-900">
+                                    {order.estimatedDeliveryDate
+                                      ? formatDate(order.estimatedDeliveryDate)
+                                      : 'TBD'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="bg-gray-50 px-6 py-3 flex items-center justify-between">
-                        <p className="text-sm text-gray-500">
-                          Submitted {formatDate(order.createdAt)}
-                        </p>
-                        <Link
-                          to={`/request-details/${order.id}`}
-                          className="text-emerald-600 font-medium text-sm hover:text-emerald-700 flex items-center gap-1"
-                        >
-                          View Details
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
+                        <div className="bg-gray-50 px-6 py-3 flex items-center justify-between">
+                          <p className="text-sm text-gray-500">
+                            Submitted {formatDate(order.createdAt)}
+                          </p>
+                          <Link
+                            to={`/request-details/${order.id}`}
+                            className="text-emerald-600 font-medium text-sm hover:text-emerald-700 flex items-center gap-1"
+                          >
+                            View Details
+                            <ChevronRight className="w-4 h-4" />
+                          </Link>
+                        </div>
                       </div>
+                    );
+                  })}
+
+                  {/* Requests pagination */}
+                  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="px-6 py-3 flex items-center justify-between border-t border-gray-100">
+                      <p className="text-sm text-gray-500">
+                        Showing {Math.min((ordersPage - 1) * PAGE_SIZE + 1, sortedOrders.length)}–{Math.min(ordersPage * PAGE_SIZE, sortedOrders.length)} of {sortedOrders.length} orders
+                      </p>
                     </div>
-                  );
-                })
+                    <Paginator
+                      currentPage={ordersPage}
+                      totalPages={ordersTotalPages}
+                      onPageChange={setOrdersPage}
+                    />
+                  </div>
+                </>
               )}
             </div>
           )}
 
-
+          {/* ================================================================
+              PAYMENTS TAB
+              ================================================================ */}
           {activeTab === 'payments' && (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {paymentsLoading ? (
@@ -422,13 +548,13 @@ export function Dashboard() {
                     There was an error loading your payment history. Please try again.
                   </p>
                   <button
-                    onClick={() => window.location.reload()}
+                    onClick={() => refetchPayments()}
                     className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
                   >
-                    Refresh Page
+                    Retry
                   </button>
                 </div>
-              ) : payments.length === 0 ? (
+              ) : sortedPayments.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CreditCard className="w-8 h-8 text-gray-400" />
@@ -447,63 +573,31 @@ export function Dashboard() {
                 </div>
               ) : (
                 <>
-                  {/* Payment Stats Summary */}
-                  {/* <div className="p-6 bg-gray-50 border-b border-gray-200">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">{paymentStats.total}</p>
-                        <p className="text-sm text-gray-500">Total Payments</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{paymentStats.completed}</p>
-                        <p className="text-sm text-gray-500">Completed</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-yellow-600">{paymentStats.pending}</p>
-                        <p className="text-sm text-gray-500">Pending</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(paymentStats.totalSpent)}</p>
-                        <p className="text-sm text-gray-500">Total Spent</p>
-                      </div>
-                    </div>
-                  </div> */}
-
-                  {/* Payments Table */}
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Order
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Vehicle
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Type
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Reference
-                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
-                        {payments.map((payment: any) => {
-                          // Get vehicle info from order snapshot
+                        {paginatedPayments.map((payment: Payment) => {
                           const vehicle = payment.order?.vehicleSnapshot;
                           const vehicleName = vehicle
                             ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
                             : 'N/A';
+
+                          // Use the per-payment calculation amount; fall back to amountUsd
+                          const paymentAmount =
+                            payment.metadata?.calculation?.paymentAmount ??
+                            payment.amountUsd ??
+                            0;
 
                           return (
                             <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
@@ -526,7 +620,9 @@ export function Dashboard() {
                                 <div className="max-w-xs">
                                   <p className="truncate font-medium">{vehicleName}</p>
                                   {vehicle?.vin && (
-                                    <p className="text-xs text-gray-500 truncate">VIN: {vehicle.vin}</p>
+                                    <p className="text-xs text-gray-500 truncate">
+                                      VIN: {vehicle.vin}
+                                    </p>
                                   )}
                                 </div>
                               </td>
@@ -536,14 +632,7 @@ export function Dashboard() {
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                <div>
-                                  <div>{formatCurrency(payment.amountUsd)}</div>
-                                  {payment.amountLocal && payment.localCurrency && (
-                                    <div className="text-xs text-gray-500">
-                                      ≈ {formatCurrency(payment.amountLocal, payment.localCurrency)}
-                                    </div>
-                                  )}
-                                </div>
+                                {formatCurrency(paymentAmount)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span
@@ -568,7 +657,9 @@ export function Dashboard() {
                                     {payment.transactionRef || payment.providerTransactionId || '-'}
                                   </p>
                                   {payment.paymentProvider && (
-                                    <p className="text-xs text-gray-400 capitalize">{payment.paymentProvider}</p>
+                                    <p className="text-xs text-gray-400 capitalize">
+                                      {payment.paymentProvider}
+                                    </p>
                                   )}
                                 </div>
                               </td>
@@ -579,17 +670,25 @@ export function Dashboard() {
                     </table>
                   </div>
 
-                  {/* Pagination info */}
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  {/* Payments footer + pagination */}
+                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                     <p className="text-sm text-gray-500">
-                      Showing {payments.length} {payments.length === 1 ? 'payment' : 'payments'}
+                      Showing {Math.min((paymentsPage - 1) * PAGE_SIZE + 1, sortedPayments.length)}–{Math.min(paymentsPage * PAGE_SIZE, sortedPayments.length)} of {sortedPayments.length} {sortedPayments.length === 1 ? 'payment' : 'payments'}
                     </p>
                   </div>
+                  <Paginator
+                    currentPage={paymentsPage}
+                    totalPages={paymentsTotalPages}
+                    onPageChange={setPaymentsPage}
+                  />
                 </>
               )}
             </div>
           )}
 
+          {/* ================================================================
+              SAVED TAB
+              ================================================================ */}
           {activeTab === 'saved' && (
             <div className="bg-white rounded-xl p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -608,7 +707,9 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* PROFILE TAB */}
+          {/* ================================================================
+              PROFILE TAB
+              ================================================================ */}
           {activeTab === 'profile' && (
             <div className="max-w-7xl mx-auto px-4 py-8 bg-white rounded-xl shadow-sm mt-6">
               <div className="flex justify-between">
@@ -627,70 +728,28 @@ export function Dashboard() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={user.fullName || ''}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input type="text" value={user.fullName || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={user?.email || ''}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" value={user?.email || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={user?.phone || ''}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input type="tel" value={user?.phone || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      value={user?.country || 'Nigeria'}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                    <input type="text" value={user?.country || 'Nigeria'} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      value={user?.state || ''}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                    <input type="text" value={user?.state || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={user?.address || ''}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input type="text" value={user?.address || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -727,16 +786,11 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <div className="max-w-md">
-                    <AddressCard
-                      addr={primaryDefault}
-                      onEdit={handleOpenUpdate}
-                      onDelete={handleOpenDelete}
-                    />
+                    <AddressCard addr={primaryDefault} onEdit={handleOpenUpdate} onDelete={handleOpenDelete} />
                   </div>
                 )}
               </div>
 
-              {/* Other Addresses Section */}
               <div className="mt-10">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Other Saved Addresses</h3>
@@ -761,12 +815,7 @@ export function Dashboard() {
                 ) : (
                   <div className="grid md:grid-cols-2 gap-4">
                     {otherAddresses.map((addr: any) => (
-                      <AddressCard
-                        key={addr.id}
-                        addr={addr}
-                        onEdit={handleOpenUpdate}
-                        onDelete={handleOpenDelete}
-                      />
+                      <AddressCard key={addr.id} addr={addr} onEdit={handleOpenUpdate} onDelete={handleOpenDelete} />
                     ))}
                   </div>
                 )}
@@ -776,6 +825,9 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* ============================================================
+          MODALS
+          ============================================================ */}
       {showConfirmModal && (
         <ConfirmPasswordModal
           loading={changingPassword}
@@ -787,9 +839,7 @@ export function Dashboard() {
       {showResetPasswordModal && (
         <ResetPasswordModal
           onClose={() => setShowResetPasswordModal(false)}
-          onSuccess={() => {
-            setShowResetPasswordModal(false);
-          }}
+          onSuccess={() => setShowResetPasswordModal(false)}
         />
       )}
 
@@ -803,10 +853,7 @@ export function Dashboard() {
       {updateAddModal && selectedAddress && (
         <UpdateAddressModal
           address={selectedAddress}
-          onClose={() => {
-            setUpdateAddModal(false);
-            setSelectedAddress(null);
-          }}
+          onClose={() => { setUpdateAddModal(false); setSelectedAddress(null); }}
           onSuccess={refetchAddresses}
         />
       )}
@@ -815,17 +862,13 @@ export function Dashboard() {
         <DelAddressModal
           loading={false}
           address={selectedAddress}
-          onClose={() => {
-            setDelAddModal(false);
-            setSelectedAddress(null);
-          }}
+          onClose={() => { setDelAddModal(false); setSelectedAddress(null); }}
           onConfirm={async () => {
             if (!selectedAddress?.id) {
               console.error('No address ID found!');
               showToast({ type: "error", message: 'Error: No address ID found' });
               return;
             }
-
             try {
               await deleteAddress({ id: selectedAddress.id });
               refetchAddresses();
@@ -833,9 +876,7 @@ export function Dashboard() {
               setSelectedAddress(null);
             } catch (error) {
               console.error('Delete failed:', error);
-              showToast({
-                type: "error", message: 'Failed to delete address'
-              });
+              showToast({ type: "error", message: 'Failed to delete address' });
             }
           }}
         />
@@ -896,24 +937,12 @@ function AddressCard({ addr, onEdit, onDelete }: any) {
       <p className="text-sm text-gray-500">{addr.phoneNumber}</p>
 
       <div className="flex gap-4 mt-3">
-        <button
-          onClick={() => onEdit(addr)}
-          className="text-emerald-600 text-sm font-medium hover:underline"
-        >
-          Update
-        </button>
-        <button
-          onClick={() => onDelete(addr)}
-          className="text-red-600 text-sm font-medium hover:underline"
-        >
-          Delete
-        </button>
+        <button onClick={() => onEdit(addr)} className="text-emerald-600 text-sm font-medium hover:underline">Update</button>
+        <button onClick={() => onDelete(addr)} className="text-red-600 text-sm font-medium hover:underline">Delete</button>
       </div>
 
       {addr.isDefault && (
-        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded mt-2 inline-block">
-          Default
-        </span>
+        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded mt-2 inline-block">Default</span>
       )}
     </div>
   );
