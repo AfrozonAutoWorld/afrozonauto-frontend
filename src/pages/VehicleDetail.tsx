@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,38 +17,42 @@ import {
 } from 'lucide-react';
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
-import type { CostBreakdown } from '../types';
 import { useVehicle } from '../hooks/useVehicles';
 import { useToggleSaveVehicle } from '../hooks/useVehicleMutate';
 import { showToast } from '../lib/showNotification';
 import { useAuthQuery } from '../hooks/useAuth';
-
+import { useCostBreakdown } from '../hooks/useOrders';
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthQuery();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [calculatedCost, setCalculatedCost] = useState<CostBreakdown | null>(null);
-  const [deliveryDays, setDeliveryDays] = useState(45);
+  const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
   const [isSaved, setIsSaved] = useState(false);
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
+  const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+
 
   const { toggleSave, isLoading: isSaving } = useToggleSaveVehicle({
-
     onSuccess: (saved) => {
       setIsSaved(saved);
-
-      showToast({ type: "success", message: saved ? "Vehicle saved" : "Vehicle removed" })
+      showToast({ type: "success", message: saved ? "Vehicle saved" : "Vehicle removed" });
     },
     onError: (error) => {
       setIsSaved(!isSaved);
       console.error('Failed to save vehicle:', error);
-      showToast({ type: "error", message: "Failed to save vehicle" })
+      showToast({ type: "error", message: "Failed to save vehicle" });
     },
   });
 
+  // Update isSaved when vehicle data loads
+  useEffect(() => {
+    if (vehicle) {
+      setIsSaved(vehicle.isActive || false);
+    }
+  }, [vehicle]);
 
   if (isLoading) {
     return (
@@ -60,7 +64,6 @@ export function VehicleDetail() {
       </div>
     );
   }
-
 
   if (isError) {
     return (
@@ -79,7 +82,6 @@ export function VehicleDetail() {
       </div>
     );
   }
-
 
   if (!vehicle) {
     return (
@@ -104,12 +106,14 @@ export function VehicleDetail() {
       navigate('/login', { state: { from: `/vehicles/${vehicle.id}` } });
       return;
     }
-    navigate(`/request/${vehicle.id}`, { state: { vehicle, calculatedCost, deliveryDays } });
-  };
 
-  const handleCalculate = (breakdown: CostBreakdown, days: number) => {
-    setCalculatedCost(breakdown);
-    setDeliveryDays(days);
+    navigate(`/request/${vehicle.id}`, {
+      state: {
+        vehicle,
+        costBreakdown,
+        shippingMethod
+      }
+    });
   };
 
   const handleToggleSave = () => {
@@ -128,7 +132,6 @@ export function VehicleDetail() {
     });
   };
 
-
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
   };
@@ -143,8 +146,6 @@ export function VehicleDetail() {
     { icon: Settings, label: 'Transmission', value: vehicle.transmission },
     { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },
     { icon: Settings, label: 'Engine', value: vehicle.engineSize },
-    // { icon: Palette, label: 'Exterior', value: vehicle.exteriorColor },
-    // { icon: Palette, label: 'Interior', value: vehicle.interiorColor },
     { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity}, ${vehicle.dealerState}` },
   ];
 
@@ -307,7 +308,9 @@ export function VehicleDetail() {
             <PriceCalculator
               vehiclePrice={vehicle.priceUsd}
               vehicleType={vehicle.vehicleType}
-              onCalculate={handleCalculate}
+              costBreakdown={costBreakdown}
+              isLoading={isCostBreakdownLoading}
+              onShippingMethodChange={setShippingMethod}
             />
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

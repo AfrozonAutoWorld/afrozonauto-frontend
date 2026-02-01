@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Gauge, Calendar, Heart, ArrowRight } from 'lucide-react';
 import { Vehicle } from '../../types';
-import { formatCurrency, calculateLandedCost } from '../../lib/pricingCalculator';
+import { formatCurrency } from '../../lib/pricingCalculator';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -10,7 +10,7 @@ interface VehicleCardProps {
   isSaved?: boolean;
 }
 
-function getPrimaryImage(vehicle: Vehicle): string {
+export function getPrimaryImage(vehicle: Vehicle): string {
   const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
 
   const primaryImage = vehicle.apiData?.listing?.retailListing?.primaryImage
@@ -32,12 +32,12 @@ function getMileage(vehicle: Vehicle): number | undefined {
 }
 
 export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
-  const landedCost = calculateLandedCost(
-    vehicle.priceUsd,
-    vehicle.vehicleType,
-    'RoRo',
-    'Lagos'
-  );
+  // const landedCost = calculateLandedCost(
+  //   vehicle.priceUsd,
+  //   vehicle.vehicleType,
+  //   'RoRo',
+  //   'Lagos'
+  // );
 
   const primaryImage = getPrimaryImage(vehicle);
   const mileage = getMileage(vehicle);
@@ -107,12 +107,12 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
               <p className="text-xs text-gray-500">US Price</p>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(vehicle.priceUsd)}</p>
             </div>
-            <div className="text-right">
+            {/* <div className="text-right">
               <p className="text-xs text-gray-500">Est. Landed (Lagos)</p>
               <p className="text-lg font-bold text-emerald-600">
                 {formatCurrency(landedCost.breakdown.total_usd)}
               </p>
-            </div>
+            </div> */}
           </div>
 
           <Link

@@ -70,15 +70,16 @@ export interface Profile {
 
 export type VehicleType =
   | "CAR"
-  | "TRUCK"
   | "SUV"
+  | "TRUCK"
   | "VAN"
-  | "MOTORCYCLE"
-  | "COUPE"
   | "SEDAN"
+  | "COUPE"
   | "HATCHBACK"
   | "WAGON"
-  | "CONVERTIBLE";
+  | "CONVERTIBLE"
+  | "MOTORCYCLE";
+
 type TransmissionType = "Automatic" | "Manual";
 type FuelType = "Hybrid" | "Regular Unleaded" | "Diesel" | "Electric";
 type DrivetrainType = "FWD" | "RWD" | "AWD" | "4WD";
@@ -294,45 +295,6 @@ export interface SavedVehicle {
   vehicle?: Vehicle;
 }
 
-export type RequestStatus =
-  | "pending_quote"
-  | "quote_sent"
-  | "deposit_pending"
-  | "deposit_paid"
-  | "inspection_pending"
-  | "inspection_complete"
-  | "awaiting_approval"
-  | "approved"
-  | "purchase_in_progress"
-  | "purchased"
-  | "export_pending"
-  | "shipped"
-  | "in_transit"
-  | "arrived_port"
-  | "customs_clearance"
-  | "cleared"
-  | "delivery_scheduled"
-  | "delivered"
-  | "cancelled"
-  | "refunded";
-
-export interface CostBreakdown {
-  vehicle_price: number;
-  sourcing_fee: number;
-  inspection_fee: number;
-  us_handling_fee: number;
-  shipping_cost: number;
-  customs_duty: number;
-  vat: number;
-  levy: number;
-  clearing_fee: number;
-  port_charges: number;
-  local_delivery: number;
-  total_usd: number;
-  total_ngn: number;
-  exchange_rate: number;
-}
-
 export interface VehicleRequest {
   id: string;
   request_number: string;
@@ -461,16 +423,43 @@ export interface PricingConfig {
   us_handling_fee_usd: number;
   shipping_roro_base_usd: number;
   shipping_container_base_usd: number;
-  customs_duty_percent: number;
-  vat_percent: number;
-  levy_percent: number;
-  clearing_fee_usd: number;
-  port_charges_usd: number;
-  local_delivery_base_usd: number;
   exchange_rate_ngn_usd: number;
-  timeline_days_roro: number;
+  timeline_days_roro: number; // Remove the ?
   timeline_days_container: number;
 }
+
+export interface CostBreakdown {
+  vehicle_price: number;
+  sourcing_fee: number;
+  inspection_fee: number;
+  us_handling_fee: number;
+  shipping_cost: number;
+  total_usd: number;
+  total_ngn: number;
+  exchange_rate: number;
+}
+
+export type RequestStatus =
+  | "pending_quote"
+  | "quote_sent"
+  | "deposit_pending"
+  | "deposit_paid"
+  | "inspection_pending"
+  | "inspection_complete"
+  | "awaiting_approval"
+  | "approved"
+  | "purchase_in_progress"
+  | "purchased"
+  | "export_pending"
+  | "shipped"
+  | "in_transit"
+  | "arrived_port"
+  | "customs_clearance"
+  | "cleared"
+  | "delivery_scheduled"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
 
 export interface VehicleSearchFilters {
   make?: string;

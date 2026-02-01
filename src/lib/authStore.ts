@@ -55,17 +55,17 @@ export function isTokenExpiringSoon(
   }
 }
 
-// ✅ Custom storage that uses sessionStorage
-const sessionStorageAdapter = {
+// ✅ Custom storage that uses localStorage (survives tab/browser closes)
+const localStorageAdapter = {
   getItem: (name: string) => {
-    const value = sessionStorage.getItem(name);
+    const value = localStorage.getItem(name);
     return value ? JSON.parse(value) : null;
   },
   setItem: (name: string, value: any) => {
-    sessionStorage.setItem(name, JSON.stringify(value));
+    localStorage.setItem(name, JSON.stringify(value));
   },
   removeItem: (name: string) => {
-    sessionStorage.removeItem(name);
+    localStorage.removeItem(name);
   },
 };
 
@@ -79,7 +79,10 @@ export const useAuthStore = create<AuthState>()(
       isHydrated: false,
 
       setAuth: (user, accessToken, refreshToken) => {
-        console.log("Setting auth:", { user, hasAccessToken: !!accessToken });
+        console.log("Setting auth:", {
+          user: user.email,
+          hasAccessToken: !!accessToken,
+        });
         set({
           user,
           accessToken,
@@ -98,7 +101,7 @@ export const useAuthStore = create<AuthState>()(
       setAccessToken: (accessToken) => set({ accessToken }),
 
       clearAuth: () => {
-        //console.log("Clearing auth");
+        console.log("Clearing auth");
         set({
           user: null,
           accessToken: null,
@@ -117,7 +120,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      storage: createJSONStorage(() => sessionStorageAdapter),
+      storage: createJSONStorage(() => localStorageAdapter),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
@@ -125,16 +128,31 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        //console.log("Rehydrating state:", state);
+        console.log(
+          "Rehydrating state:",
+          state ? "Found stored auth" : "No stored auth",
+        );
         if (state) {
           state.isHydrated = true;
 
-          // Only clear auth if token is ACTUALLY expired
-          if (state.isAuthenticated && state.isTokenExpired()) {
-            console.warn("Token expired on page load, clearing auth");
-            state.clearAuth();
-          } else if (state.isAuthenticated) {
-            // console.log("Auth rehydrated successfully");
+          // ✅ Improved logic: Don't logout immediately, let refresh mechanism handle it
+          if (state.isAuthenticated && state.accessToken) {
+            const isExpired = isJWTExpired(state.accessToken);
+            const hasRefreshToken = !!state.refreshToken;
+
+            if (isExpired && hasRefreshToken) {
+              console.log(
+                "Access token expired but refresh token available - will attempt refresh",
+              );
+              // Don't clear auth - let the API interceptor or background refresh handle it
+            } else if (isExpired && !hasRefreshToken) {
+              console.warn(
+                "Token expired and no refresh token available, clearing auth",
+              );
+              state.clearAuth();
+            } else {
+              console.log("Auth rehydrated successfully with valid token");
+            }
           }
         }
       },

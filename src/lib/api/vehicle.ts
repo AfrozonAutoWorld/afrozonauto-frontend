@@ -66,7 +66,6 @@ const buildQueryString = (filters?: VehicleFilters): string => {
   return queryString ? `?${queryString}` : "";
 };
 
-
 const transformVehiclesResponse = (
   apiResponse: VehiclesApiResponse,
 ): VehicleListResponse => {

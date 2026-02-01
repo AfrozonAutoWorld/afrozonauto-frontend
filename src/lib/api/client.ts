@@ -13,6 +13,9 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public code?: string,
+    public errors?: string[],
+    public details?: any,
     public data?: any,
   ) {
     super(message);
@@ -46,6 +49,7 @@ class ApiClient {
         const { accessToken, isAuthenticated, refreshToken } =
           useAuthStore.getState();
 
+        // Skip token logic for refresh endpoint
         if (config.url?.includes("/auth/refresh-token")) {
           return config;
         }
@@ -58,15 +62,14 @@ class ApiClient {
           ) {
             try {
               this.isRefreshing = true;
-              console.log("Proactively refreshing token...");
-
               const response = await axios.post(
                 `${API_BASE_URL}/auth/refresh-token`,
-                { refreshToken },
+                { token: refreshToken },
                 {
                   headers: {
                     "Content-Type": "application/json",
                   },
+                  timeout: 10000,
                 },
               );
 
@@ -84,9 +87,11 @@ class ApiClient {
                 );
 
               config.headers.Authorization = `Bearer ${newAccessToken}`;
-              console.log("Token refreshed proactively");
             } catch (error) {
-              console.error("Proactive token refresh failed:", error);
+              console.error(
+                "❌ API Interceptor: Proactive token refresh failed:",
+                error,
+              );
               // Continue with old token, 401 interceptor will handle if expired
               config.headers.Authorization = `Bearer ${accessToken}`;
             } finally {
@@ -114,7 +119,14 @@ class ApiClient {
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
             })
-              .then(() => this.client(originalRequest))
+              .then(() => {
+                // After refresh completes, retry with new token
+                const { accessToken } = useAuthStore.getState();
+                if (originalRequest.headers && accessToken) {
+                  originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                }
+                return this.client(originalRequest);
+              })
               .catch((err) => Promise.reject(err));
           }
 
@@ -125,16 +137,19 @@ class ApiClient {
             const { refreshToken } = useAuthStore.getState();
 
             if (!refreshToken) {
+              console.warn(
+                "⚠️ API Interceptor: No refresh token available for 401 retry",
+              );
               throw new Error("No refresh token available");
             }
-
             const response = await axios.post(
               `${API_BASE_URL}/auth/refresh-token`,
-              { refreshToken },
+              { token: refreshToken },
               {
                 headers: {
                   "Content-Type": "application/json",
                 },
+                timeout: 10000,
               },
             );
 
@@ -151,22 +166,54 @@ class ApiClient {
 
             this.processQueue(null);
 
+            // Retry original request with new token
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             }
             return this.client(originalRequest);
           } catch (refreshError) {
+            console.error(
+              "❌ API Interceptor: Token refresh failed after 401:",
+              refreshError,
+            );
             this.processQueue(refreshError);
             this.handleLogout();
-            return Promise.reject(refreshError);
+            return Promise.reject(
+              this.transformError(refreshError as AxiosError),
+            );
           } finally {
             this.isRefreshing = false;
           }
         }
 
-        return Promise.reject(error);
+        // Transform all errors to ApiError
+        return Promise.reject(this.transformError(error));
       },
     );
+  }
+
+  // Transform Axios errors to ApiError
+  private transformError(error: AxiosError): ApiError {
+    if (error.response) {
+      const { data, status } = error.response;
+      const errorData = data as any;
+
+      return new ApiError(
+        errorData?.message || `Request failed with status ${status}`,
+        status,
+        errorData?.code,
+        errorData?.errors,
+        errorData?.details,
+        errorData,
+      );
+    }
+
+    // Network or timeout errors
+    if (error.code === "ECONNABORTED") {
+      return new ApiError("Request timeout", 0);
+    }
+
+    return new ApiError(error.message || "Network error", 0);
   }
 
   private processQueue(error: any) {
@@ -180,7 +227,7 @@ class ApiClient {
     const { clearAuth } = useAuthStore.getState();
     clearAuth();
 
-    const protectedRoutes = ["/dashboard"];
+    const protectedRoutes = ["/dashboard", "/request-details"];
     const currentPath = window.location.pathname;
 
     if (protectedRoutes.some((route) => currentPath.startsWith(route))) {

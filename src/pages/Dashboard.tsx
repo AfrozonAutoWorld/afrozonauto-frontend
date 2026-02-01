@@ -13,38 +13,101 @@ import { AddAddressModal } from './AddAddressModal';
 import { ResetPasswordModal } from './ResetPasswordModal';
 import { UpdateAddressModal } from './UpdateAddressModal';
 import { showToast } from '../lib/showNotification';
+import { useAllOrders } from '../hooks/useOrders';
+import { useAllPayments } from '../hooks/usePayments';
+
+// Helper function to get primary image from order
+function getOrderPrimaryImage(order: any): string {
+  const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
+
+  // Try to get from vehicleSnapshot.apiData
+  const primaryImage = order.vehicleSnapshot?.apiData?.listing?.retailListing?.primaryImage
+    || order.vehicleSnapshot?.apiData?.listing?.wholesaleListing?.primaryImage;
+
+  if (primaryImage) return primaryImage;
+
+  // Try to get from vehicleSnapshot.images array
+  if (order.vehicleSnapshot?.images && order.vehicleSnapshot.images.length > 0) {
+    return order.vehicleSnapshot.images[0];
+  }
+
+  // Fallback to vehicle.images if exists
+  if (order.vehicle?.images && order.vehicle.images.length > 0) {
+    return order.vehicle.images[0];
+  }
+
+  return fallbackImage;
+}
+
+// Helper function to get vehicle name from order
+function getOrderVehicleName(order: any): string {
+  const snapshot = order.vehicleSnapshot;
+  const vehicle = order.vehicle;
+
+  // Try vehicleSnapshot first
+  if (snapshot?.year && snapshot?.make && snapshot?.model) {
+    return `${snapshot.year} ${snapshot.make} ${snapshot.model}`;
+  }
+
+  // Fallback to vehicle object
+  if (vehicle?.year && vehicle?.make && vehicle?.model) {
+    return `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+  }
+
+  // Last resort - use order number or ID
+  return order.requestNumber || `Order #${order.id}`;
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending_quote: { label: 'Pending Quote', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+  PENDING_QUOTE: { label: 'Pending Quote', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   quote_sent: { label: 'Quote Sent', color: 'bg-blue-100 text-blue-700', icon: FileText },
+  QUOTE_SENT: { label: 'Quote Sent', color: 'bg-blue-100 text-blue-700', icon: FileText },
   deposit_pending: { label: 'Deposit Pending', color: 'bg-orange-100 text-orange-700', icon: CreditCard },
+  DEPOSIT_PENDING: { label: 'Deposit Pending', color: 'bg-orange-100 text-orange-700', icon: CreditCard },
   deposit_paid: { label: 'Deposit Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  DEPOSIT_PAID: { label: 'Deposit Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   inspection_pending: { label: 'Inspection Pending', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
+  INSPECTION_PENDING: { label: 'Inspection Pending', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
   inspection_complete: { label: 'Inspection Complete', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
+  INSPECTION_COMPLETE: { label: 'Inspection Complete', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
   awaiting_approval: { label: 'Awaiting Approval', color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
+  AWAITING_APPROVAL: { label: 'Awaiting Approval', color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
   approved: { label: 'Approved', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  APPROVED: { label: 'Approved', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   purchase_in_progress: { label: 'Purchasing', color: 'bg-blue-100 text-blue-700', icon: Package },
+  PURCHASE_IN_PROGRESS: { label: 'Purchasing', color: 'bg-blue-100 text-blue-700', icon: Package },
   purchased: { label: 'Purchased', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  PURCHASED: { label: 'Purchased', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   export_pending: { label: 'Export Pending', color: 'bg-yellow-100 text-yellow-700', icon: Package },
+  EXPORT_PENDING: { label: 'Export Pending', color: 'bg-yellow-100 text-yellow-700', icon: Package },
   shipped: { label: 'Shipped', color: 'bg-blue-100 text-blue-700', icon: Ship },
+  SHIPPED: { label: 'Shipped', color: 'bg-blue-100 text-blue-700', icon: Ship },
   in_transit: { label: 'In Transit', color: 'bg-blue-100 text-blue-700', icon: Ship },
+  IN_TRANSIT: { label: 'In Transit', color: 'bg-blue-100 text-blue-700', icon: Ship },
   arrived_port: { label: 'Arrived at Port', color: 'bg-green-100 text-green-700', icon: MapPin },
+  ARRIVED_PORT: { label: 'Arrived at Port', color: 'bg-green-100 text-green-700', icon: MapPin },
   customs_clearance: { label: 'Customs Clearance', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
+  CUSTOMS_CLEARANCE: { label: 'Customs Clearance', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
   cleared: { label: 'Cleared', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  CLEARED: { label: 'Cleared', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   delivery_scheduled: { label: 'Delivery Scheduled', color: 'bg-blue-100 text-blue-700', icon: Truck },
+  DELIVERY_SCHEDULED: { label: 'Delivery Scheduled', color: 'bg-blue-100 text-blue-700', icon: Truck },
   delivered: { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
+  DELIVERED: { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: AlertCircle },
+  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: AlertCircle },
   refunded: { label: 'Refunded', color: 'bg-gray-100 text-gray-700', icon: CreditCard },
+  REFUNDED: { label: 'Refunded', color: 'bg-gray-100 text-gray-700', icon: CreditCard },
 };
 
 export function Dashboard() {
-  const { forgotPassword } = useAuthQuery();
+  const { user, loading: authLoading, isAuthenticated, forgotPassword } = useAuthQuery();
+
   const { deleteAddress } = useAddressMutate();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'saved' | 'payments' | 'profile'>('requests');
-  const [requests, setRequests] = useState<(VehicleRequest & { vehicle: Vehicle })[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
@@ -52,10 +115,6 @@ export function Dashboard() {
   const [updateAddModal, setUpdateAddModal] = useState(false);
   const [delAddModal, setDelAddModal] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
-
-
-
-  // In your Dashboard component, update the logic:
 
   const {
     defaultAddresses,
@@ -71,6 +130,20 @@ export function Dashboard() {
     refetch: refetchAddresses,
   } = useGetAddresses();
 
+  const {
+    orders,
+    isLoading: ordersLoading,
+    isError: ordersError,
+    refetch: refetchOrders,
+  } = useAllOrders();
+
+  const {
+    allPayments: paymentsData,
+    isLoading: paymentsLoading,
+    isError: paymentsError,
+    refetch: refetchPayments,
+  } = useAllPayments();
+
   const primaryDefault = Array.isArray(defaultAddresses) && defaultAddresses.length > 0
     ? defaultAddresses[0]
     : null;
@@ -78,9 +151,6 @@ export function Dashboard() {
   const otherAddresses = Array.isArray(addresses)
     ? addresses.filter((a: any) => a.id !== primaryDefault?.id)
     : [];
-
-
-  const { user, isAuthenticated } = useAuthStore();
 
 
   if (!isAuthenticated || !user) {
@@ -92,11 +162,11 @@ export function Dashboard() {
   }, []);
 
   async function fetchData() {
-    setLoading(true);
     try {
-      // Fetch requests & payments
-    } finally {
-      setLoading(false);
+      // Fetch payments if needed
+      // Payment fetching logic here
+    } catch (error) {
+      console.error('Error fetching data:', error);
     }
   }
 
@@ -107,7 +177,6 @@ export function Dashboard() {
       await forgotPassword({ email: user.email });
       setShowConfirmModal(false);
       setShowResetPasswordModal(true);
-
     } finally {
       setChangingPassword(false);
     }
@@ -123,8 +192,7 @@ export function Dashboard() {
     setDelAddModal(true);
   };
 
-
-  if (loading) {
+  if (authLoading || ordersLoading || defaultLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -137,20 +205,26 @@ export function Dashboard() {
 
   const stats = [
     {
-      label: 'Active Requests',
-      value: requests.filter(r => !['delivered', 'cancelled', 'refunded'].includes(r.status)).length,
+      label: 'Active Orders',
+      value: orders.filter((o: any) => {
+        const status = o.status?.toLowerCase();
+        return !['delivered', 'cancelled', 'refunded'].includes(status);
+      }).length,
       icon: Car,
       color: 'bg-blue-500',
     },
     {
       label: 'In Transit',
-      value: requests.filter(r => ['shipped', 'in_transit'].includes(r.status)).length,
+      value: orders.filter((o: any) => {
+        const status = o.status?.toLowerCase();
+        return ['shipped', 'in_transit'].includes(status);
+      }).length,
       icon: Ship,
       color: 'bg-emerald-500',
     },
     {
       label: 'Delivered',
-      value: requests.filter(r => r.status === 'delivered').length,
+      value: orders.filter((o: any) => o.status?.toLowerCase() === 'delivered').length,
       icon: CheckCircle,
       color: 'bg-green-500',
     },
@@ -219,12 +293,22 @@ export function Dashboard() {
 
           {activeTab === 'requests' && (
             <div className="space-y-4">
-              {requests.length === 0 ? (
+              {ordersError ? (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-red-900 font-medium">Failed to load orders</p>
+                      <p className="text-red-700 text-sm mt-1">Please try refreshing the page.</p>
+                    </div>
+                  </div>
+                </div>
+              ) : orders.length === 0 ? (
                 <div className="bg-white rounded-xl p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Car className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No requests yet</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
                   <p className="text-gray-600 mb-4">
                     Start browsing vehicles to make your first import request.
                   </p>
@@ -237,17 +321,19 @@ export function Dashboard() {
                   </Link>
                 </div>
               ) : (
-                requests.map((request) => {
-                  const statusConfig = STATUS_CONFIG[request.status];
+                orders.map((order: any) => {
+                  const statusConfig = STATUS_CONFIG[order.status];
                   const StatusIcon = statusConfig?.icon || Clock;
+                  const vehicleName = getOrderVehicleName(order);
+                  const vehicleImage = getOrderPrimaryImage(order);
 
                   return (
-                    <div key={request.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
                       <div className="p-6">
                         <div className="flex flex-col md:flex-row gap-6">
                           <img
-                            src={request.vehicle?.images?.[0] || 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=200'}
-                            alt={`${request.vehicle?.year} ${request.vehicle?.make} ${request.vehicle?.model}`}
+                            src={vehicleImage}
+                            alt={vehicleName}
                             className="w-full md:w-48 h-32 object-cover rounded-lg"
                           />
 
@@ -255,15 +341,15 @@ export function Dashboard() {
                             <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
                               <div>
                                 <p className="text-sm text-gray-500 mb-1">
-                                  Request #{request.request_number}
+                                  Order #{order.requestNumber || order.id}
                                 </p>
                                 <h3 className="text-xl font-semibold text-gray-900">
-                                  {request.vehicle?.year} {request.vehicle?.make} {request.vehicle?.model}
+                                  {vehicleName}
                                 </h3>
                               </div>
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig?.color}`}>
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusConfig?.color || 'bg-gray-100 text-gray-700'}`}>
                                 <StatusIcon className="w-4 h-4" />
-                                {statusConfig?.label}
+                                {statusConfig?.label || order.status}
                               </span>
                             </div>
 
@@ -271,26 +357,26 @@ export function Dashboard() {
                               <div>
                                 <p className="text-gray-500">Total Cost</p>
                                 <p className="font-semibold text-gray-900">
-                                  {formatCurrency(request.total_landed_cost_usd || 0)}
+                                  {formatCurrency(order.totalLandedCostUsd || order.quotedPriceUsd || order.vehicleSnapshot?.priceUsd || 0)}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-gray-500">Shipping</p>
                                 <p className="font-semibold text-gray-900">
-                                  {request.shipping_method}
+                                  {order.shippingMethod || 'N/A'}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-gray-500">Destination</p>
                                 <p className="font-semibold text-gray-900">
-                                  {request.destination_state}
+                                  {order.destinationState || 'N/A'}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-gray-500">Est. Delivery</p>
                                 <p className="font-semibold text-gray-900">
-                                  {request.estimated_delivery_date
-                                    ? formatDate(request.estimated_delivery_date)
+                                  {order.estimatedDeliveryDate
+                                    ? formatDate(order.estimatedDeliveryDate)
                                     : 'TBD'}
                                 </p>
                               </div>
@@ -301,10 +387,10 @@ export function Dashboard() {
 
                       <div className="bg-gray-50 px-6 py-3 flex items-center justify-between">
                         <p className="text-sm text-gray-500">
-                          Submitted {formatDate(request.created_at)}
+                          Submitted {formatDate(order.createdAt)}
                         </p>
                         <Link
-                          to={`/request-details/${request.id}`}
+                          to={`/request-details/${order.id}`}
                           className="text-emerald-600 font-medium text-sm hover:text-emerald-700 flex items-center gap-1"
                         >
                           View Details
@@ -318,54 +404,188 @@ export function Dashboard() {
             </div>
           )}
 
+
           {activeTab === 'payments' && (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {payments.length === 0 ? (
+              {paymentsLoading ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-600">Loading payments...</p>
+                </div>
+              ) : paymentsError ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="w-8 h-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Payments</h3>
+                  <p className="text-gray-600 mb-4">
+                    There was an error loading your payment history. Please try again.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
+              ) : payments.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CreditCard className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No payments yet</h3>
-                  <p className="text-gray-600">
-                    Your payment history will appear here.
+                  <p className="text-gray-600 mb-4">
+                    Your payment history will appear here once you make your first payment.
                   </p>
+                  <Link
+                    to="/vehicles"
+                    className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                  >
+                    Browse Vehicles
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Date</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Type</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Amount</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {payments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {formatDate(payment.created_at)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">
-                          {payment.payment_type.replace('_', ' ')}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {formatCurrency(payment.amount_usd)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${payment.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
-                            : payment.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
-                            }`}>
-                            {payment.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  {/* Payment Stats Summary */}
+                  {/* <div className="p-6 bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{paymentStats.total}</p>
+                        <p className="text-sm text-gray-500">Total Payments</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">{paymentStats.completed}</p>
+                        <p className="text-sm text-gray-500">Completed</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-yellow-600">{paymentStats.pending}</p>
+                        <p className="text-sm text-gray-500">Pending</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(paymentStats.totalSpent)}</p>
+                        <p className="text-sm text-gray-500">Total Spent</p>
+                      </div>
+                    </div>
+                  </div> */}
+
+                  {/* Payments Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Order
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Vehicle
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Reference
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {payments.map((payment: any) => {
+                          // Get vehicle info from order snapshot
+                          const vehicle = payment.order?.vehicleSnapshot;
+                          const vehicleName = vehicle
+                            ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+                            : 'N/A';
+
+                          return (
+                            <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {formatDate(payment.createdAt)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {payment.order ? (
+                                  <Link
+                                    to={`/request-details/${payment.orderId}`}
+                                    className="text-emerald-600 hover:text-emerald-700 font-medium"
+                                  >
+                                    {payment.order.requestNumber}
+                                  </Link>
+                                ) : (
+                                  <span className="text-gray-500">-</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-900">
+                                <div className="max-w-xs">
+                                  <p className="truncate font-medium">{vehicleName}</p>
+                                  {vehicle?.vin && (
+                                    <p className="text-xs text-gray-500 truncate">VIN: {vehicle.vin}</p>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span className="capitalize">
+                                  {payment.paymentType?.replace(/_/g, ' ').toLowerCase() || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <div>
+                                  <div>{formatCurrency(payment.amountUsd)}</div>
+                                  {payment.amountLocal && payment.localCurrency && (
+                                    <div className="text-xs text-gray-500">
+                                      ≈ {formatCurrency(payment.amountLocal, payment.localCurrency)}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${payment.status === 'COMPLETED'
+                                    ? 'bg-green-100 text-green-700'
+                                    : payment.status === 'PENDING'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : payment.status === 'FAILED'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                  {payment.status === 'COMPLETED' && <CheckCircle className="w-3 h-3 mr-1" />}
+                                  {payment.status === 'PENDING' && <Clock className="w-3 h-3 mr-1" />}
+                                  {payment.status === 'FAILED' && <AlertCircle className="w-3 h-3 mr-1" />}
+                                  {payment.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div className="max-w-xs">
+                                  <p className="font-mono text-xs truncate">
+                                    {payment.transactionRef || payment.providerTransactionId || '-'}
+                                  </p>
+                                  {payment.paymentProvider && (
+                                    <p className="text-xs text-gray-400 capitalize">{payment.paymentProvider}</p>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination info */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <p className="text-sm text-gray-500">
+                      Showing {payments.length} {payments.length === 1 ? 'payment' : 'payments'}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -388,11 +608,9 @@ export function Dashboard() {
             </div>
           )}
 
-
-          {/* PROFILE TAB ONLY (rest unchanged) */}
+          {/* PROFILE TAB */}
           {activeTab === 'profile' && (
             <div className="max-w-7xl mx-auto px-4 py-8 bg-white rounded-xl shadow-sm mt-6">
-
               <div className="flex justify-between">
                 <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
                 <div className="flex gap-4">
@@ -573,7 +791,6 @@ export function Dashboard() {
             setShowResetPasswordModal(false);
           }}
         />
-
       )}
 
       {showAddAddress && (
@@ -593,7 +810,6 @@ export function Dashboard() {
           onSuccess={refetchAddresses}
         />
       )}
-
 
       {delAddModal && selectedAddress && (
         <DelAddressModal
@@ -624,16 +840,12 @@ export function Dashboard() {
           }}
         />
       )}
-
     </>
   );
 }
 
 /* ---------------- MODALS & CARDS ---------------- */
 function DelAddressModal({ loading, onClose, onConfirm, address }: any) {
-  console.log('DelAddressModal received address:', address);
-  console.log('Address ID in modal:', address?.id);
-
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-lg">
@@ -656,7 +868,6 @@ function DelAddressModal({ loading, onClose, onConfirm, address }: any) {
     </div>
   );
 }
-
 
 function ConfirmPasswordModal({ loading, onClose, onConfirm }: any) {
   return (
@@ -686,20 +897,13 @@ function AddressCard({ addr, onEdit, onDelete }: any) {
 
       <div className="flex gap-4 mt-3">
         <button
-          onClick={() => {
-            console.log('Edit clicked for address:', addr);
-            onEdit(addr);
-          }}
+          onClick={() => onEdit(addr)}
           className="text-emerald-600 text-sm font-medium hover:underline"
         >
           Update
         </button>
         <button
-          onClick={() => {
-            console.log('Delete clicked for address:', addr);
-            console.log('Address ID being passed:', addr?.id);
-            onDelete(addr);
-          }}
+          onClick={() => onDelete(addr)}
           className="text-red-600 text-sm font-medium hover:underline"
         >
           Delete
