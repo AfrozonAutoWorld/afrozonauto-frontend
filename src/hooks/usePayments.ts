@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   PaymenInit,
   Payment,
@@ -10,6 +10,8 @@ import { showToast } from "../lib/showNotification";
 import { ApiError } from "../lib/api/client";
 
 export function useAllPayments() {
+  const queryClient = useQueryClient();
+
   const queryResult = useQuery<Payment[], Error>({
     queryKey: ["payments"],
     queryFn: async () => {
@@ -97,6 +99,8 @@ export const usePaymentInit = () => {
 };
 
 export const useVerifyPayment = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<PaymentVerification, ApiError, { reference: string }>({
     mutationFn: async ({ reference }) => {
       const res = await paymentsApi.paymentVerify(reference);
@@ -104,7 +108,8 @@ export const useVerifyPayment = () => {
       return res.data.data;
     },
 
-    onSuccess: ({ success, payment, message }) => {
+    onSuccess: ({ success, message }) => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
       if (success) {
         showToast({
           type: "success",
@@ -118,10 +123,7 @@ export const useVerifyPayment = () => {
       } else {
         showToast({
           type: "error",
-          message:
-            message ||
-            payment.metadata?.failureReason ||
-            "Payment verification failed",
+          message: message || "Payment verification failed",
         });
       }
     },

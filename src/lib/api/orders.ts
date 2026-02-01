@@ -272,6 +272,8 @@ export interface DefualtPrices {
 
 export interface PaymentPricing {
   totalUsd: number;
+  totalUsedDeposit: number;
+  shippingMethod: string;
   breakdown: {
     vehiclePriceUsd: number;
     prePurchaseInspectionUsd: number;

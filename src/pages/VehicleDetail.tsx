@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
-import { useToggleSaveVehicle } from '../hooks/useVehicleMutate';
+import { useCreateSavePayload, useSavedVehicles, useSaveVehicle } from '../hooks/useVehicleMutate';
 import { showToast } from '../lib/showNotification';
 import { useAuthQuery } from '../hooks/useAuth';
 import { useCostBreakdown } from '../hooks/useOrders';
@@ -29,30 +29,45 @@ export function VehicleDetail() {
   const { user } = useAuthQuery();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
-  const [isSaved, setIsSaved] = useState(false);
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
+  const vehicleId = vehicle ? vehicle.id : '';
   const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
 
 
-  const { toggleSave, isLoading: isSaving } = useToggleSaveVehicle({
-    onSuccess: (saved) => {
-      setIsSaved(saved);
-      showToast({ type: "success", message: saved ? "Vehicle saved" : "Vehicle removed" });
-    },
-    onError: (error) => {
-      setIsSaved(!isSaved);
-      console.error('Failed to save vehicle:', error);
-      showToast({ type: "error", message: "Failed to save vehicle" });
-    },
-  });
+  const { isVehicleSaved } = useSavedVehicles();
+  const { mutate: saveVehicle, isPending: isSaving } = useSaveVehicle();
+  const createSavePayload = useCreateSavePayload();
+
 
   // Update isSaved when vehicle data loads
-  useEffect(() => {
-    if (vehicle) {
-      setIsSaved(vehicle.isActive || false);
+  const isSaved = vehicle ? isVehicleSaved(vehicle.id) : false;
+
+  const handleSaveVehicle = () => {
+    if (vehicle) return;
+    if (!user) {
+      showToast({
+        type: "error",
+        message: "You must be logged in to save vehicles",
+      });
+      navigate('/login', { state: { from: `/vehicles/${vehicleId}` } });
+      return;
     }
-  }, [vehicle]);
+
+    if (!vehicle) return;
+
+    if (isSaved) {
+      showToast({
+        type: "info",
+        message: "Vehicle already saved",
+      });
+      return;
+    }
+
+    // Create payload and call API
+    const payload = createSavePayload(vehicle);
+    saveVehicle(payload);
+  };
 
   if (isLoading) {
     return (
@@ -116,21 +131,6 @@ export function VehicleDetail() {
     });
   };
 
-  const handleToggleSave = () => {
-    if (!user) {
-      navigate('/login', { state: { from: `/vehicles/${vehicle.id}` } });
-      return;
-    }
-
-    // Optimistic update
-    setIsSaved(!isSaved);
-
-    // Call API
-    toggleSave({
-      vehicleId: vehicle.id,
-      isSaved: !isSaved,
-    });
-  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
@@ -142,7 +142,11 @@ export function VehicleDetail() {
 
   const specs = [
     { icon: Calendar, label: 'Year', value: vehicle.year },
-    { icon: Gauge, label: 'Mileage', value: `${vehicle.mileage?.toLocaleString()} mi` },
+    {
+      icon: Gauge,
+      label: 'Mileage',
+      value: vehicle.mileage ? `${vehicle.mileage.toLocaleString()} mi` : 'No Mileage'
+    },
     { icon: Settings, label: 'Transmission', value: vehicle.transmission },
     { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },
     { icon: Settings, label: 'Engine', value: vehicle.engineSize },
@@ -205,21 +209,22 @@ export function VehicleDetail() {
                 </div>
               </div>
 
-              <div className="absolute top-4 right-4 flex gap-2">
+              {/* <div className="absolute top-4 right-4 flex gap-2">
                 <button
-                  onClick={handleToggleSave}
-                  disabled={isSaving}
+                  onClick={handleSaveVehicle}
+                  disabled={isSaving || isSaved}
                   className={`p-3 rounded-full transition-colors ${isSaved
-                    ? 'bg-red-500 text-white'
+                    ? 'bg-red-500 text-white cursor-not-allowed'
                     : 'bg-white/90 text-gray-600 hover:bg-red-500 hover:text-white'
-                    }`}
+                    } ${isSaving ? 'opacity-50 cursor-wait' : ''}`}
+                  title={isSaved ? 'Already saved' : 'Save vehicle'}
                 >
                   <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                 </button>
                 <button className="p-3 bg-white/90 rounded-full text-gray-600 hover:bg-emerald-500 hover:text-white transition-colors">
                   <Share2 className="w-5 h-5" />
                 </button>
-              </div>
+              </div> */}
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm">

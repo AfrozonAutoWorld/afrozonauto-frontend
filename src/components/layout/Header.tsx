@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Car, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuthQuery } from '../../hooks/useAuth';
-import { useAuthStore } from '../../lib/authStore';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { signOut } = useAuthQuery();
-  const user = useAuthStore((state) => state.user);
+  const { user, signOut } = useAuthQuery();
 
 
   const navigate = useNavigate();

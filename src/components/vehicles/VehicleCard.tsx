@@ -90,7 +90,7 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
           {mileage && (
             <div className="flex items-center gap-1">
               <Gauge className="w-4 h-4" />
-              <span>{mileage.toLocaleString()} mi</span>
+              <span>{mileage ? `${mileage.toLocaleString()} mi` : 'No Mileage'}</span>
             </div>
           )}
           <div className="flex items-center gap-1">

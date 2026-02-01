@@ -179,6 +179,8 @@ export interface Vehicle {
   year: number;
   priceUsd: number;
   vehicleType: VehicleType;
+  exteriorColor?: string;
+  interiorColor?: string;
   transmission: TransmissionType;
   fuelType: FuelType;
   engineSize: string;
@@ -199,6 +201,10 @@ export interface Vehicle {
   apiSyncStatus: ApiSyncStatus;
   id: string;
   mileage?: number;
+  horsepower?: number;
+  torque?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface VehicleFilters {

@@ -25,9 +25,17 @@ export interface PaymentResponse {
 }
 
 export interface PaymentMetadata {
-  failureReason?: string;
-  provider?: string;
-  providerResponse?: any;
+  calculation: {
+    totalAmountUsd: number;
+    paymentAmount: number;
+    depositPercentage: number;
+    isDeposit: boolean;
+    remainingBalance: number;
+    paymentType: "FULL_PAYMENT" | "DEPOSIT" | "BALANCE";
+  };
+  isDeposit: boolean;
+  depositPercentage: number;
+  remainingBalance: number;
 }
 export type Currency = "USD" | "NGN" | null;
 
