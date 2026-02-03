@@ -6,14 +6,11 @@ import {
   Ship,
   Truck,
   Shield,
-  MapPin,
 } from 'lucide-react';
 import {
-  calculateLandedCost,
   formatCurrency,
   formatDate,
   getEstimatedDeliveryDate,
-  NIGERIAN_STATES,
 } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
 import { useAuthQuery } from '../hooks/useAuth';
@@ -32,15 +29,15 @@ export function RequestVehicle() {
 
   const [step, setStep] = useState(1);
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
-  const [destinationState, setDestinationState] = useState(user?.state || "Lagos");
-  const [destinationAddress, setDestinationAddress] = useState(user?.address || "");
-  const [destinationCity, setDestinationCity] = useState(user?.city || "");
-  const [destinationCountry, setDestinationCountry] = useState(user?.country || "Nigeria");
-  const [deliveryInstructions, setDeliveryInstructions] = useState('');
+  // const [destinationState, setDestinationState] = useState(user?.state || "Lagos");
+  // const [destinationAddress, setDestinationAddress] = useState(user?.address || "");
+  // const [destinationCity, setDestinationCity] = useState(user?.city || "");
+  // const [destinationCountry, setDestinationCountry] = useState(user?.country || "Nigeria");
+  // const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToInspection, setAgreeToInspection] = useState(false);
   const [agreeToNoRefund, setAgreeToNoRefund] = useState(false);
-  const [notes, setNotes] = useState('');
+  // const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   // const [success, setSuccess] = useState(false);
 
@@ -88,10 +85,6 @@ export function RequestVehicle() {
       return;
     }
 
-    if (!destinationState || !destinationAddress) {
-      setError('Please provide complete delivery information');
-      return;
-    }
     setError('');
 
     try {
@@ -99,12 +92,6 @@ export function RequestVehicle() {
         identifier: vehicle.id,
         type: vehicle.vin || vehicle.id,
         shippingMethod,
-        destinationCountry,
-        destinationState,
-        destinationCity,
-        destinationAddress,
-        deliveryInstructions,
-        customerNotes: notes,
       });
 
     } catch (err: any) {
@@ -152,18 +139,23 @@ export function RequestVehicle() {
         </div>
 
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div key={s} className="flex-1">
               <div
                 className={`h-2 rounded-full ${s <= step ? 'bg-emerald-600' : 'bg-gray-200'
                   }`}
               />
-              <p className={`text-xs mt-1 ${s <= step ? 'text-emerald-600' : 'text-gray-400'}`}>
-                {s === 1 ? 'Shipping' : s === 2 ? 'Delivery' : 'Confirm'}
+              <p
+                className={`text-xs mt-1 ${s <= step ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+              >
+                {s === 1 && 'Shipping'}
+                {s === 2 && 'Confirm'}
               </p>
             </div>
           ))}
         </div>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -254,121 +246,8 @@ export function RequestVehicle() {
               </div>
             )}
 
+
             {step === 2 && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Delivery Information
-                </h2>
-
-                <div className="space-y-4">
-                  {/* State */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Destination State
-                    </label>
-                    <select
-                      value={destinationState}
-                      onChange={(e) => setDestinationState(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    >
-                      {NIGERIAN_STATES.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* City + Country */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={destinationCity}
-                        onChange={(e) => setDestinationCity(e.target.value)}
-                        placeholder="e.g. Ikeja"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        value={destinationCountry}
-                        onChange={(e) => setDestinationCountry(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-100 cursor-not-allowed"
-                        disabled
-                      />
-                    </div>
-                  </div>
-
-                  {/* Full Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delivery Address
-                    </label>
-                    <textarea
-                      value={destinationAddress}
-                      onChange={(e) => setDestinationAddress(e.target.value)}
-                      rows={3}
-                      placeholder="Street, house number, area, nearby landmark"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Delivery Instructions */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delivery Instructions
-                    </label>
-                    <textarea
-                      value={deliveryInstructions}
-                      onChange={(e) => setDeliveryInstructions(e.target.value)}
-                      rows={2}
-                      placeholder="Gate code, call before arrival, landmark, etc."
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Extra Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Additional Notes
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                      placeholder="Any special requests or preferences?"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-between">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Review & Confirm</h2>
 
@@ -382,12 +261,15 @@ export function RequestVehicle() {
                   </div>
 
                   <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                    <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                    <Ship className="w-5 h-5 text-emerald-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Delivery: {destinationState}</p>
-                      <p className="text-sm text-gray-500">{destinationAddress}</p>
+                      <p className="font-medium text-gray-900">Shipping Method: {shippingMethod}</p>
+                      <p className="text-sm text-gray-500">
+                        Estimated arrival in {estimatedDeliveryDays} days
+                      </p>
                     </div>
                   </div>
+
                 </div>
 
                 <div className="border-t border-gray-100 pt-4 space-y-3">
@@ -446,7 +328,7 @@ export function RequestVehicle() {
 
                 <div className="mt-6 flex justify-between">
                   <button
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                     className="text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                   >
                     Back

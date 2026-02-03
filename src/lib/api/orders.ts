@@ -4,12 +4,12 @@ export interface RequestVehicle {
   identifier: string;
   type: string;
   shippingMethod: string;
-  destinationCountry: string;
-  destinationState: string;
-  destinationCity: string;
-  destinationAddress: string;
-  deliveryInstructions: string;
-  customerNotes: string;
+  destinationCountry?: string;
+  destinationState?: string;
+  destinationCity?: string;
+  destinationAddress?: string;
+  deliveryInstructions?: string;
+  customerNotes?: string;
 }
 
 export interface VehicleSnapshot {
