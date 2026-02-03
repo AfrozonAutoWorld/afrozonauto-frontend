@@ -91,6 +91,9 @@ export function VehicleListing() {
 
   const currentPageStart = ((filters.page || 1) - 1) * (filters.limit || 50) + 1;
   const currentPageEnd = Math.min((filters.page || 1) * (filters.limit || 50), meta?.total || 0);
+
+  const vehiclesOnPage = vehicles.length;
+
   const totalVehicles =
     meta?.total && meta.total > 0
       ? meta.total
@@ -109,7 +112,7 @@ export function VehicleListing() {
             {isLoading ? (
               'Loading vehicles...'
             ) : (
-              `${meta?.total || 0} verified vehicles available for import to Nigeria`
+              `${totalVehicles} verified vehicles available for import to Nigeria`
             )}
             {meta?.fromApi !== undefined && meta.fromApi > 0 && (
               ` (${meta.fromApi} from live listings)`
@@ -156,7 +159,7 @@ export function VehicleListing() {
                   <>
                     Showing{' '}
                     <span className="font-semibold">
-                      {vehicles.length > 0 ? `${currentPageStart}-${currentPageEnd}` : '0'}
+                      {vehicles.length > 0 ? `${vehiclesOnPage}` : '0'}
                     </span>{' '}
                     of{' '}
                     <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
@@ -267,56 +270,55 @@ export function VehicleListing() {
 
             {/* Pagination */}
             {meta && meta.pages > 1 && (
-              <div className="mt-8 flex justify-center items-center gap-2">
-                <button
-                  onClick={() => handlePageChange(filters.page! - 1)}
-                  disabled={filters.page === 1}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                >
-                  Previous
-                </button>
+              <div className="mt-10 flex flex-col items-center gap-4">
 
-                <div className="flex gap-2">
-                  {Array.from({ length: Math.min(5, meta.pages) }, (_, i) => {
-                    const page = i + 1;
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`px-4 py-2 rounded-lg transition-colors ${filters.page === page
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-white border border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                  {meta.pages > 5 && (
-                    <>
-                      <span className="px-2 py-2">...</span>
-                      <button
-                        onClick={() => handlePageChange(meta.pages)}
-                        className={`px-4 py-2 rounded-lg transition-colors ${filters.page === meta.pages
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-white border border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        {meta.pages}
-                      </button>
-                    </>
-                  )}
+                <div className="text-sm text-gray-500">
+                  Page {filters.page} of {meta.pages}
                 </div>
 
-                <button
-                  onClick={() => handlePageChange(filters.page! + 1)}
-                  disabled={filters.page === meta.pages}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                >
-                  Next
-                </button>
+                <div className="flex justify-center items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => handlePageChange(filters.page! - 1)}
+                    disabled={filters.page === 1}
+                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Previous
+                  </button>
+
+                  {(() => {
+                    const currentPage = filters.page || 1;
+                    const totalPages = meta.pages;
+                    const startPage = Math.max(1, currentPage - 2);
+                    const endPage = Math.min(totalPages, currentPage + 2);
+
+                    return Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+                      const page = startPage + i;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-4 py-2 rounded-lg ${filters.page === page
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-white border border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    });
+                  })()}
+
+                  <button
+                    onClick={() => handlePageChange(filters.page! + 1)}
+                    disabled={filters.page === meta.pages}
+                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
