@@ -6,18 +6,16 @@ import {
   Ship,
   Truck,
   Shield,
-  MapPin,
 } from 'lucide-react';
 import {
-  calculateLandedCost,
   formatCurrency,
   formatDate,
   getEstimatedDeliveryDate,
-  NIGERIAN_STATES,
 } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
 import { useAuthQuery } from '../hooks/useAuth';
 import { useRequestOrderVehicle } from '../hooks/useVehicleMutate';
+import { useCostBreakdown } from '../hooks/useOrders';
 
 
 export function RequestVehicle() {
@@ -31,15 +29,15 @@ export function RequestVehicle() {
 
   const [step, setStep] = useState(1);
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
-  const [destinationState, setDestinationState] = useState(user?.state || "Lagos");
-  const [destinationAddress, setDestinationAddress] = useState(user?.address || "");
-  const [destinationCity, setDestinationCity] = useState(user?.city || "");
-  const [destinationCountry, setDestinationCountry] = useState(user?.country || "Nigeria");
-  const [deliveryInstructions, setDeliveryInstructions] = useState('');
+  // const [destinationState, setDestinationState] = useState(user?.state || "Lagos");
+  // const [destinationAddress, setDestinationAddress] = useState(user?.address || "");
+  // const [destinationCity, setDestinationCity] = useState(user?.city || "");
+  // const [destinationCountry, setDestinationCountry] = useState(user?.country || "Nigeria");
+  // const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [agreeToInspection, setAgreeToInspection] = useState(false);
   const [agreeToNoRefund, setAgreeToNoRefund] = useState(false);
-  const [notes, setNotes] = useState('');
+  // const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   // const [success, setSuccess] = useState(false);
 
@@ -61,8 +59,23 @@ export function RequestVehicle() {
     );
   }
 
-  const result = calculateLandedCost(vehicle.priceUsd, vehicle.vehicleType, shippingMethod);
-  const { breakdown, estimatedDeliveryDays, depositAmount } = result;
+
+  const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+
+  const paymentData = costBreakdown?.paymentBreakdown;
+  const defaultPricing = costBreakdown?.defaultPricing;
+
+  const breakdown = paymentData?.breakdown;
+
+  const depositAmount = paymentData?.totalUsedDeposit ?? 0
+
+  const estimatedDeliveryDays = shippingMethod === 'RORO' ? 45 :
+    shippingMethod === 'CONTAINER' ? 60 :
+      shippingMethod === 'AIR_FREIGHT' ? 15 : 7;
+
+
+  const exchangeRate = defaultPricing ? 1550 : 1550;
+
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -72,10 +85,6 @@ export function RequestVehicle() {
       return;
     }
 
-    if (!destinationState || !destinationAddress) {
-      setError('Please provide complete delivery information');
-      return;
-    }
     setError('');
 
     try {
@@ -83,12 +92,6 @@ export function RequestVehicle() {
         identifier: vehicle.id,
         type: vehicle.vin || vehicle.id,
         shippingMethod,
-        destinationCountry,
-        destinationState,
-        destinationCity,
-        destinationAddress,
-        deliveryInstructions,
-        customerNotes: notes,
       });
 
     } catch (err: any) {
@@ -136,18 +139,23 @@ export function RequestVehicle() {
         </div>
 
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div key={s} className="flex-1">
               <div
                 className={`h-2 rounded-full ${s <= step ? 'bg-emerald-600' : 'bg-gray-200'
                   }`}
               />
-              <p className={`text-xs mt-1 ${s <= step ? 'text-emerald-600' : 'text-gray-400'}`}>
-                {s === 1 ? 'Shipping' : s === 2 ? 'Delivery' : 'Confirm'}
+              <p
+                className={`text-xs mt-1 ${s <= step ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+              >
+                {s === 1 && 'Shipping'}
+                {s === 2 && 'Confirm'}
               </p>
             </div>
           ))}
         </div>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -238,121 +246,8 @@ export function RequestVehicle() {
               </div>
             )}
 
+
             {step === 2 && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Delivery Information
-                </h2>
-
-                <div className="space-y-4">
-                  {/* State */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Destination State
-                    </label>
-                    <select
-                      value={destinationState}
-                      onChange={(e) => setDestinationState(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    >
-                      {NIGERIAN_STATES.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* City + Country */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={destinationCity}
-                        onChange={(e) => setDestinationCity(e.target.value)}
-                        placeholder="e.g. Ikeja"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        value={destinationCountry}
-                        onChange={(e) => setDestinationCountry(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-100 cursor-not-allowed"
-                        disabled
-                      />
-                    </div>
-                  </div>
-
-                  {/* Full Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delivery Address
-                    </label>
-                    <textarea
-                      value={destinationAddress}
-                      onChange={(e) => setDestinationAddress(e.target.value)}
-                      rows={3}
-                      placeholder="Street, house number, area, nearby landmark"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Delivery Instructions */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delivery Instructions
-                    </label>
-                    <textarea
-                      value={deliveryInstructions}
-                      onChange={(e) => setDeliveryInstructions(e.target.value)}
-                      rows={2}
-                      placeholder="Gate code, call before arrival, landmark, etc."
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {/* Extra Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Additional Notes
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                      placeholder="Any special requests or preferences?"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-between">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Review & Confirm</h2>
 
@@ -366,12 +261,15 @@ export function RequestVehicle() {
                   </div>
 
                   <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                    <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                    <Ship className="w-5 h-5 text-emerald-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Delivery: {destinationState}</p>
-                      <p className="text-sm text-gray-500">{destinationAddress}</p>
+                      <p className="font-medium text-gray-900">Shipping Method: {shippingMethod}</p>
+                      <p className="text-sm text-gray-500">
+                        Estimated arrival in {estimatedDeliveryDays} days
+                      </p>
                     </div>
                   </div>
+
                 </div>
 
                 <div className="border-t border-gray-100 pt-4 space-y-3">
@@ -430,7 +328,7 @@ export function RequestVehicle() {
 
                 <div className="mt-6 flex justify-between">
                   <button
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                     className="text-gray-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                   >
                     Back
@@ -461,59 +359,76 @@ export function RequestVehicle() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Cost Summary</h3>
 
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Vehicle Price</span>
-                  <span className="font-medium">{formatCurrency(breakdown.vehicle_price)}</span>
+              {isCostBreakdownLoading ? (
+                <div className="bg-gray-50 rounded-xl p-5 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Calculating costs...</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sourcing Fee</span>
-                  <span className="font-medium">{formatCurrency(breakdown.sourcing_fee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Inspection</span>
-                  <span className="font-medium">{formatCurrency(breakdown.inspection_fee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping ({shippingMethod})</span>
-                  <span className="font-medium">{formatCurrency(breakdown.shipping_cost)}</span>
-                </div>
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Duties & Taxes</span>
-                  <span className="font-medium">
-                    {formatCurrency(breakdown.customs_duty + breakdown.vat + breakdown.levy)}
-                  </span>
-                </div> */}
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Clearing & Delivery</span>
-                  <span className="font-medium">
-                    {formatCurrency(breakdown.clearing_fee + breakdown.port_charges + breakdown.local_delivery)}
-                  </span> */}
-              </div>
+              ) : paymentData && breakdown ? (
+                <>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Vehicle Price</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.vehiclePriceUsd ?? 0)}
+                      </span>
+                    </div>
 
-              <div className="border-t border-gray-100 pt-3 mt-3">
-                <div className="flex justify-between text-lg">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(breakdown.total_usd)}</span>
-                </div>
-                <p className="text-right text-emerald-600 font-medium mt-1">
-                  {formatCurrency(breakdown.total_ngn, 'NGN')}
-                </p>
-              </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sourcing Fee</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.sourcingFee ?? 0)}
+                      </span>
+                    </div>
 
-              <div className="bg-emerald-50 rounded-lg p-4 mt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-emerald-800 font-medium">Deposit (30%)</span>
-                  <span className="text-xl font-bold text-emerald-700">
-                    {formatCurrency(depositAmount)}
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-600 mt-1">
-                  Pay after quote approval
-                </p>
-              </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Inspection</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.prePurchaseInspectionUsd ?? 0)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping ({shippingMethod})</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.shippingCostUsd ?? 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-3 mt-3">
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-gray-900">Total (USD)</span>
+                      <span className="font-bold text-gray-900">
+                        {formatCurrency(paymentData.totalUsd)}
+                      </span>
+                    </div>
+                    <p className="text-right text-emerald-600 font-medium mt-1">
+                      {formatCurrency(paymentData.totalUsd * exchangeRate, 'NGN')}
+                    </p>
+                  </div>
+
+                  <div className="bg-emerald-50 rounded-lg p-4 mt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-800 font-medium">Deposit (30%)</span>
+                      <span className="text-xl font-bold text-emerald-700">
+                        {formatCurrency(depositAmount)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-600 mt-1">
+                      Pay after quote approval
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Cost data unavailable.</p>
+              )}
             </div>
           </div>
+
+
 
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-3">Estimated Timeline</h3>
@@ -529,6 +444,7 @@ export function RequestVehicle() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
