@@ -54,7 +54,7 @@ export function VehicleListing() {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      page: 1, // Reset to first page when filters change
+      page: 1,
     }));
   };
 
@@ -89,6 +89,12 @@ export function VehicleListing() {
     );
   }
 
+  const currentPageStart = ((filters.page || 1) - 1) * (filters.limit || 50) + 1;
+  const currentPageEnd = Math.min((filters.page || 1) * (filters.limit || 50), meta?.total || 0);
+  const totalVehicles =
+    meta?.total && meta.total > 0
+      ? meta.total
+      : vehicles?.length || meta?.fromApi || 0;
 
 
   return (
@@ -140,11 +146,24 @@ export function VehicleListing() {
           <div className="flex-1">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <p className="text-gray-600">
-                Showing <span className="font-semibold">{vehicles.length}</span> of{' '}
-                <span className="font-semibold">{meta?.total || 0}</span> vehicles
-              </p>
 
+              <p className="text-gray-600">
+                {isLoading ? (
+                  'Loading vehicles...'
+                ) : totalVehicles === 0 ? (
+                  'No vehicles found'
+                ) : (
+                  <>
+                    Showing{' '}
+                    <span className="font-semibold">
+                      {vehicles.length > 0 ? `${currentPageStart}-${currentPageEnd}` : '0'}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
+                    vehicles
+                  </>
+                )}
+              </p>
               <div className="flex items-center gap-4">
                 {/* View Toggle */}
                 <div className="hidden sm:flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
@@ -181,7 +200,7 @@ export function VehicleListing() {
                     <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
                     <option value="year_desc">Year: Newest</option>
-                    <option value="mileage_asc">Mileage: Lowest</option>
+                    {/* <option value="mileage_asc">Mileage: Lowest</option> */}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>

@@ -29,34 +29,38 @@ export function useAuthQuery() {
     clearAuth,
     isAuthenticated,
     user: storedUser,
+    isHydrated,
+    isInitialized,
+    setInitialized,
   } = useAuthStore();
 
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
     location.pathname.startsWith(route),
   );
 
-  const { isHydrated } = useAuthStore();
-
+  // Query for user data - only on protected routes when authenticated
   const { data, isLoading, error, refetch } = useQuery<User | null>({
     queryKey: ["auth", "user-id"],
     queryFn: async () => {
       try {
-        if (!storedUser?.id) {
-          //console.log("No user ID found in store, using stored user data");
-          return storedUser;
+        // If we have user data in store, return it first for instant UI
+        if (storedUser?.id) {
+          // Fetch fresh data in background
+          const user = await authApi.getUserById(storedUser.id);
+
+          if (user) {
+            useAuthStore.setState({
+              user,
+              isAuthenticated: true,
+              isHydrated: true,
+              isInitialized: true,
+            });
+          }
+          return user;
         }
 
-        // console.log("Fetching fresh user data from API");
-        const user = await authApi.getUserById(storedUser.id);
-
-        if (user) {
-          useAuthStore.setState({
-            user,
-            isAuthenticated: true,
-            isHydrated: true,
-          });
-        }
-        return user;
+        // No user data available
+        return null;
       } catch (err) {
         console.error("Failed to fetch user:", err);
 
@@ -66,20 +70,27 @@ export function useAuthQuery() {
         ) {
           console.warn("Authentication failed, clearing auth");
           clearAuth();
-          return null; // Add explicit return
+          return null;
         }
 
+        // Return cached user on error (network issues, etc.)
         return storedUser;
       }
     },
     enabled: isHydrated && isAuthenticated && isProtectedRoute,
-
-    retry: 1, // Changed from false to 1
+    retry: 1,
     staleTime: 5 * 60 * 1000,
-    // Add these options:
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
+
+  // Initialize authentication state on mount
+  useEffect(() => {
+    if (isHydrated && !isInitialized) {
+      // Mark as initialized regardless of auth state
+      setInitialized(true);
+    }
+  }, [isHydrated, isInitialized, setInitialized]);
 
   const forceLogout = () => {
     clearAuth();
@@ -118,7 +129,6 @@ export function useAuthQuery() {
     mutationFn: (data: OnboardingInput) => authApi.startRegistration(data),
 
     onSuccess: (_, variables) => {
-      // Store email temporarily in sessionStorage (non-sensitive)
       sessionStorage.setItem("onboarding_email", variables.email);
       showToast({
         type: "success",
@@ -226,7 +236,6 @@ export function useAuthQuery() {
         message: "Password changed successfully. Please login again.",
       });
 
-      // Force logout and redirect to login
       forceLogout();
     },
 
@@ -273,12 +282,16 @@ export function useAuthQuery() {
     queryClient.removeQueries({ queryKey: ["auth", "user"] });
     navigate("/", { replace: true });
   };
+
+  // Return the actual user - prefer query data, fallback to stored user
+  const currentUser = data !== undefined ? data : storedUser;
+
   return {
-    // User data
-    user: data ?? null,
-    loading: isLoading,
+    // User data - guaranteed to be in sync
+    user: currentUser,
+    loading: isLoading || !isInitialized, // Include initialization check
     error,
-    isAuthenticated: isAuthenticated,
+    isAuthenticated: isAuthenticated && !!currentUser,
     refetchUser: refetch,
 
     // Auth actions
@@ -344,7 +357,7 @@ export function useTokenRefresh() {
             { refreshToken },
             {
               headers: { "Content-Type": "application/json" },
-              timeout: 10000, // 10 second timeout
+              timeout: 10000,
             },
           );
 
@@ -365,7 +378,6 @@ export function useTokenRefresh() {
             if (status === 401 || status === 403) {
               console.warn("Refresh token invalid, logging out user");
               clearAuth();
-            } else {
             }
           }
         } finally {

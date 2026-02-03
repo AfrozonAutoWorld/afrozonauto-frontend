@@ -343,7 +343,7 @@ export function Dashboard() {
           <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Welcome back, {user.fullName || user.email.split('@')[0]}
+                Welcome back, {user.profile.firstName || user.email.split('@')[0]}
               </h1>
               <p className="text-gray-300 mt-1">Manage your vehicle imports</p>
             </div>

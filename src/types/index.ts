@@ -49,6 +49,23 @@ export interface User {
   gender?: "male" | "female" | "other" | "prefer_not_to_say";
   phoneVerified?: boolean;
   twoFactorEnabled?: boolean;
+  profile: {
+    id: string;
+    userId: string;
+    avatar: string | null;
+    dateOfBirth: string | null;
+    identificationNumber: string | null;
+    identificationType: string | null;
+    identificationDocument: string | null;
+    businessName: string | null;
+    taxId: string | null;
+    isVerified: boolean;
+    verifiedAt: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 export interface Session {

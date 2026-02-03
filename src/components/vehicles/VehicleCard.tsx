@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Gauge, Calendar, Heart, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Heart, ArrowRight } from 'lucide-react';
 import { Vehicle } from '../../types';
 import { formatCurrency } from '../../lib/pricingCalculator';
 
@@ -25,11 +25,11 @@ export function getPrimaryImage(vehicle: Vehicle): string {
   return fallbackImage;
 }
 
-function getMileage(vehicle: Vehicle): number | undefined {
-  return vehicle.mileage
-    || vehicle.apiData?.listing?.retailListing?.miles
-    || vehicle.apiData?.listing?.wholesaleListing?.miles;
-}
+// function getMileage(vehicle: Vehicle): number | undefined {
+//   return vehicle.mileage
+//     || vehicle.apiData?.listing?.retailListing?.miles
+//     || vehicle.apiData?.listing?.wholesaleListing?.miles;
+// }
 
 export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
   // const landedCost = calculateLandedCost(
@@ -40,7 +40,6 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
   // );
 
   const primaryImage = getPrimaryImage(vehicle);
-  const mileage = getMileage(vehicle);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
@@ -87,12 +86,12 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
         </div>
 
         <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-          {mileage && (
+          {/* {mileage && (
             <div className="flex items-center gap-1">
               <Gauge className="w-4 h-4" />
               <span>{mileage ? `${mileage.toLocaleString()} mi` : 'No Mileage'}</span>
             </div>
-          )}
+          )} */}
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
             <span>{vehicle.year}</span>

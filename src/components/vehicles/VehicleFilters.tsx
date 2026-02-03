@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { VehicleFilters, VehicleType } from '../../types';
-import { VEHICLE_MAKES, US_STATES } from '../../lib/pricingCalculator';
+import { VEHICLE_MAKES } from '../../lib/pricingCalculator';
+import { states } from '../../lib/state';
 
 interface VehicleFiltersProps {
   filters: VehicleFilters;
@@ -91,8 +92,8 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
     }
   };
 
-  const handleStateChange = (state: string) => {
-    onFilterChange({ ...filters, state: state || undefined });
+  const handleStateChange = (stateAbbrev: string) => {
+    onFilterChange({ ...filters, state: stateAbbrev || undefined });
   };
 
   const handleMileageChange = (value: string) => {
@@ -204,32 +205,12 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         >
           <option value="">All States</option>
-          {US_STATES.map((state) => (
-            <option key={state} value={state}>{state}</option>
+          {states.map((state) => (
+            <option key={state.abbrevCode} value={state.abbrevCode}>
+              {state.fullName}
+            </option>
           ))}
         </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Max Mileage
-          {debouncedMileage && parseInt(debouncedMileage) > 0 && (
-            <span className="text-emerald-600 font-normal ml-2">
-              (≤ {parseInt(debouncedMileage).toLocaleString()} miles)
-            </span>
-          )}
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="e.g., 50000"
-          value={localMileage}
-          onChange={(e) => handleMileageChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Type and pause - filters apply automatically
-        </p>
       </div>
 
       {activeFiltersCount > 0 && (
