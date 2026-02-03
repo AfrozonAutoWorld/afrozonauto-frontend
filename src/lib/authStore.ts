@@ -8,11 +8,13 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isHydrated: boolean;
+  isInitialized: boolean; // NEW: Track if initial auth check is complete
   setAuth: (user: User, accessToken: string, refreshToken?: string) => void;
   updateUser: (user: User) => void;
   setAccessToken: (token: string) => void;
   clearAuth: () => void;
   setHydrated: (val: boolean) => void;
+  setInitialized: (val: boolean) => void; // NEW
   isTokenExpired: () => boolean;
 }
 
@@ -55,7 +57,6 @@ export function isTokenExpiringSoon(
   }
 }
 
-// ✅ Custom storage that uses localStorage (survives tab/browser closes)
 const localStorageAdapter = {
   getItem: (name: string) => {
     const value = localStorage.getItem(name);
@@ -77,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       isHydrated: false,
+      isInitialized: false, // NEW
 
       setAuth: (user, accessToken, refreshToken) => {
         set({
@@ -85,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: refreshToken || null,
           isAuthenticated: true,
           isHydrated: true,
+          isInitialized: true, // NEW
         });
       },
 
@@ -103,10 +106,12 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
           isHydrated: true,
+          isInitialized: true, // Keep initialized true
         });
       },
 
       setHydrated: (val) => set({ isHydrated: val }),
+      setInitialized: (val) => set({ isInitialized: val }), // NEW
 
       isTokenExpired: () => {
         const { accessToken } = get();

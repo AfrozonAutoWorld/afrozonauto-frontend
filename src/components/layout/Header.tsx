@@ -53,7 +53,7 @@ export function Header() {
                 </Link>
 
                 <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                  <span className="text-sm text-gray-600">{user?.fullName || user.email}</span>
+                  <span className="text-sm text-gray-600">{user?.profile.firstName || user.email}</span>
                   <button
                     onClick={handleSignOut}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"

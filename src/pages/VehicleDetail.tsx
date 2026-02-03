@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Heart,
-  Share2,
   MapPin,
-  Gauge,
+  Car,
   Calendar,
   Fuel,
   Settings,
@@ -143,9 +141,9 @@ export function VehicleDetail() {
   const specs = [
     { icon: Calendar, label: 'Year', value: vehicle.year },
     {
-      icon: Gauge,
-      label: 'Mileage',
-      value: vehicle.mileage ? `${vehicle.mileage.toLocaleString()} mi` : 'No Mileage'
+      icon: Car,
+      label: 'Make',
+      value: vehicle.make
     },
     { icon: Settings, label: 'Transmission', value: vehicle.transmission },
     { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },

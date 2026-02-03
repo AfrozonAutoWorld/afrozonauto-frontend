@@ -181,7 +181,7 @@ export function VehicleListing() {
                     <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
                     <option value="year_desc">Year: Newest</option>
-                    <option value="mileage_asc">Mileage: Lowest</option>
+                    {/* <option value="mileage_asc">Mileage: Lowest</option> */}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
