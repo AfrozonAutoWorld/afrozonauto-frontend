@@ -3,6 +3,7 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import type { VehicleFilters, VehicleType } from '../../types';
 import { VEHICLE_MAKES } from '../../lib/pricingCalculator';
 import { states } from '../../lib/state';
+import { carModels } from '../../lib/carModels';
 
 interface VehicleFiltersProps {
   filters: VehicleFilters;
@@ -32,6 +33,10 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [localMileage, setLocalMileage] = useState<string>(filters.mileageMax?.toString() || '');
   const [debouncedMileage, setDebouncedMileage] = useState<string>(filters.mileageMax?.toString() || '');
+
+  const availableModels = filters.make && carModels[filters.make as keyof typeof carModels]
+    ? carModels[filters.make as keyof typeof carModels]
+    : [];
 
   // Sync local mileage with filters when filters are cleared externally
   useEffect(() => {
@@ -96,11 +101,8 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
     onFilterChange({ ...filters, state: stateAbbrev || undefined });
   };
 
-  const handleMileageChange = (value: string) => {
-    // Only allow numbers
-    if (value === '' || /^\d+$/.test(value)) {
-      setLocalMileage(value);
-    }
+  const handleModelChange = (model: string) => {
+    onFilterChange({ ...filters, model: model || undefined });
   };
 
   const clearFilters = () => {
@@ -122,12 +124,13 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   const activeFiltersCount = [
     filters.make,
     filters.vehicleType,
+    filters.model,
     filters.priceMin,
     filters.priceMax,
     filters.yearMin,
     filters.yearMax,
     filters.state,
-    filters.mileageMax,
+    //filters.mileageMax,
     filters.search,
   ].filter(v => v !== undefined).length;
 
@@ -146,6 +149,23 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
           ))}
         </select>
       </div>
+
+      {filters.make && availableModels.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+          <select
+            value={filters.model || ''}
+            onChange={(e) => handleModelChange(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          >
+            <option value="">All Models</option>
+            {availableModels.map((model) => (
+              <option key={model} value={model}>{model}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
