@@ -18,6 +18,7 @@ import {
 import { useVehicle } from '../hooks/useVehicles';
 import { useAuthQuery } from '../hooks/useAuth';
 import { useRequestOrderVehicle } from '../hooks/useVehicleMutate';
+import { useCostBreakdown } from '../hooks/useOrders';
 
 
 export function RequestVehicle() {
@@ -61,8 +62,23 @@ export function RequestVehicle() {
     );
   }
 
-  const result = calculateLandedCost(vehicle.priceUsd, vehicle.vehicleType, shippingMethod);
-  const { breakdown, estimatedDeliveryDays, depositAmount } = result;
+
+  const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+
+  const paymentData = costBreakdown?.paymentBreakdown;
+  const defaultPricing = costBreakdown?.defaultPricing;
+
+  const breakdown = paymentData?.breakdown;
+
+  const depositAmount = paymentData?.totalUsedDeposit ?? 0
+
+  const estimatedDeliveryDays = shippingMethod === 'RORO' ? 45 :
+    shippingMethod === 'CONTAINER' ? 60 :
+      shippingMethod === 'AIR_FREIGHT' ? 15 : 7;
+
+
+  const exchangeRate = defaultPricing ? 1550 : 1550;
+
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -461,59 +477,76 @@ export function RequestVehicle() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Cost Summary</h3>
 
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Vehicle Price</span>
-                  <span className="font-medium">{formatCurrency(breakdown.vehicle_price)}</span>
+              {isCostBreakdownLoading ? (
+                <div className="bg-gray-50 rounded-xl p-5 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Calculating costs...</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sourcing Fee</span>
-                  <span className="font-medium">{formatCurrency(breakdown.sourcing_fee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Inspection</span>
-                  <span className="font-medium">{formatCurrency(breakdown.inspection_fee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping ({shippingMethod})</span>
-                  <span className="font-medium">{formatCurrency(breakdown.shipping_cost)}</span>
-                </div>
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Duties & Taxes</span>
-                  <span className="font-medium">
-                    {formatCurrency(breakdown.customs_duty + breakdown.vat + breakdown.levy)}
-                  </span>
-                </div> */}
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Clearing & Delivery</span>
-                  <span className="font-medium">
-                    {formatCurrency(breakdown.clearing_fee + breakdown.port_charges + breakdown.local_delivery)}
-                  </span> */}
-              </div>
+              ) : paymentData && breakdown ? (
+                <>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Vehicle Price</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.vehiclePriceUsd ?? 0)}
+                      </span>
+                    </div>
 
-              <div className="border-t border-gray-100 pt-3 mt-3">
-                <div className="flex justify-between text-lg">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(breakdown.total_usd)}</span>
-                </div>
-                <p className="text-right text-emerald-600 font-medium mt-1">
-                  {formatCurrency(breakdown.total_ngn, 'NGN')}
-                </p>
-              </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sourcing Fee</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.sourcingFee ?? 0)}
+                      </span>
+                    </div>
 
-              <div className="bg-emerald-50 rounded-lg p-4 mt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-emerald-800 font-medium">Deposit (30%)</span>
-                  <span className="text-xl font-bold text-emerald-700">
-                    {formatCurrency(depositAmount)}
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-600 mt-1">
-                  Pay after quote approval
-                </p>
-              </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Inspection</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.prePurchaseInspectionUsd ?? 0)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping ({shippingMethod})</span>
+                      <span className="font-medium">
+                        {formatCurrency(breakdown.shippingCostUsd ?? 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-3 mt-3">
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-gray-900">Total (USD)</span>
+                      <span className="font-bold text-gray-900">
+                        {formatCurrency(paymentData.totalUsd)}
+                      </span>
+                    </div>
+                    <p className="text-right text-emerald-600 font-medium mt-1">
+                      {formatCurrency(paymentData.totalUsd * exchangeRate, 'NGN')}
+                    </p>
+                  </div>
+
+                  <div className="bg-emerald-50 rounded-lg p-4 mt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-800 font-medium">Deposit (30%)</span>
+                      <span className="text-xl font-bold text-emerald-700">
+                        {formatCurrency(depositAmount)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-600 mt-1">
+                      Pay after quote approval
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Cost data unavailable.</p>
+              )}
             </div>
           </div>
+
+
 
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-3">Estimated Timeline</h3>
@@ -529,6 +562,7 @@ export function RequestVehicle() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

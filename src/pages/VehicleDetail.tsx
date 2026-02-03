@@ -34,7 +34,7 @@ export function VehicleDetail() {
 
 
   const { isVehicleSaved } = useSavedVehicles();
-  const { mutate: saveVehicle, isPending: isSaving } = useSaveVehicle();
+  const { mutate: saveVehicle } = useSaveVehicle();
   const createSavePayload = useCreateSavePayload();
 
 
