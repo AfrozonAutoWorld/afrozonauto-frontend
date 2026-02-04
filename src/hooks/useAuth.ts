@@ -38,32 +38,18 @@ export function useAuthQuery() {
     location.pathname.startsWith(route),
   );
 
-  // Query for user data - only on protected routes when authenticated
   const { data, isLoading, error, refetch } = useQuery<User | null>({
     queryKey: ["auth", "user-id"],
     queryFn: async () => {
       try {
-        // If we have user data in store, return it first for instant UI
         if (storedUser?.id) {
-          // Fetch fresh data in background
+          // Just fetch the user, don't update state here
           const user = await authApi.getUserById(storedUser.id);
-
-          if (user) {
-            useAuthStore.setState({
-              user,
-              isAuthenticated: true,
-              isHydrated: true,
-              isInitialized: true,
-            });
-          }
           return user;
         }
-
-        // No user data available
         return null;
       } catch (err) {
         console.error("Failed to fetch user:", err);
-
         if (
           err instanceof ApiError &&
           (err.status === 401 || err.status === 403)
@@ -72,22 +58,32 @@ export function useAuthQuery() {
           clearAuth();
           return null;
         }
-
-        // Return cached user on error (network issues, etc.)
         return storedUser;
       }
     },
-    enabled: isHydrated && isAuthenticated && isProtectedRoute,
+    enabled:
+      isHydrated && isAuthenticated && isProtectedRoute && !!storedUser?.id,
     retry: 1,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 
+  // Update store when query data changes (separate from query function)
+  useEffect(() => {
+    if (data && data !== storedUser) {
+      useAuthStore.setState({
+        user: data,
+        isAuthenticated: true,
+        isHydrated: true,
+        isInitialized: true,
+      });
+    }
+  }, [data, storedUser]);
+
   // Initialize authentication state on mount
   useEffect(() => {
     if (isHydrated && !isInitialized) {
-      // Mark as initialized regardless of auth state
       setInitialized(true);
     }
   }, [isHydrated, isInitialized, setInitialized]);
@@ -337,20 +333,33 @@ export function useTokenRefresh() {
   } = useAuthStore();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRefreshingRef = useRef(false);
+  const lastRefreshAttempt = useRef<number>(0);
 
   useEffect(() => {
     if (!isAuthenticated || !accessToken || !refreshToken) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       return;
     }
 
     const checkAndRefresh = async () => {
+      // Prevent multiple simultaneous refresh attempts
       if (isRefreshingRef.current) {
+        return;
+      }
+
+      // Prevent refresh attempts within 30 seconds of last attempt
+      const now = Date.now();
+      if (now - lastRefreshAttempt.current < 30000) {
         return;
       }
 
       if (isTokenExpiringSoon(accessToken, 300)) {
         try {
           isRefreshingRef.current = true;
+          lastRefreshAttempt.current = now;
 
           const response = await axios.post(
             `${API_BASE_URL}/auth/refresh-token`,
@@ -386,8 +395,10 @@ export function useTokenRefresh() {
       }
     };
 
+    // Check immediately on mount
     checkAndRefresh();
 
+    // Then check every 2 minutes
     intervalRef.current = setInterval(checkAndRefresh, 2 * 60 * 1000);
 
     return () => {

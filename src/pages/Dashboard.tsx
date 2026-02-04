@@ -14,6 +14,7 @@ import { showToast } from '../lib/showNotification';
 import { useAllOrders } from '../hooks/useOrders';
 import { useAllPayments } from '../hooks/usePayments';
 import { Payment } from '../lib/api/payment';
+import { useAuthStore } from '../lib/authStore';
 
 const PAGE_SIZE = 10;
 
@@ -175,6 +176,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 // ---------------------------------------------------------------------------
 export function Dashboard() {
   const { user, loading: authLoading, isAuthenticated, forgotPassword } = useAuthQuery();
+  const { isInitialized } = useAuthStore();
 
   const { deleteAddress } = useAddressMutate();
 
@@ -286,8 +288,7 @@ export function Dashboard() {
     setSelectedAddress(addr);
     setDelAddModal(true);
   };
-
-  if (authLoading || ordersLoading || defaultLoading) {
+  if (!isInitialized || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -297,6 +298,11 @@ export function Dashboard() {
       </div>
     );
   }
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
 
   const totalSpent = paymentsData
     ?.filter((p: Payment) => p.paymentType === 'FULL_PAYMENT' || p.paymentType === 'DEPOSIT')
@@ -343,7 +349,7 @@ export function Dashboard() {
           <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Welcome back, {user.profile.firstName || user.email.split('@')[0]}
+                Welcome back, {user?.profile?.firstName || user.email.split('@')[0]}
               </h1>
               <p className="text-gray-300 mt-1">Manage your vehicle imports</p>
             </div>
