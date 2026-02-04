@@ -119,7 +119,7 @@ function AppRoutes() {
       />
 
       <Route
-        path="/payment/verify"
+        path="/payment"
         element={
           <ProtectedRoute>
             <VerifyPaymentCallback />
