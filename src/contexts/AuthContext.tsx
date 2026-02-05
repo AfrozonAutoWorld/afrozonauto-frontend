@@ -1,5 +1,22 @@
+'use client';
+
 import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User } from '../types';
+
+function safeGetItem(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+}
+
+function safeSetItem(key: string, value: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, value);
+}
+
+function safeRemoveItem(key: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+}
 
 type AuthState = {
   user: User | null;
@@ -23,8 +40,8 @@ const AuthContext = createContext<{
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'LOGIN':
-      localStorage.setItem('accessToken', action.payload.accessToken);
-      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      safeSetItem('accessToken', action.payload.accessToken);
+      safeSetItem('refreshToken', action.payload.refreshToken);
       return {
         ...state,
         user: action.payload.user,
@@ -34,8 +51,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         loading: false,
       };
     case 'LOGOUT':
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      safeRemoveItem('accessToken');
+      safeRemoveItem('refreshToken');
       return {
         user: null,
         accessToken: null,
@@ -53,13 +70,21 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
-    accessToken: localStorage.getItem('accessToken'),
-    refreshToken: localStorage.getItem('refreshToken'),
+    accessToken: null,
+    refreshToken: null,
     isAuthenticated: false,
     loading: true,
   });
 
   useEffect(() => {
+    const accessToken = safeGetItem('accessToken');
+    const refreshToken = safeGetItem('refreshToken');
+    if (accessToken) {
+      dispatch({
+        type: 'LOGIN',
+        payload: { user: state.user!, accessToken, refreshToken: refreshToken || '' },
+      });
+    }
     dispatch({ type: 'SET_LOADING', payload: false });
   }, []);
 

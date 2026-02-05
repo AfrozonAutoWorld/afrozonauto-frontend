@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useRouter, usePathname } from 'next/navigation';
 import { authApi } from "../lib/api/auth";
 import { ApiError } from "../lib/api/client";
 import type { User } from "../types";
@@ -16,14 +16,14 @@ import { useAuthStore, isTokenExpiringSoon } from "../lib/authStore";
 import { useEffect, useRef } from "react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 const PROTECTED_ROUTES = ["/dashboard", "/request-details"];
 
 export function useAuthQuery() {
   const queryClient = useQueryClient();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const {
     setAuth,
     clearAuth,
@@ -35,7 +35,7 @@ export function useAuthQuery() {
   } = useAuthStore();
 
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    location.pathname.startsWith(route),
+    pathname.startsWith(route),
   );
 
   const { data, isLoading, error, refetch } = useQuery<User | null>({
@@ -91,7 +91,7 @@ export function useAuthQuery() {
   const forceLogout = () => {
     clearAuth();
     queryClient.removeQueries({ queryKey: ["auth", "user-id"] });
-    navigate("/login", { replace: true });
+    router.replace("/login");
   };
 
   const signInMutation = useMutation({
@@ -277,7 +277,7 @@ export function useAuthQuery() {
   const signOut = () => {
     clearAuth();
     queryClient.removeQueries({ queryKey: ["auth", "user"] });
-    navigate("/", { replace: true });
+    router.replace("/");
   };
 
   // Return the actual user - prefer query data, fallback to stored user

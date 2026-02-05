@@ -7,7 +7,7 @@ import axios, {
 import { useAuthStore } from "../authStore";
 import { isTokenExpiringSoon } from "../authStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 export class ApiError extends Error {
   constructor(
@@ -227,11 +227,13 @@ class ApiClient {
     const { clearAuth } = useAuthStore.getState();
     clearAuth();
 
-    const protectedRoutes = ["/dashboard", "/request-details"];
-    const currentPath = window.location.pathname;
+    if (typeof window !== 'undefined') {
+      const protectedRoutes = ["/dashboard", "/request-details"];
+      const currentPath = window.location.pathname;
 
-    if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
-      window.location.href = "/login";
+      if (protectedRoutes.some((route) => currentPath.startsWith(route))) {
+        window.location.href = "/login";
+      }
     }
   }
 

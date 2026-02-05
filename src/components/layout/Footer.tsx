@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Car, Mail, Phone, MapPin } from 'lucide-react';
 
 export function Footer() {
@@ -40,22 +40,22 @@ export function Footer() {
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/vehicles" className="hover:text-emerald-400 transition-colors">
+                <Link href="/vehicles" className="hover:text-emerald-400 transition-colors">
                   Browse Vehicles
                 </Link>
               </li>
               <li>
-                <Link to="/calculator" className="hover:text-emerald-400 transition-colors">
+                <Link href="/calculator" className="hover:text-emerald-400 transition-colors">
                   Price Calculator
                 </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="hover:text-emerald-400 transition-colors">
+                <Link href="/how-it-works" className="hover:text-emerald-400 transition-colors">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:text-emerald-400 transition-colors">
+                <Link href="/faq" className="hover:text-emerald-400 transition-colors">
                   FAQs
                 </Link>
               </li>
@@ -66,17 +66,17 @@ export function Footer() {
             <h3 className="text-white font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/terms" className="hover:text-emerald-400 transition-colors">
+                <Link href="/terms" className="hover:text-emerald-400 transition-colors">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="hover:text-emerald-400 transition-colors">
+                <Link href="/privacy" className="hover:text-emerald-400 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/refund-policy" className="hover:text-emerald-400 transition-colors">
+                <Link href="/refund-policy" className="hover:text-emerald-400 transition-colors">
                   Refund Policy
                 </Link>
               </li>

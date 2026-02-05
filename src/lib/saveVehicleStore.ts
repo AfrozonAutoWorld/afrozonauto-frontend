@@ -8,6 +8,7 @@ const STORAGE_KEY = "afrozon_saved_vehicles";
 
 export const savedVehiclesStore = {
   getSavedVehicleIds(): Set<string> {
+    if (typeof window === 'undefined') return new Set();
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return new Set();
@@ -21,6 +22,7 @@ export const savedVehiclesStore = {
   },
 
   getSavedVehicles(): SavedVehicleInfo[] {
+    if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return [];
@@ -32,6 +34,7 @@ export const savedVehiclesStore = {
   },
 
   addSavedVehicle(id: string, vin: string): void {
+    if (typeof window === 'undefined') return;
     try {
       const vehicles = this.getSavedVehicles();
 
@@ -52,6 +55,7 @@ export const savedVehiclesStore = {
   },
 
   removeSavedVehicle(id: string): void {
+    if (typeof window === 'undefined') return;
     try {
       const vehicles = this.getSavedVehicles();
       const filtered = vehicles.filter((v) => v.id !== id);

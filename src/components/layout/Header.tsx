@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Menu, X, Car, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuthQuery } from '../../hooks/useAuth';
 
@@ -8,11 +9,11 @@ export function Header() {
   const { user, signOut } = useAuthQuery();
 
 
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    router.push('/');
   };
 
   return (
@@ -20,7 +21,7 @@ export function Header() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
                 <Car className="w-6 h-6 text-white" />
               </div>
@@ -32,20 +33,20 @@ export function Header() {
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/vehicles" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/vehicles" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               Browse Vehicles
             </Link>
-            <Link to="/calculator" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/calculator" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               Price Calculator
             </Link>
-            <Link to="/how-it-works" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/how-it-works" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               How It Works
             </Link>
 
             {user ? (
               <div className="flex items-center gap-4">
                 <Link
-                  to="/dashboard"
+                  href="/dashboard"
                   className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
                 >
                   <LayoutDashboard className="w-5 h-5" />
@@ -65,13 +66,13 @@ export function Header() {
             ) : (
               <div className="flex items-center gap-3">
                 <Link
-                  to="/login"
+                  href="/login"
                   className="text-gray-600 hover:text-emerald-600 font-medium transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  to="/onboarding"
+                  href="/onboarding"
                   className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
                 >
                   Get Started
@@ -94,21 +95,21 @@ export function Header() {
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col gap-4">
               <Link
-                to="/vehicles"
+                href="/vehicles"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Browse Vehicles
               </Link>
               <Link
-                to="/calculator"
+                href="/calculator"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Price Calculator
               </Link>
               <Link
-                to="/how-it-works"
+                href="/how-it-works"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -118,7 +119,7 @@ export function Header() {
               {user ? (
                 <>
                   <Link
-                    to="/dashboard"
+                    href="/dashboard"
                     className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -140,14 +141,14 @@ export function Header() {
               ) : (
                 <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
                   <Link
-                    to="/login"
+                    href="/login"
                     className="text-gray-600 hover:text-emerald-600 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link
-                    to="/onbaording"
+                    href="/onboarding"
                     className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium text-center hover:bg-emerald-700"
                     onClick={() => setMobileMenuOpen(false)}
                   >

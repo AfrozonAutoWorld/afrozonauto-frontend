@@ -4,12 +4,12 @@ import { ordersApi, RequestVehicle, VehicleOrder } from "../lib/api/orders";
 import type { Vehicle } from "../types/";
 import { showToast } from "../lib/showNotification";
 import { ApiError } from "../lib/api/client";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { savedVehiclesStore } from "../lib/saveVehicleStore";
 
 export const useRequestOrderVehicle = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -30,9 +30,7 @@ export const useRequestOrderVehicle = () => {
           message: "Request sent successfully!",
         });
 
-        navigate("/dashboard", {
-          state: { newRequest: requestNumber },
-        });
+        router.push("/dashboard");
       }
     },
 

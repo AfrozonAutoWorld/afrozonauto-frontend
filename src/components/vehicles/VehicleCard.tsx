@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { MapPin, Calendar, Heart, ArrowRight } from 'lucide-react';
 import { Vehicle } from '../../types';
 import { formatCurrency } from '../../lib/pricingCalculator';
@@ -115,7 +115,7 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
           </div>
 
           <Link
-            to={`/vehicles/${vehicle.id}`}
+            href={`/vehicles/${vehicle.id}`}
             className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 transition-colors"
           >
             View Details
