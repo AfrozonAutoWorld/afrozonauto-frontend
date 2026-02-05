@@ -16,8 +16,6 @@ import {
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
-import { useCreateSavePayload, useSavedVehicles, useSaveVehicle } from '../hooks/useVehicleMutate';
-import { showToast } from '../lib/showNotification';
 import { useAuthQuery } from '../hooks/useAuth';
 import { useCostBreakdown } from '../hooks/useOrders';
 
@@ -29,43 +27,7 @@ export function VehicleDetail() {
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
-  const vehicleId = vehicle ? vehicle.id : '';
   const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
-
-
-  const { isVehicleSaved } = useSavedVehicles();
-  const { mutate: saveVehicle } = useSaveVehicle();
-  const createSavePayload = useCreateSavePayload();
-
-
-  // Update isSaved when vehicle data loads
-  const isSaved = vehicle ? isVehicleSaved(vehicle.id) : false;
-
-  const handleSaveVehicle = () => {
-    if (vehicle) return;
-    if (!user) {
-      showToast({
-        type: "error",
-        message: "You must be logged in to save vehicles",
-      });
-      navigate('/login', { state: { from: `/vehicles/${vehicleId}` } });
-      return;
-    }
-
-    if (!vehicle) return;
-
-    if (isSaved) {
-      showToast({
-        type: "info",
-        message: "Vehicle already saved",
-      });
-      return;
-    }
-
-    // Create payload and call API
-    const payload = createSavePayload(vehicle);
-    saveVehicle(payload);
-  };
 
   if (isLoading) {
     return (

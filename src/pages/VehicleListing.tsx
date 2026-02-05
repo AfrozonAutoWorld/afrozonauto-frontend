@@ -89,9 +89,6 @@ export function VehicleListing() {
     );
   }
 
-  const currentPageStart = ((filters.page || 1) - 1) * (filters.limit || 50) + 1;
-  const currentPageEnd = Math.min((filters.page || 1) * (filters.limit || 50), meta?.total || 0);
-
   const vehiclesOnPage = vehicles.length;
 
   const totalVehicles =

@@ -222,7 +222,8 @@ export function useAuthQuery() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (data: ResetPasswordInput) => authApi.resetPassword(data),
+    mutationFn: ({ confirmPassword: _, ...resetData }: ResetPasswordInput) =>
+      authApi.resetPassword(resetData),
 
     onSuccess: () => {
       sessionStorage.removeItem("reset_email");

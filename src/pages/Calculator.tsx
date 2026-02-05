@@ -15,7 +15,7 @@ const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COU
 export function Calculator() {
   const [vehiclePrice, setVehiclePrice] = useState<number>(20000);
   const [vehicleType, setVehicleType] = useState<VehicleType>('SUV');
-  const [shippingMethod, setShippingMethod] = useState<'RoRo' | 'Container'>('RoRo');
+  const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER'>('RORO');
   const [destinationState, setDestinationState] = useState('Lagos');
 
   const result = calculateLandedCost(vehiclePrice, vehicleType, shippingMethod);
@@ -111,14 +111,14 @@ export function Calculator() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <button
-                    onClick={() => setShippingMethod('RoRo')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'RoRo'
+                    onClick={() => setShippingMethod('RORO')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'RORO'
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Ship className={`w-6 h-6 ${shippingMethod === 'RoRo' ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      <Ship className={`w-6 h-6 ${shippingMethod === 'RORO' ? 'text-emerald-600' : 'text-gray-400'}`} />
                       <span className="font-semibold text-gray-900">RoRo</span>
                     </div>
                     <p className="text-sm text-gray-500">Roll-on/Roll-off</p>
@@ -126,14 +126,14 @@ export function Calculator() {
                   </button>
 
                   <button
-                    onClick={() => setShippingMethod('Container')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'Container'
+                    onClick={() => setShippingMethod('CONTAINER')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'CONTAINER'
                         ? 'border-emerald-500 bg-emerald-50'
                         : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <Truck className={`w-6 h-6 ${shippingMethod === 'Container' ? 'text-emerald-600' : 'text-gray-400'}`} />
+                      <Truck className={`w-6 h-6 ${shippingMethod === 'CONTAINER' ? 'text-emerald-600' : 'text-gray-400'}`} />
                       <span className="font-semibold text-gray-900">Container</span>
                     </div>
                     <p className="text-sm text-gray-500">Full container</p>

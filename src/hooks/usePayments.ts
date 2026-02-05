@@ -10,8 +10,6 @@ import { showToast } from "../lib/showNotification";
 import { ApiError } from "../lib/api/client";
 
 export function useAllPayments() {
-  const queryClient = useQueryClient();
-
   const queryResult = useQuery<Payment[], Error>({
     queryKey: ["payments"],
     queryFn: async () => {

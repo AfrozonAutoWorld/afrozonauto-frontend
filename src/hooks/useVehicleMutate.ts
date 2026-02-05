@@ -90,7 +90,7 @@ export function useSaveVehicle() {
       return { tempId };
     },
 
-    onSuccess: (savedVehicle, payload, context) => {
+    onSuccess: (savedVehicle, _payload, context) => {
       // Update localStorage with actual vehicle ID from server
       if (context?.tempId && savedVehicle.id !== context.tempId) {
         savedVehiclesStore.removeSavedVehicle(context.tempId);
@@ -106,7 +106,7 @@ export function useSaveVehicle() {
       });
     },
 
-    onError: (error: Error, payload, context) => {
+    onError: (error: Error, _payload, context) => {
       // Rollback localStorage on error
       if (context?.tempId) {
         savedVehiclesStore.removeSavedVehicle(context.tempId);

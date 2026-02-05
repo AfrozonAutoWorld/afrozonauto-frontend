@@ -44,6 +44,7 @@ export const resetPasswordSchema = z.object({
   email: z.string().email("Invalid email"),
   token: z.string().min(6, "Token is required"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
 });
 
 export const addressSchema = z.object({

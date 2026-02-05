@@ -1,6 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User } from '../types';
-import { authApi } from '../lib/api/auth';
 
 type AuthState = {
   user: User | null;
@@ -61,20 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          const user = await authApi.getCurrentUser();
-          dispatch({ type: 'LOGIN', payload: { user, accessToken: token, refreshToken: token } });
-        } catch {
-          dispatch({ type: 'LOGOUT' });
-        }
-      }
-      dispatch({ type: 'SET_LOADING', payload: false });
-    };
-
-    initAuth();
+    dispatch({ type: 'SET_LOADING', payload: false });
   }, []);
 
   const login = (user: User, accessToken: string, refreshToken: string) => {

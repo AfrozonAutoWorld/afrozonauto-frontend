@@ -109,7 +109,7 @@ export const authApi = {
     return apiClient.post("/auth/forgot-password", data);
   },
 
-  resetPassword: async (data: ResetPasswordInput): Promise<any> => {
+  resetPassword: async (data: Omit<ResetPasswordInput, 'confirmPassword'>): Promise<any> => {
     return apiClient.post("/auth/reset-password", data);
   },
 };

@@ -16,7 +16,7 @@ export function ResetPasswordModal({ onClose, onSuccess }: Props) {
 
   const form = useForm({
     schema: resetPasswordSchema,
-    initialValues: { email: '', token: '', newPassword: '' },
+    initialValues: { email: '', token: '', newPassword: '', confirmPassword: '' },
     onSubmit: async (values) => {
       try {
         await resetPassword(values);

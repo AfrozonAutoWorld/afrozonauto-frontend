@@ -209,7 +209,7 @@ export function Dashboard() {
 
   const {
     orders,
-    isLoading: ordersLoading,
+    isLoading: _ordersLoading,
     isError: ordersError
   } = useAllOrders();
 

@@ -1,4 +1,4 @@
-import type { Vehicle, VehicleType } from '../types';
+import type { VehicleType } from '../types';
 
 const vehicleImages: Record<string, string[]> = {
   'Toyota Camry': [
@@ -71,7 +71,7 @@ const vehicleData: Array<{
   {
     make: 'Toyota',
     model: 'Camry',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 18000,
     features: ['Backup Camera', 'Bluetooth', 'Lane Departure Warning', 'Adaptive Cruise Control'],
   },
@@ -85,7 +85,7 @@ const vehicleData: Array<{
   {
     make: 'Toyota',
     model: 'Corolla',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 15000,
     features: ['Fuel Efficient', 'Backup Camera', 'Bluetooth', 'USB Ports'],
   },
@@ -99,7 +99,7 @@ const vehicleData: Array<{
   {
     make: 'Honda',
     model: 'Accord',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 20000,
     features: ['Honda Sensing', 'Wireless Charging', 'LED Headlights', 'Remote Start'],
   },
@@ -113,7 +113,7 @@ const vehicleData: Array<{
   {
     make: 'Honda',
     model: 'Civic',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 16000,
     features: ['Sport Mode', 'Backup Camera', 'Bluetooth', 'Collision Warning'],
   },
@@ -127,7 +127,7 @@ const vehicleData: Array<{
   {
     make: 'Ford',
     model: 'F-150',
-    type: 'Truck',
+    type: 'TRUCK',
     basePrice: 35000,
     features: ['EcoBoost Engine', 'Pro Trailer Backup', 'SYNC 4', 'Bed Liner'],
   },
@@ -148,7 +148,7 @@ const vehicleData: Array<{
   {
     make: 'Chevrolet',
     model: 'Silverado 1500',
-    type: 'Truck',
+    type: 'TRUCK',
     basePrice: 36000,
     features: ['Durabed', 'Trailering Package', 'MyLink Infotainment', 'Rear Camera'],
   },
@@ -162,7 +162,7 @@ const vehicleData: Array<{
   {
     make: 'BMW',
     model: '3 Series',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 32000,
     features: ['M Sport Package', 'iDrive 7.0', 'Live Cockpit', 'Harman Kardon Audio'],
   },
@@ -176,7 +176,7 @@ const vehicleData: Array<{
   {
     make: 'Mercedes-Benz',
     model: 'E-Class',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 45000,
     features: ['AMG Line', 'MBUX', 'Burmester Audio', 'Air Body Control'],
   },
@@ -197,14 +197,14 @@ const vehicleData: Array<{
   {
     make: 'Lexus',
     model: 'ES 350',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 38000,
     features: ['F Sport Package', 'Navigation', 'Premium Audio', 'Memory Seats'],
   },
   {
     make: 'Nissan',
     model: 'Altima',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 17000,
     features: ['ProPILOT Assist', 'Safety Shield 360', 'Bose Audio', 'Dual Zone Climate'],
   },
@@ -218,7 +218,7 @@ const vehicleData: Array<{
   {
     make: 'Hyundai',
     model: 'Sonata',
-    type: 'Sedan',
+    type: 'SEDAN',
     basePrice: 19000,
     features: ['SmartSense', 'Wireless Android Auto', 'Digital Key', 'Highway Driving Assist'],
   },
@@ -260,7 +260,7 @@ const vehicleData: Array<{
   {
     make: 'Subaru',
     model: 'Outback',
-    type: 'Wagon',
+    type: 'WAGON',
     basePrice: 28000,
     features: ['Symmetrical AWD', 'EyeSight', 'X-Mode', 'StarLink'],
   },
@@ -307,13 +307,13 @@ const dealers = [
   'Carvana',
 ];
 
-const transmissions = ['Automatic', 'CVT', 'Manual'];
+const transmissions: ('Automatic' | 'Manual')[] = ['Automatic', 'Manual'];
 const fuelTypes = ['Gasoline', 'Hybrid', 'Diesel'];
 const colors = ['White', 'Black', 'Silver', 'Gray', 'Blue', 'Red', 'Brown', 'Green'];
 const engineSizes = ['1.5L', '2.0L', '2.4L', '2.5L', '3.0L', '3.5L', '5.0L'];
 
-export function generateMockVehicles(count: number = 50): Vehicle[] {
-  const vehicles: Vehicle[] = [];
+export function generateMockVehicles(count: number = 50): any[] {
+  const vehicles: any[] = [];
   const currentYear = new Date().getFullYear();
 
   for (let i = 0; i < count; i++) {
@@ -345,7 +345,7 @@ export function generateMockVehicles(count: number = 50): Vehicle[] {
       dealer_city: city,
       images: getVehicleImages(vehicleInfo.make, vehicleInfo.model),
       features: vehicleInfo.features,
-      source: 'LicensedAPI',
+      source: 'API',
       status: 'AVAILABLE',
       api_listing_id: `API-${generateUUID().substring(0, 8)}`,
       created_at: new Date().toISOString(),
