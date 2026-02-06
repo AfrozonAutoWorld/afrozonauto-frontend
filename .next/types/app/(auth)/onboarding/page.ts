@@ -1,4 +1,4 @@
-// File: /home/project/src/app/(auth)/onboarding/page.tsx
+// File: C:\Users\HP\Desktop\Freelance\afrozonauto-frontend\src\app\(auth)\onboarding\page.tsx
 import * as entry from '../../../../../src/app/(auth)/onboarding/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
