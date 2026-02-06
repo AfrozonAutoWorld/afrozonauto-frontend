@@ -1,20 +1,24 @@
+'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, Car, LogOut, LayoutDashboard } from 'lucide-react';
-import { useAuthQuery } from '../../hooks/useAuth';
+import { Menu, X, Car, LogOut, LayoutDashboard, Store, ShieldCheck } from 'lucide-react';
+import { useAuthQuery } from '@/hooks/useAuth';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuthQuery();
-
-
   const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
   };
+
+  const isSeller = user?.role === 'SELLER' || user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -44,16 +48,36 @@ export function Header() {
             </Link>
 
             {user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {isSeller && (
+                  <Link
+                    href="/seller"
+                    className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
+                  >
+                    <Store className="w-4 h-4" />
+                    <span className="text-sm font-medium">Sell</span>
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-sm font-medium">Admin</span>
+                  </Link>
+                )}
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                  className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
                 >
-                  <LayoutDashboard className="w-5 h-5" />
-                  <span>Dashboard</span>
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="text-sm font-medium">Dashboard</span>
                 </Link>
 
-                <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+                <NotificationBell />
+
+                <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
                   <span className="text-sm text-gray-600">{user?.profile?.firstName || user.email}</span>
                   <button
                     onClick={handleSignOut}
@@ -81,7 +105,8 @@ export function Header() {
             )}
           </div>
 
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center gap-2">
+            {user && <NotificationBell />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600"
@@ -118,6 +143,26 @@ export function Header() {
 
               {user ? (
                 <>
+                  {isSeller && (
+                    <Link
+                      href="/seller"
+                      className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Store className="w-5 h-5" />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <ShieldCheck className="w-5 h-5" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
                   <Link
                     href="/dashboard"
                     className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
@@ -126,7 +171,6 @@ export function Header() {
                     <LayoutDashboard className="w-5 h-5" />
                     <span>Dashboard</span>
                   </Link>
-
                   <button
                     onClick={() => {
                       handleSignOut();

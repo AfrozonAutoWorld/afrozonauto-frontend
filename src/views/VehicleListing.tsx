@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Search, Grid, List, ChevronDown, AlertCircle } from 'lucide-react';
+import { Search, Grid, List, ChevronDown, AlertCircle, Store } from 'lucide-react';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
 import { VehicleFilters } from '../components/vehicles/VehicleFilters';
+import { MarketplaceVehicleCard } from '../components/marketplace/MarketplaceVehicleCard';
 import { useVehicles } from '../hooks/useVehicles';
+import { useMarketplaceVehicles } from '../hooks/useMarketplace';
 import type { VehicleFilters as VehicleFilterType } from '../types';
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'year_desc' | 'mileage_asc';
 
 export function VehicleListing() {
+  const { data: marketplaceVehicles } = useMarketplaceVehicles();
   const [filters, setFilters] = useState<VehicleFilterType>({
     page: 1,
     limit: 50,
@@ -131,9 +134,25 @@ export function VehicleListing() {
         </div>
       </div>
 
+      {marketplaceVehicles && marketplaceVehicles.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Store className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-xl font-bold text-gray-900">Marketplace Listings</h2>
+            <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-0.5 rounded-full">
+              {marketplaceVehicles.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+            {marketplaceVehicles.map((v) => (
+              <MarketplaceVehicleCard key={v.id} vehicle={v} />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
             <VehicleFilters
               filters={filters}
@@ -142,7 +161,7 @@ export function VehicleListing() {
             />
           </div>
 
-          {/* Main Content */}
+
           <div className="flex-1">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
