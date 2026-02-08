@@ -16,13 +16,14 @@ import {
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
-import { useAuthQuery } from '../hooks/useAuth';
-import { useCostBreakdown } from '../hooks/useOrders';
+import { useSession } from 'next-auth/react';
+import { useCostBreakdown } from '@/hooks/useOrderQueries';
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuthQuery();
+  const { data: session } = useSession();
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
 
@@ -77,12 +78,12 @@ export function VehicleDetail() {
   }
 
   const handleRequestVehicle = () => {
-    if (!user) {
+    if (!session?.user) {
       router.push('/login');
       return;
     }
 
-    router.push(`/request/${vehicle.id}`);
+    router.push(`/marketplace/${vehicle.id}`);
   };
 
 

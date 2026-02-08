@@ -6,8 +6,10 @@ declare module "next-auth" {
     email: string;
     emailVerified: boolean;
     fullName: string | null;
+    firstName?: string;
+    lastName?: string;
     phone: string | null;
-    role: "SUPER_ADMIN" | "ADMIN" | "OPERATION" | "BUYER";
+    role: UserRole;
     isActive: boolean;
     isSuspended: boolean;
     googleId: string;
@@ -19,13 +21,40 @@ declare module "next-auth" {
     currency: string;
     language: string;
     timezone: string;
-    notificationPreferences: string | null;
-    lastLoginAt: string;
+    notificationPreferences: NotificationPreferences | null;
+    lastLoginAt: string | null;
     createdAt: string;
     updatedAt: string;
     online: boolean;
-    accessToken: string;
-    refreshToken: string;
+
+    // Optional fields that might be added later
+    address: string | null;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+    avatar?: string;
+    dateOfBirth?: string;
+    gender?: "male" | "female" | "other" | "prefer_not_to_say";
+    phoneVerified?: boolean;
+    twoFactorEnabled?: boolean;
+    profile: {
+      id: string;
+      userId: string;
+      avatar: string | null;
+      dateOfBirth: string | null;
+      identificationNumber: string | null;
+      identificationType: string | null;
+      identificationDocument: string | null;
+      businessName: string | null;
+      taxId: string | null;
+      isVerified: boolean;
+      verifiedAt: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      createdAt: string;
+      updatedAt: string;
+    };
   }
 
   interface Session {

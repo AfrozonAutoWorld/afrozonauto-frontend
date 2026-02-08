@@ -4,13 +4,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, X, Car, LogOut, LayoutDashboard, Store, ShieldCheck } from 'lucide-react';
-import { useAuthQuery } from '@/hooks/useAuth';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { signOut, useSession } from 'next-auth/react';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuthQuery();
+  const { data: session } = useSession();
   const router = useRouter();
+
+  const user = session?.user;
 
   const handleSignOut = async () => {
     await signOut();
@@ -37,7 +39,7 @@ export function Header() {
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/vehicles" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/marketplace" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               Browse Vehicles
             </Link>
             <Link href="/calculator" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">

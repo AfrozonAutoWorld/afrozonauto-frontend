@@ -88,7 +88,7 @@ export const vehiclesApi = {
         `/vehicles${queryString}`,
       );
 
-      return transformVehiclesResponse(response);
+      return transformVehiclesResponse(response.data);
     } catch (error) {
       console.error("Error fetching vehicles:", error);
       throw new Error("Failed to fetch vehicles");

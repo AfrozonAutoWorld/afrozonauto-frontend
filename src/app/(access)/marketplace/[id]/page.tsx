@@ -1,11 +1,7 @@
-import React from 'react'
+'use client';
 
-const page = () => {
-  return (
-    <div>
-      Vehicle detail page
-    </div>
-  )
+import { VehicleDetail } from '@/views/VehicleDetail';
+
+export default function VehicleDetailPage() {
+  return <VehicleDetail />;
 }
-
-export default page

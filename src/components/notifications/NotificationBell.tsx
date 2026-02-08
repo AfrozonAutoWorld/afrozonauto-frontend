@@ -4,10 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useUnreadNotifications, useMarkNotificationRead } from '@/hooks/useMarketplace';
-import { useAuthStore } from '@/lib/authStore';
+import { useSession } from 'next-auth/react';
+
 
 export function NotificationBell() {
-  const { isAuthenticated } = useAuthStore();
+  const { status } = useSession();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: notifications } = useUnreadNotifications();
@@ -25,7 +26,7 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  if (!isAuthenticated) return null;
+  if (status === "unauthenticated") return null;
 
   const handleMarkAllRead = () => {
     markRead.mutate('all');

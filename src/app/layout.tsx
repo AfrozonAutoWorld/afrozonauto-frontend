@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Providers } from './providers';
 import './globals.css';
 import ReactQueryProvider from '@/providers/QueryProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from 'sonner';
+import { Providers } from '@/providers/SessionProvider';
 
 export const metadata: Metadata = {
   title: 'Afrozon AutoGlobal - Import Verified US Vehicles to Nigeria',
@@ -25,7 +25,7 @@ export default function RootLayout({
             <Header />
             <main className="flex-1 overflow-y-auto bg-background">
               {children}
-              <Toaster />
+              <Toaster position='top-left' richColors />
             </main>
             <Footer />
           </ReactQueryProvider>

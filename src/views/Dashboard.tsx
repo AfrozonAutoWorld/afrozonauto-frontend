@@ -6,17 +6,16 @@ import {
   ChevronRight, ChevronLeft, AlertCircle, FileText, Truck, MapPin,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
-import { useAuthQuery } from '../hooks/useAuth';
 import { useAddressMutate, useGetAddresses, useGetDefaultAddress } from '../hooks/useAddress';
 import { AddAddressModal } from './AddAddressModal';
 import { ResetPasswordModal } from './ResetPasswordModal';
 import { UpdateAddressModal } from './UpdateAddressModal';
 import { showToast } from '../lib/showNotification';
-
-import { useAllOrders } from '../hooks/useOrders';
-import { useAllPayments } from '../hooks/usePayments';
-import { Payment } from '../lib/api/payment';
-import { useAuthStore } from '../lib/authStore';
+import { useOrders } from '@/hooks/useOrderQueries';
+import { usePayments } from '@/hooks/usePaymentQuery';
+import { useSession } from 'next-auth/react';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
+import { Payment } from '@/lib/api/payment';
 
 const PAGE_SIZE = 10;
 
@@ -178,9 +177,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 // ---------------------------------------------------------------------------
 export function Dashboard() {
   const router = useRouter();
-  const { user, loading: authLoading, isAuthenticated, forgotPassword } = useAuthQuery();
-  const { isInitialized } = useAuthStore();
-
+  const { data: session, status } = useSession();
+  const token = session?.accessToken
+  const user = session?.user
   const { deleteAddress } = useAddressMutate();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'saved' | 'payments' | 'profile'>('requests');
@@ -214,14 +213,15 @@ export function Dashboard() {
     orders,
     isLoading: _ordersLoading,
     isError: ordersError
-  } = useAllOrders();
+  } = useOrders();
 
   const {
-    allPayments: paymentsData,
+    payments: paymentsData,
     isLoading: paymentsLoading,
     isError: paymentsError,
     refetch: refetchPayments,
-  } = useAllPayments();
+  } = usePayments();
+  const { forgotPassword } = useAuthMutations();
 
   const primaryDefault = Array.isArray(defaultAddresses) && defaultAddresses.length > 0
     ? defaultAddresses[0]
@@ -266,21 +266,11 @@ export function Dashboard() {
 
   // ---------------------------------------------------------------------------
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, user, router]);
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
   const handleConfirmChangePassword = async () => {
-    if (!user?.email) return;
+    if (!session?.user.email) return;
     try {
       setChangingPassword(true);
-      await forgotPassword({ email: user.email });
+      await forgotPassword({ email: session?.user?.email });
       setShowConfirmModal(false);
       setShowResetPasswordModal(true);
     } finally {
@@ -297,7 +287,9 @@ export function Dashboard() {
     setSelectedAddress(addr);
     setDelAddModal(true);
   };
-  if (!isInitialized || authLoading) {
+
+
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -308,7 +300,7 @@ export function Dashboard() {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!token) {
     return null;
   }
 
@@ -358,7 +350,7 @@ export function Dashboard() {
           <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Welcome back, {user?.profile?.firstName || user.email.split('@')[0]}
+                Welcome back, {user?.profile?.firstName || user?.email.split('@')[0]}
               </h1>
               <p className="text-gray-300 mt-1">Manage your vehicle imports</p>
             </div>
@@ -744,7 +736,9 @@ export function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" value={user.fullName || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
+                    <input type="text" value={user?.profile?.firstName || ''} readOnly
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
+
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>

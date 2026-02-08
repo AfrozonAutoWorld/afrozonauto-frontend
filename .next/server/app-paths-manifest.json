@@ -1,23 +1,4 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/(auth)/complete-profile/page": "app/(auth)/complete-profile/page.js",
-  "/(auth)/forgot-password/page": "app/(auth)/forgot-password/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(auth)/onboarding/page": "app/(auth)/onboarding/page.js",
-  "/(auth)/reset-password/page": "app/(auth)/reset-password/page.js",
-  "/(auth)/verify/page": "app/(auth)/verify/page.js",
-  "/payment/page": "app/payment/page.js",
-  "/(site)/dashboard/page": "app/(site)/dashboard/page.js",
-  "/(site)/calculator/page": "app/(site)/calculator/page.js",
-  "/(site)/how-it-works/page": "app/(site)/how-it-works/page.js",
-  "/(site)/marketplace/[id]/page": "app/(site)/marketplace/[id]/page.js",
-  "/(site)/marketplace/request/[id]/page": "app/(site)/marketplace/request/[id]/page.js",
-  "/(site)/request-details/[id]/page": "app/(site)/request-details/[id]/page.js",
-  "/(site)/page": "app/(site)/page.js",
-  "/(site)/request/[id]/page": "app/(site)/request/[id]/page.js",
-  "/(site)/seller/page": "app/(site)/seller/page.js",
-  "/(site)/seller/vehicles/new/page": "app/(site)/seller/vehicles/new/page.js",
-  "/(site)/seller/vehicles/[id]/edit/page": "app/(site)/seller/vehicles/[id]/edit/page.js",
-  "/(site)/vehicles/[id]/page": "app/(site)/vehicles/[id]/page.js",
-  "/(site)/vehicles/page": "app/(site)/vehicles/page.js"
+  "/page": "app/page.js"
 }
