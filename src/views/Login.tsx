@@ -5,21 +5,75 @@ import { Car, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
 import { loginSchema } from '../lib/validation/auth.schema';
 import { useAuthQuery } from '../hooks/useAuth';
+import { signIn, useSession } from "next-auth/react";
+import { showToast } from '@/lib/showNotification';
+
 
 export function Login() {
   const router = useRouter();
-  const { signIn } = useAuthQuery();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
 
   const form = useForm({
     schema: loginSchema,
     initialValues: { email: '', password: '' },
     onSubmit: async (values) => {
+      setIsLoading(true);
       try {
-        await signIn(values);
-        router.push('/dashboard');
-      } catch (error) {
-        console.error('Login failed:', error);
+        const res = await signIn("credentials", {
+          redirect: false,
+          email: values.email,
+          password: values.password,
+        });
+
+        if (!res) {
+          throw new Error("No response from server");
+        }
+
+        if (res.error === "CredentialsSignin") {
+          setError("Invalid email or password");
+          showToast({
+            type: "error",
+            message: "Invalid email or password",
+            duration: 8000,
+          });
+        } else if (res.error) {
+          setError(res.error);
+          showToast({
+            type: "error",
+            message: res.error || "Unexpected server error",
+            duration: 8000,
+          });
+        } else {
+          showToast({
+            type: "success",
+            message: "Login Successful",
+            duration: 3000,
+          });
+          // The useEffect above will handle the redirect
+        }
+      } catch (error: unknown) {
+
+        console.error("Login failed:", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unexpected error occurred";
+
+        const errorMessage = message.includes("Network")
+          ? "Network error. Please check your internet connection."
+          : message;
+
+        setError(errorMessage);
+        showToast({
+          type: "error",
+          message: errorMessage,
+          duration: 8000,
+        });
+      } finally {
+        setIsLoading(false);
       }
     },
   });

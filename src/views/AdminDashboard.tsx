@@ -345,19 +345,17 @@ export function AdminDashboard() {
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className={`p-2 rounded-lg ${
-                        item.type === 'vehicle'
+                      className={`p-2 rounded-lg ${item.type === 'vehicle'
                           ? 'bg-emerald-100'
                           : 'bg-blue-100'
-                      }`}
+                        }`}
                     >
                       {item.type === 'vehicle' ? (
                         <Car
-                          className={`w-4 h-4 ${
-                            item.type === 'vehicle'
+                          className={`w-4 h-4 ${item.type === 'vehicle'
                               ? 'text-emerald-600'
                               : 'text-blue-600'
-                          }`}
+                            }`}
                         />
                       ) : (
                         <ClipboardList className="w-4 h-4 text-blue-600" />
