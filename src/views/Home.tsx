@@ -153,14 +153,14 @@ export function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                href="/vehicles"
+                href="/marketplace"
                 className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-emerald-500 transition-colors"
               >
                 Browse Vehicles
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                href="/calculator"
+                href="/marketplace/calculator"
                 className="inline-flex items-center justify-center gap-2 bg-white/10 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-colors border border-white/20"
               >
                 Calculate Import Cost
@@ -226,7 +226,7 @@ export function Home() {
 
           <div className="text-center mt-10">
             <Link
-              href="/vehicles"
+              href="/marketplace"
               className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-emerald-600 transition-colors"
             >
               View All Vehicles
@@ -323,7 +323,7 @@ export function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/vehicles"
+              href="/marketplace"
               className="inline-flex items-center justify-center gap-2 bg-white text-emerald-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors"
             >
               Start Browsing

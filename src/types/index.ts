@@ -305,11 +305,6 @@ export interface VehicleMakesResponse {
   data: string[];
 }
 
-export interface VehicleModelsResponse {
-  success: boolean;
-  data: string[];
-}
-
 export interface SavedVehicle {
   id: string;
   user_id: string;

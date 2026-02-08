@@ -1,9 +1,11 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { Search, Grid, List, ChevronDown, AlertCircle, Store } from 'lucide-react';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
 import { VehicleFilters } from '../components/vehicles/VehicleFilters';
 import { MarketplaceVehicleCard } from '../components/marketplace/MarketplaceVehicleCard';
-import { useVehicles } from '../hooks/useVehicles';
+import { useVehiclesWithPagination } from '../hooks/useVehicles';
 import { useMarketplaceVehicles } from '../hooks/useMarketplace';
 import type { VehicleFilters as VehicleFilterType } from '../types';
 
@@ -11,12 +13,12 @@ type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'year_desc' | 'mileage
 
 export function VehicleListing() {
   const { data: marketplaceVehicles } = useMarketplaceVehicles();
-  const [filters, setFilters] = useState<VehicleFilterType>({
-    page: 1,
-    limit: 50,
+
+  const [baseFilters, setBaseFilters] = useState<Omit<VehicleFilterType, 'page' | 'limit'>>({
     includeApi: true,
     status: 'AVAILABLE',
   });
+
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -33,43 +35,50 @@ export function VehicleListing() {
 
   // Update filters when search or sort changes
   useEffect(() => {
-    setFilters(prev => ({
+    setBaseFilters(prev => ({
       ...prev,
       search: debouncedSearch || undefined,
       sortBy: sortBy === 'newest' ? 'createdAt' :
         sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' :
           sortBy === 'year_desc' ? 'year' : 'mileage',
       sortOrder: sortBy === 'price_desc' || sortBy === 'year_desc' ? 'desc' : 'asc',
-      page: 1, // Reset to first page on filter change
     }));
   }, [debouncedSearch, sortBy]);
 
-  const { vehicles, meta, isLoading, isError, error, refetch } = useVehicles(filters);
-
-
-  const handlePageChange = (newPage: number) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
+  // Use the new pagination hook
+  const {
+    vehicles,
+    meta,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    currentPage,
+    totalPages,
+    goToPage,
+    nextPage,
+    prevPage,
+    hasNextPage,
+    hasPrevPage,
+    resetPagination,
+  } = useVehiclesWithPagination(baseFilters);
 
   const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
-    setFilters(prev => ({
+    setBaseFilters(prev => ({
       ...prev,
       ...newFilters,
-      page: 1,
     }));
+    resetPagination(); // Reset to page 1 when filters change
   };
 
   const handleClearFilters = () => {
-    setSearchQuery(''); // Clear the search bar
-    setSortBy('newest'); // Reset sort
-    setFilters({
-      page: 1,
-      limit: 50,
+    setSearchQuery('');
+    setSortBy('newest');
+    setBaseFilters({
       includeApi: true,
       status: 'AVAILABLE',
     });
+    resetPagination();
   };
 
   if (isError) {
@@ -92,13 +101,9 @@ export function VehicleListing() {
     );
   }
 
-  const vehiclesOnPage = vehicles.length;
-
-  const totalVehicles =
-    meta?.total && meta.total > 0
-      ? meta.total
-      : vehicles?.length || meta?.fromApi || 0;
-
+  const totalVehicles = meta?.total || meta?.fromApi || 0;
+  const displayStart = meta?.displayStart || 0;
+  const displayEnd = meta?.displayEnd || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -112,12 +117,11 @@ export function VehicleListing() {
             {isLoading ? (
               'Loading vehicles...'
             ) : (
-              `${totalVehicles} verified vehicles available for import to Nigeria`
+              `${totalVehicles.toLocaleString()} verified vehicles available for import to Nigeria`
             )}
             {meta?.fromApi !== undefined && meta.fromApi > 0 && (
               ` (${meta.fromApi} from live listings)`
             )}
-
           </p>
 
           {/* Search Bar */}
@@ -125,7 +129,7 @@ export function VehicleListing() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by model, or VIN(e.g Chevelle, 10ARJYBS7RC154562, etc)"
+              placeholder="Search by model, or VIN (e.g Chevelle, 10ARJYBS7RC154562, etc)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-4 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500 text-lg"
@@ -134,6 +138,7 @@ export function VehicleListing() {
         </div>
       </div>
 
+      {/* Marketplace Listings */}
       {marketplaceVehicles && marketplaceVehicles.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
           <div className="flex items-center gap-2 mb-4">
@@ -153,19 +158,19 @@ export function VehicleListing() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filters Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
             <VehicleFilters
-              filters={filters}
+              filters={baseFilters as VehicleFilterType}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
             />
           </div>
 
-
+          {/* Main Content */}
           <div className="flex-1">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-
               <p className="text-gray-600">
                 {isLoading ? (
                   'Loading vehicles...'
@@ -175,7 +180,7 @@ export function VehicleListing() {
                   <>
                     Showing{' '}
                     <span className="font-semibold">
-                      {vehicles.length > 0 ? `${vehiclesOnPage}` : '0'}
+                      {displayStart}-{displayEnd}
                     </span>{' '}
                     of{' '}
                     <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
@@ -183,6 +188,7 @@ export function VehicleListing() {
                   </>
                 )}
               </p>
+
               <div className="flex items-center gap-4">
                 {/* View Toggle */}
                 <div className="hidden sm:flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
@@ -219,7 +225,6 @@ export function VehicleListing() {
                     <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
                     <option value="year_desc">Year: Newest</option>
-                    {/* <option value="mileage_asc">Mileage: Lowest</option> */}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -247,21 +252,11 @@ export function VehicleListing() {
                   Try adjusting your search or filters to find what you're looking for.
                 </p>
                 <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSortBy('newest');
-                    setFilters({
-                      page: 1,
-                      limit: 50,
-                      includeApi: true,
-                      status: 'AVAILABLE',
-                    });
-                  }}
+                  onClick={handleClearFilters}
                   className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   Clear All Filters
                 </button>
-
               </div>
             )}
 
@@ -285,25 +280,22 @@ export function VehicleListing() {
             )}
 
             {/* Pagination */}
-            {meta && meta.pages > 1 && (
+            {totalPages > 1 && (
               <div className="mt-10 flex flex-col items-center gap-4">
-
                 <div className="text-sm text-gray-500">
-                  Page {filters.page} of {meta.pages}
+                  Page {currentPage} of {totalPages}
                 </div>
 
                 <div className="flex justify-center items-center gap-2 flex-wrap">
                   <button
-                    onClick={() => handlePageChange(filters.page! - 1)}
-                    disabled={filters.page === 1}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    onClick={prevPage}
+                    disabled={!hasPrevPage}
+                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     Previous
                   </button>
 
                   {(() => {
-                    const currentPage = filters.page || 1;
-                    const totalPages = meta.pages;
                     const startPage = Math.max(1, currentPage - 2);
                     const endPage = Math.min(totalPages, currentPage + 2);
 
@@ -312,8 +304,8 @@ export function VehicleListing() {
                       return (
                         <button
                           key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`px-4 py-2 rounded-lg ${filters.page === page
+                          onClick={() => goToPage(page)}
+                          className={`px-4 py-2 rounded-lg transition-colors ${currentPage === page
                             ? 'bg-emerald-600 text-white'
                             : 'bg-white border border-gray-200 hover:bg-gray-50'
                             }`}
@@ -325,16 +317,24 @@ export function VehicleListing() {
                   })()}
 
                   <button
-                    onClick={() => handlePageChange(filters.page! + 1)}
-                    disabled={filters.page === meta.pages}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    onClick={nextPage}
+                    disabled={!hasNextPage}
+                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     Next
                   </button>
                 </div>
+
+                {/* Debug info - remove in production */}
+                {meta && (
+                  <div className="text-xs text-gray-400 mt-2">
+                    API Page: {meta.apiPage} of {meta.apiPages} |
+                    Frontend Page: {meta.frontendPage} of {meta.frontendPages} |
+                    Showing: {meta.frontendPageSize} per page
+                  </div>
+                )}
               </div>
             )}
-
           </div>
         </div>
       </div>

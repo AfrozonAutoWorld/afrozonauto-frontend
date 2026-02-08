@@ -249,7 +249,7 @@ export function HowItWorks() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/vehicles"
+              href="/marketplace"
               className="inline-flex items-center justify-center gap-2 bg-white text-emerald-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors"
             >
               Browse Vehicles

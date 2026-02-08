@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
@@ -49,7 +51,7 @@ export function VehicleDetail() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Vehicle</h2>
           <p className="text-gray-600 mb-6">{error?.message || 'Failed to load vehicle details'}</p>
           <button
-            onClick={() => router.push('/vehicles')}
+            onClick={() => router.push('/marketplace')}
             className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
           >
             Back to Vehicles
@@ -67,7 +69,7 @@ export function VehicleDetail() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h2>
           <p className="text-gray-600 mb-6">The vehicle you're looking for doesn't exist or has been removed.</p>
           <button
-            onClick={() => router.push('/vehicles')}
+            onClick={() => router.push('/marketplace')}
             className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
           >
             Browse Vehicles

@@ -42,10 +42,10 @@ export function Header() {
             <Link href="/marketplace" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               Browse Vehicles
             </Link>
-            <Link href="/calculator" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/marketplace/calculator" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               Price Calculator
             </Link>
-            <Link href="/how-it-works" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
+            <Link href="/marketplace/how-it-works" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">
               How It Works
             </Link>
 
@@ -53,24 +53,16 @@ export function Header() {
               <div className="flex items-center gap-3">
                 {isSeller && (
                   <Link
-                    href="/seller"
+                    href="/partners"
                     className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
                   >
                     <Store className="w-4 h-4" />
                     <span className="text-sm font-medium">Sell</span>
                   </Link>
                 )}
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span className="text-sm font-medium">Admin</span>
-                  </Link>
-                )}
+
                 <Link
-                  href="/dashboard"
+                  href="/marketplace/buyer"
                   className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
@@ -122,21 +114,21 @@ export function Header() {
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col gap-4">
               <Link
-                href="/vehicles"
+                href="/marketplace"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Browse Vehicles
               </Link>
               <Link
-                href="/calculator"
+                href="/marketplace/calculator"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Price Calculator
               </Link>
               <Link
-                href="/how-it-works"
+                href="/marketplace/how-it-works"
                 className="text-gray-600 hover:text-emerald-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -147,7 +139,7 @@ export function Header() {
                 <>
                   {isSeller && (
                     <Link
-                      href="/seller"
+                      href="/partners"
                       className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -155,18 +147,9 @@ export function Header() {
                       <span>Seller Dashboard</span>
                     </Link>
                   )}
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <ShieldCheck className="w-5 h-5" />
-                      <span>Admin Dashboard</span>
-                    </Link>
-                  )}
+
                   <Link
-                    href="/dashboard"
+                    href="/marketplace"
                     className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
                     onClick={() => setMobileMenuOpen(false)}
                   >

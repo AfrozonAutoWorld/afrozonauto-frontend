@@ -41,7 +41,7 @@ export function BuyerRequestVehicle({ vehicleId }: Props) {
         <Car className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Vehicle Not Found</h2>
         <p className="text-gray-500 mb-6">This vehicle may no longer be available.</p>
-        <Link href="/vehicles" className="text-emerald-600 hover:text-emerald-700 font-medium">
+        <Link href="/marketplace" className="text-emerald-600 hover:text-emerald-700 font-medium">
           Browse Vehicles
         </Link>
       </div>
@@ -84,7 +84,7 @@ export function BuyerRequestVehicle({ vehicleId }: Props) {
           >
             Go to Dashboard
           </button>
-          <Link href="/vehicles" className="text-gray-600 hover:text-gray-900 font-medium">
+          <Link href="/marketplace" className="text-gray-600 hover:text-gray-900 font-medium">
             Continue Browsing
           </Link>
         </div>

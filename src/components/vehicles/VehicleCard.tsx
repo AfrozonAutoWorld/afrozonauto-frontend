@@ -115,7 +115,7 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
           </div>
 
           <Link
-            href={`/vehicles/${vehicle.id}`}
+            href={`/marketplace/${vehicle.id}`}
             className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-600 transition-colors"
           >
             View Details

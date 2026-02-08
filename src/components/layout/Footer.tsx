@@ -40,17 +40,17 @@ export function Footer() {
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/vehicles" className="hover:text-emerald-400 transition-colors">
+                <Link href="/marketplace" className="hover:text-emerald-400 transition-colors">
                   Browse Vehicles
                 </Link>
               </li>
               <li>
-                <Link href="/calculator" className="hover:text-emerald-400 transition-colors">
+                <Link href="/marketplace/calculator" className="hover:text-emerald-400 transition-colors">
                   Price Calculator
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works" className="hover:text-emerald-400 transition-colors">
+                <Link href="/marketplace/how-it-works" className="hover:text-emerald-400 transition-colors">
                   How It Works
                 </Link>
               </li>

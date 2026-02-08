@@ -78,8 +78,8 @@ export function Calculator() {
                         key={price}
                         onClick={() => setVehiclePrice(price)}
                         className={`px-3 py-1 rounded-full text-sm ${vehiclePrice === price
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                       >
                         ${price.toLocaleString()}
@@ -113,8 +113,8 @@ export function Calculator() {
                   <button
                     onClick={() => setShippingMethod('RORO')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'RORO'
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -128,8 +128,8 @@ export function Calculator() {
                   <button
                     onClick={() => setShippingMethod('CONTAINER')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${shippingMethod === 'CONTAINER'
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -209,7 +209,7 @@ export function Calculator() {
             </div>
 
             <Link
-              href="/vehicles"
+              href="/marketplace"
               className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white py-4 rounded-xl font-semibold text-lg hover:bg-emerald-600 transition-colors"
             >
               Browse Vehicles

@@ -354,7 +354,7 @@ export function Dashboard() {
               </h1>
               <p className="text-gray-300 mt-1">Manage your vehicle imports</p>
             </div>
-            <Link href="/vehicles" className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-500">
+            <Link href="/marketplace" className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-500">
               Browse Vehicles
             </Link>
           </div>
@@ -422,7 +422,7 @@ export function Dashboard() {
                     Start browsing vehicles to make your first import request.
                   </p>
                   <Link
-                    href="/vehicles"
+                    href="/marketplace"
                     className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
                   >
                     Browse Vehicles
@@ -571,7 +571,7 @@ export function Dashboard() {
                     Your payment history will appear here once you make your first payment.
                   </p>
                   <Link
-                    href="/vehicles"
+                    href="/marketplace"
                     className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
                   >
                     Browse Vehicles
@@ -706,7 +706,7 @@ export function Dashboard() {
                 Save vehicles you're interested in to view them later.
               </p>
               <Link
-                href="/vehicles"
+                href="/marketplace"
                 className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
               >
                 Browse Vehicles

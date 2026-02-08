@@ -5,7 +5,6 @@ import {
   VehicleMeta,
   VehiclesApiResponse,
   VehicleListResponse,
-  VehicleModelsResponse,
 } from "../../types";
 
 export interface SaveVehiclePayload {
@@ -100,19 +99,12 @@ export const vehiclesApi = {
    * @param id - Vehicle ID or VIN
    * @returns Promise with vehicle data
    */
-  getById: async (id: string): Promise<Vehicle> => {
+  getById: async (id: string) => {
     try {
       const response = await apiClient.get<SingleVehicleRes<Vehicle>>(
         `/vehicles/${id}`,
       );
-
-      const vehicle = response.data.data;
-
-      return {
-        ...vehicle,
-        images: vehicle.images ?? [],
-        features: vehicle.features ?? [],
-      };
+      return response.data.data;
     } catch (error) {
       console.error(`Error fetching vehicle ${id}:`, error);
       throw new Error(`Failed to fetch vehicle with ID: ${id}`);
@@ -132,47 +124,11 @@ export const vehiclesApi = {
         payload,
       );
 
-      return response.data;
+      return response.data.data;
     } catch (error) {
       console.error("Error saving vehicle:", error);
       throw new Error("Failed to save vehicle");
     }
-  },
-
-  /**
-   * Get models for a specific make
-   * @param make - Vehicle make name
-   * @returns Promise with array of model names
-   */
-  getModels: async (make: string): Promise<string[]> => {
-    try {
-      if (!make) {
-        throw new Error("Make parameter is required");
-      }
-
-      const response = await apiClient.get<VehicleModelsResponse>(
-        `/vehicles/makes/${encodeURIComponent(make)}/models`,
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching models for ${make}:`, error);
-      throw new Error(`Failed to fetch models for make: ${make}`);
-    }
-  },
-
-  /**
-   * Get available vehicles with specific criteria
-   * @param filters - Vehicle filters
-   * @returns Promise with available vehicles
-   */
-  getAvailable: async (
-    filters?: Omit<VehicleFilters, "status">,
-  ): Promise<VehicleListResponse> => {
-    return vehiclesApi.getAll({
-      ...filters,
-      status: "AVAILABLE",
-    });
   },
 
   /**
