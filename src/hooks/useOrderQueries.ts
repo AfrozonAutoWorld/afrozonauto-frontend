@@ -1,11 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { ordersApi, PaginatedOrders } from "../lib/api/orders";
+import {
+  ordersApi,
+  type PaginatedOrders,
+  type Order,
+  type CostBreakdown,
+} from "@/lib/api/orders";
 
-export function useAllOrders() {
+export function useOrders() {
   const queryResult = useQuery<PaginatedOrders, Error>({
     queryKey: ["orders"],
     queryFn: () => ordersApi.getAllOrder(),
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
   });
 
@@ -19,15 +24,14 @@ export function useAllOrders() {
     isError: queryResult.isError,
     error: queryResult.error,
     refetch: queryResult.refetch,
-    isFetching: queryResult.isFetching,
   };
 }
 
-export function useGetOrder(orderId: string) {
-  const queryResult = useQuery({
-    queryKey: ["order", orderId],
+export function useOrder(orderId: string) {
+  const queryResult = useQuery<Order, Error>({
+    queryKey: ["orders", orderId],
     queryFn: () => ordersApi.getOrderById(orderId),
-    enabled: !!orderId, // Only run query if orderId exists
+    enabled: !!orderId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
   });
@@ -38,25 +42,25 @@ export function useGetOrder(orderId: string) {
     isError: queryResult.isError,
     error: queryResult.error,
     refetch: queryResult.refetch,
-    isFetching: queryResult.isFetching,
   };
 }
 
-export const useCostBreakdown = (
+export function useCostBreakdown(
   vehicleId: string | undefined,
   shippingMethod: "RORO" | "CONTAINER" | "AIR_FREIGHT" | "EXPRESS",
-) => {
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["costBreakdown", vehicleId, shippingMethod],
+) {
+  const queryResult = useQuery<CostBreakdown, Error>({
+    queryKey: ["orders", "costBreakdown", vehicleId, shippingMethod],
     queryFn: () => ordersApi.getPredefinePrices(vehicleId!, shippingMethod),
     enabled: !!vehicleId && !!shippingMethod,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   return {
-    costBreakdown: data,
-    isLoading,
-    isError,
-    error,
+    costBreakdown: queryResult.data,
+    isLoading: queryResult.isLoading,
+    isError: queryResult.isError,
+    error: queryResult.error,
   };
-};
+}

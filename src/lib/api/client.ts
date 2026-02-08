@@ -1,6 +1,20 @@
 import axios from "axios";
 import { getSession } from "next-auth/react";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+    public errors?: string[],
+    public details?: any,
+    public data?: any,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export const apiClient = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
