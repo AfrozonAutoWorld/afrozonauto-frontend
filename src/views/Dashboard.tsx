@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+"use client";
+
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -223,9 +225,13 @@ export function Dashboard() {
   } = usePayments();
   const { forgotPassword } = useAuthMutations();
 
-  const primaryDefault = Array.isArray(defaultAddresses) && defaultAddresses.length > 0
-    ? defaultAddresses[0]
-    : null;
+  const primaryDefault = useMemo(() => {
+    if (!Array.isArray(defaultAddresses) || defaultAddresses.length === 0) {
+      return null;
+    }
+
+    return defaultAddresses[0]?.data ?? null;
+  }, [defaultAddresses]);
 
   const otherAddresses = Array.isArray(addresses)
     ? addresses.filter((a: any) => a.id !== primaryDefault?.id)
@@ -506,7 +512,7 @@ export function Dashboard() {
                             Submitted {formatDate(order.createdAt)}
                           </p>
                           <Link
-                            href={`/request-details/${order.id}`}
+                            href={`/marketplace/buyer/order/${order.id}`}
                             className="text-emerald-600 font-medium text-sm hover:text-emerald-700 flex items-center gap-1"
                           >
                             View Details
@@ -751,14 +757,6 @@ export function Dashboard() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                     <input type="text" value={user?.country || 'Nigeria'} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                    <input type="text" value={user?.state || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <input type="text" value={user?.address || ''} readOnly className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50" />
                   </div>
                 </div>
               </div>

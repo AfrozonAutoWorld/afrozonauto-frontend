@@ -1,17 +1,19 @@
+"use client";
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Car, Mail, Lock, Eye, EyeOff, AlertCircle, Key } from 'lucide-react';
 
 import { useForm } from '../hooks/useForm';
-import { useAuthQuery } from '../hooks/useAuth';
 import {
   resetPasswordSchema
 } from '../lib/validation/auth.schema';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 
 export function ResetPassword() {
   const router = useRouter();
-  const { resetPassword } = useAuthQuery();
+  const { resetPassword } = useAuthMutations();
 
   const [showPassword, setShowPassword] = useState(false);
 

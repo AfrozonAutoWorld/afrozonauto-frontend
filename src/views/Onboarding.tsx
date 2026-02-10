@@ -1,14 +1,16 @@
+"use client";
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Car, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { onboardingSchema, type OnboardingInput } from '../lib/validation/auth.schema';
-import { useAuthQuery } from '../hooks/useAuth';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 
 
 export function Onboarding() {
   const router = useRouter();
-  const { onboarding } = useAuthQuery();
+  const { onboarding } = useAuthMutations();
 
   const [formData, setFormData] = useState<OnboardingInput>({
     email: '',

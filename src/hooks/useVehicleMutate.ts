@@ -1,47 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi, SaveVehiclePayload } from "../lib/api/vehicle";
-import { ordersApi, RequestVehicle, VehicleOrder } from "../lib/api/orders";
 import type { Vehicle } from "../types/";
 import { showToast } from "../lib/showNotification";
-import { ApiError } from "../lib/api/client";
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 import { savedVehiclesStore } from "../lib/saveVehicleStore";
-
-export const useRequestOrderVehicle = () => {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: RequestVehicle) => ordersApi.requestVehicle(data),
-
-    onSuccess: (order: VehicleOrder) => {
-      const requestNumber = order.requestNumber;
-
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-
-      if (order.id) {
-        queryClient.setQueryData(["order", order.id], order);
-      }
-
-      if (requestNumber) {
-        showToast({
-          type: "success",
-          message: "Request sent successfully!",
-        });
-
-        router.push("/dashboard");
-      }
-    },
-
-    onError: (error: ApiError) => {
-      showToast({
-        type: "error",
-        message: error.message || "Failed to submit request. Please try again.",
-      });
-    },
-  });
-};
 
 export function useSavedVehicles() {
   const [savedVehicleIds, setSavedVehicleIds] = useState<Set<string>>(() =>

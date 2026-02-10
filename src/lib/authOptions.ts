@@ -29,14 +29,13 @@ export const authOptions: NextAuthOptions = {
           };
 
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+            `${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
             },
           );
-
           const responseText = await response.text();
 
           if (!response.ok) {
@@ -46,20 +45,35 @@ export const authOptions: NextAuthOptions = {
             } catch {
               errorData = { message: responseText };
             }
-            console.error("Auth failed with error:", errorData);
+            console.error("❌ Auth failed - Status:", response.status);
+            console.error("❌ Error data:", errorData);
             return null;
           }
 
-          const resData = JSON.parse(responseText);
+          let resData;
+          try {
+            resData = JSON.parse(responseText);
+          } catch (error) {
+            console.error("❌ Failed to parse response JSON");
+            console.error("Raw response:", responseText.substring(0, 500));
+            return null;
+          }
 
           const userData = resData?.data?.data?.user;
           const accessToken = resData?.data?.data?.accessToken;
           const refreshToken = resData?.data?.data?.refreshToken;
 
-          if (!accessToken || !userData) {
-            console.error("Missing token or user data");
-            console.error("userData:", userData);
-            console.error("accessToken:", accessToken ? "present" : "missing");
+          if (!userData) {
+            console.error("❌ No user data found in response");
+            console.error("Response structure:", Object.keys(resData));
+            if (resData.data) {
+              console.error("data keys:", Object.keys(resData.data));
+            }
+            return null;
+          }
+
+          if (!accessToken) {
+            console.error("❌ No access token found in response");
             return null;
           }
 
@@ -67,7 +81,7 @@ export const authOptions: NextAuthOptions = {
           const user: User = {
             id: userData.id,
             email: userData.email,
-            emailVerified: userData.emailVerified,
+            emailVerified: userData.emailVerified ?? false,
             fullName: userData.fullName,
             phone: userData.phone,
             role: userData.role,
@@ -87,13 +101,19 @@ export const authOptions: NextAuthOptions = {
             createdAt: userData.createdAt,
             updatedAt: userData.updatedAt,
             online: userData.online,
+            profile: userData.profile, // Include the profile object
             accessToken,
             refreshToken,
           };
 
           return user;
         } catch (error) {
-          console.error("Login error:", error);
+          console.error("💥 Unexpected error during login:");
+          console.error(error);
+          if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+          }
           return null;
         }
       },
@@ -127,6 +147,7 @@ export const authOptions: NextAuthOptions = {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           online: user.online,
+          profile: user.profile, // Include profile in token
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
         };
@@ -134,9 +155,9 @@ export const authOptions: NextAuthOptions = {
         // Decode JWT to get expiration
         try {
           const decoded = jwtDecode<{ exp: number }>(token.accessToken ?? "");
-          token.exp = decoded?.exp ?? Math.floor(Date.now() / 1000) + 60 * 60; // Default 1 hour
+          token.exp = decoded?.exp ?? Math.floor(Date.now() / 1000) + 60 * 60;
         } catch (err) {
-          console.warn("JWT decode failed, using default expiry", err);
+          console.warn("⚠️ JWT decode failed, using default expiry");
           token.exp = Math.floor(Date.now() / 1000) + 60 * 60;
         }
 
@@ -149,7 +170,7 @@ export const authOptions: NextAuthOptions = {
         try {
           return await refreshAccessToken(token);
         } catch (err) {
-          console.error("Token refresh failed", err);
+          console.error("❌ Token refresh failed:", err);
           return { ...token, error: "RefreshAccessTokenError" };
         }
       }
@@ -167,7 +188,7 @@ export const authOptions: NextAuthOptions = {
           emailVerified: (token.emailVerified as boolean) ?? false,
           fullName: (token.fullName as string) ?? null,
           phone: (token.phone as string) ?? null,
-          role: (token.role as User["role"]) ?? "OPERATION",
+          role: (token.role as User["role"]) ?? "BUYER",
           isActive: (token.isActive as boolean) ?? true,
           isSuspended: (token.isSuspended as boolean) ?? false,
           googleId: (token.googleId as string) ?? "",
@@ -185,6 +206,7 @@ export const authOptions: NextAuthOptions = {
           createdAt: (token.createdAt as string) ?? "",
           updatedAt: (token.updatedAt as string) ?? "",
           online: (token.online as boolean) ?? false,
+          profile: token.profile as User["profile"], // Include profile in session
           accessToken: token.accessToken as string,
           refreshToken: token.refreshToken as string,
         },
@@ -194,6 +216,7 @@ export const authOptions: NextAuthOptions = {
       };
     },
   },
+  debug: process.env.NODE_ENV === "development", // Enable debug mode in development
 };
 
 async function refreshAccessToken(token: JWT) {
@@ -207,11 +230,19 @@ async function refreshAccessToken(token: JWT) {
       },
     );
 
-    if (!response.ok) throw new Error("Failed to refresh token");
+    if (!response.ok) {
+      console.error("❌ Token refresh failed - Status:", response.status);
+      throw new Error("Failed to refresh token");
+    }
 
     const refreshed = await response.json();
     const newAccessToken = refreshed?.data?.accessToken;
     const newRefreshToken = refreshed?.data?.refreshToken ?? token.refreshToken;
+
+    if (!newAccessToken) {
+      console.error("❌ No access token in refresh response");
+      throw new Error("No access token in refresh response");
+    }
 
     const decoded = jwtDecode<{ exp: number }>(newAccessToken);
 
@@ -222,7 +253,7 @@ async function refreshAccessToken(token: JWT) {
       exp: decoded.exp,
     };
   } catch (err) {
-    console.error("Error refreshing access token:", err);
+    console.error("❌ Error refreshing access token:", err);
     return { ...token, error: "RefreshAccessTokenError" };
   }
 }

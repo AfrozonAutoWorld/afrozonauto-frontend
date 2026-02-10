@@ -1,13 +1,15 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Car, AlertCircle, CheckCircle } from 'lucide-react';
 import { verifySchema, type VerifyInput } from '../lib/validation/auth.schema';
-import { useAuthQuery } from '../hooks/useAuth';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 
 export function Verify() {
   const router = useRouter();
-  const { verify, onboarding } = useAuthQuery();
+  const { verify, onboarding } = useAuthMutations();
 
 
   const [email, setEmail] = useState('');

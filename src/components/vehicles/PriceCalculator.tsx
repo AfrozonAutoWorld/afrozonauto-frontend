@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calculator, Ship, Truck, Info } from 'lucide-react';
 import type { VehicleType } from '../../types';
 import {
@@ -17,50 +17,68 @@ interface PriceCalculatorProps {
   onShippingMethodChange?: (method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS') => void;
 }
 
-export function PriceCalculator({ costBreakdown, isLoading }: PriceCalculatorProps) {
+export function PriceCalculator({ costBreakdown, isLoading, onShippingMethodChange }: PriceCalculatorProps) {
   const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
   const [destinationState, setDestinationState] = useState('Lagos');
   const [showBreakdown, setShowBreakdown] = useState(false);
 
+  // Sync shipping method with costBreakdown data when it changes
+  useEffect(() => {
+    const apiMethod = costBreakdown?.paymentBreakdown?.shippingMethod;
+    if (apiMethod) {
+      // Validate that the API value is one of our expected types
+      const validMethods: Array<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'> =
+        ['RORO', 'CONTAINER', 'AIR_FREIGHT', 'EXPRESS'];
+
+      if (validMethods.includes(apiMethod as any)) {
+        setShippingMethod(apiMethod as 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS');
+      }
+    }
+  }, [costBreakdown?.paymentBreakdown?.shippingMethod]);
+
   const paymentData = costBreakdown?.paymentBreakdown;
   const defaultPricing = costBreakdown?.defaultPricing;
+
 
   const estimatedDeliveryDays = shippingMethod === 'RORO' ? 45 :
     shippingMethod === 'CONTAINER' ? 60 :
       shippingMethod === 'AIR_FREIGHT' ? 15 : 7;
 
-
+  const handleShippingMethodChange = (method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS') => {
+    setShippingMethod(method);
+    onShippingMethodChange?.(method);
+  };
 
   const costItems = paymentData ? [
     {
       label: 'Vehicle Price',
-      value: paymentData.breakdown.vehiclePriceUsd,
+      value: paymentData.breakdown.vehiclePriceUsd ?? 0,
       info: 'Base price of the vehicle in USD'
     },
     {
       label: 'Afrozon Sourcing Fee',
-      value: paymentData.breakdown.sourcingFee,
+      value: paymentData.breakdown.sourcingFee ?? 0,
       info: '5% of vehicle price (min $500)'
     },
     {
       label: 'Pre-Purchase Inspection',
-      value: paymentData.breakdown.prePurchaseInspectionUsd,
+      value: paymentData.breakdown.prePurchaseInspectionUsd ?? 0,
       info: 'Professional vehicle inspection'
     },
     {
       label: 'US Handling Fee',
-      value: paymentData.breakdown.usHandlingFeeUsd,
+      value: paymentData.breakdown.usHandlingFeeUsd ?? 0,
       info: 'Documentation and export prep'
     },
     {
       label: 'Shipping Cost',
-      value: paymentData.breakdown.shippingCostUsd,
+      value: paymentData.breakdown.shippingCostUsd ?? 0,
       info: `${shippingMethod} shipping method`
     },
   ] : [];
 
   // Calculate exchange rate from default pricing if available
-  const exchangeRate = defaultPricing ? 1550 : 1550; // Fallback to 1600 if not available
+  const exchangeRate = defaultPricing ? 1550 : 1550; // Fallback to 1550 if not available
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -81,7 +99,7 @@ export function PriceCalculator({ costBreakdown, isLoading }: PriceCalculatorPro
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setShippingMethod('RORO')}
+              onClick={() => handleShippingMethodChange('RORO')}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RORO'
                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 hover:border-gray-300'
@@ -94,7 +112,7 @@ export function PriceCalculator({ costBreakdown, isLoading }: PriceCalculatorPro
               </div>
             </button>
             <button
-              onClick={() => setShippingMethod('CONTAINER')}
+              onClick={() => handleShippingMethodChange('CONTAINER')}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'CONTAINER'
                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 hover:border-gray-300'
@@ -138,10 +156,10 @@ export function PriceCalculator({ costBreakdown, isLoading }: PriceCalculatorPro
                 <div>
                   <p className="text-sm text-gray-600">Total Landed Cost</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(paymentData.totalUsd)}
+                    {formatCurrency(paymentData.totalUsd ?? 0)}
                   </p>
                   <p className="text-lg text-emerald-600 font-medium">
-                    {formatCurrency(paymentData.totalUsd * exchangeRate, 'NGN')}
+                    {formatCurrency((paymentData.totalUsd ?? 0) * exchangeRate, 'NGN')}
                   </p>
                 </div>
                 <div className="text-right">
@@ -179,7 +197,7 @@ export function PriceCalculator({ costBreakdown, isLoading }: PriceCalculatorPro
                     <tr className="bg-emerald-50 font-semibold">
                       <td className="px-4 py-3 text-emerald-800">Total</td>
                       <td className="px-4 py-3 text-right text-emerald-800">
-                        {formatCurrency(paymentData.totalUsd)}
+                        {formatCurrency(paymentData.totalUsd ?? 0)}
                       </td>
                     </tr>
                   </tbody>

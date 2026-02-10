@@ -1,15 +1,16 @@
+"use client";
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Car, User, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { completeProfileSchema, type CompleteProfileInput } from '../lib/validation/auth.schema';
-import { useAuthQuery } from '../hooks/useAuth';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 
 
 export function CompleteProfile() {
   const router = useRouter();
-  const { completeProfile } = useAuthQuery();
+  const { completeProfile } = useAuthMutations();
 
 
   const [formData, setFormData] = useState<CompleteProfileInput>({

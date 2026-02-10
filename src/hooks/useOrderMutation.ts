@@ -12,8 +12,11 @@ export function useCreateOrder() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (data: RequestVehicle) => ordersApi.requestVehicle(data),
+  return useMutation<VehicleOrder, ApiError, RequestVehicle>({
+    mutationFn: async (data: RequestVehicle) => {
+      const res = await ordersApi.requestVehicle(data);
+      return res.data.data.data;
+    },
     onSuccess: (order: VehicleOrder) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
 
@@ -23,10 +26,10 @@ export function useCreateOrder() {
 
       showToast({
         type: "success",
-        message: "Request sent successfully!",
+        message: "Request sent successfully! Redirecting to checkout page...",
       });
 
-      router.push("/dashboard");
+      router.push(`/marketplace/order/${order.id}`);
     },
     onError: (error: ApiError) => {
       showToast({

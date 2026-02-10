@@ -20,6 +20,9 @@ import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
 import { useSession } from 'next-auth/react';
 import { useCostBreakdown } from '@/hooks/useOrderQueries';
+import { useCreateOrder } from '@/hooks/useOrderMutation';
+
+type ShippingMethod = 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS';
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,10 +30,13 @@ export function VehicleDetail() {
   const { data: session } = useSession();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>('RORO');
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
   const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+
+  const createOrderMutation = useCreateOrder();
+
 
   if (isLoading) {
     return (
@@ -85,9 +91,17 @@ export function VehicleDetail() {
       return;
     }
 
-    router.push(`/marketplace/${vehicle.id}`);
+    // Create the order request
+    createOrderMutation.mutate({
+      identifier: vehicle.id,
+      type: vehicle.vin || vehicle.id,
+      shippingMethod: shippingMethod,
+    });
   };
 
+  const handleShippingMethodChange = (method: ShippingMethod) => {
+    setShippingMethod(method);
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
@@ -272,12 +286,13 @@ export function VehicleDetail() {
               vehicleType={vehicle.vehicleType}
               costBreakdown={costBreakdown}
               isLoading={isCostBreakdownLoading}
-              onShippingMethodChange={setShippingMethod}
+              onShippingMethodChange={handleShippingMethodChange}
             />
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <button
                 onClick={handleRequestVehicle}
+                disabled={createOrderMutation.isPending}
                 className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Shield className="w-5 h-5" />

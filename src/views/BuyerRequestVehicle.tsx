@@ -79,7 +79,7 @@ export function BuyerRequestVehicle({ vehicleId }: Props) {
         </p>
         <div className="flex items-center justify-center gap-4">
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/marketplace/buyer')}
             className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             Go to Dashboard

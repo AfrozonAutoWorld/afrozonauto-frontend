@@ -1,8 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import { X, AlertCircle, Lock, Mail, EyeOffIcon, Eye } from "lucide-react";
-import { useAuthQuery } from "../hooks/useAuth";
 import { resetPasswordSchema } from "../lib/validation/auth.schema";
 import { useForm } from "../hooks/useForm";
+import { useAuthMutations } from "@/hooks/useAuthMutations";
 
 interface Props {
   onClose: () => void;
@@ -10,7 +12,7 @@ interface Props {
 }
 
 export function ResetPasswordModal({ onClose, onSuccess }: Props) {
-  const { resetPassword } = useAuthQuery();
+  const { resetPassword } = useAuthMutations();
   const [showPassword, setShowPassword] = useState(false);
 
 

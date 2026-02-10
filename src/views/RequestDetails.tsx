@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
@@ -17,8 +19,8 @@ import {
   Shield,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
-import { useGetOrder } from '../hooks/useOrders';
-import { usePaymentInit } from '../hooks/usePayments';
+import { useInitializePayment } from '@/hooks/usePaymentMutation';
+import { useOrder } from '@/hooks/useOrderQueries';
 
 function getOrderPrimaryImage(order: any): string {
   const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
@@ -170,9 +172,10 @@ const FULLY_PAID_STATUSES = ['BALANCE_PAID', 'DELIVERED', 'CANCELLED'];
 export function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
-  const { order, isLoading, isError, refetch } = useGetOrder(id ?? '');
+
+  const { order, isLoading, isError, refetch } = useOrder(id ?? '');
 
   if (isLoading) {
     return (
@@ -195,7 +198,7 @@ export function RequestDetail() {
             We couldn't find the order you're looking for.
           </p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/marketplace/buyer')}
             className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
           >
             Back to Dashboard
@@ -258,7 +261,7 @@ export function RequestDetail() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/marketplace/buyer')}
             className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -704,7 +707,7 @@ function PaymentModal({
   };
 
   const [paymentOption, setPaymentOption] = useState<'deposit' | 'full' | 'balance'>(getDefault);
-  const { mutateAsync: initializePayment, isPending } = usePaymentInit();
+  const { mutateAsync: initializePayment, isPending } = useInitializePayment();
 
   // Map selected option → amount shown & paymentType sent to API
   const optionConfig = {

@@ -283,6 +283,7 @@ export interface PaymentPricing {
   };
 }
 
+// This is what the hook returns after extracting from the API response
 export interface CostBreakdown {
   defaultPricing: DefualtPrices;
   paymentBreakdown: PaymentPricing;
@@ -297,40 +298,17 @@ export interface ApiSuccessResponse<T> {
 }
 
 export const ordersApi = {
-  getAllOrder: async (): Promise<PaginatedOrders> => {
-    const response =
-      await apiClient.get<ApiSuccessResponse<PaginatedOrders>>(
-        `/orders/my-orders`,
-      );
+  getAllOrder: async () =>
+    apiClient.get<ApiSuccessResponse<PaginatedOrders>>(`/orders/my-orders`),
 
-    return response.data.data;
-  },
+  requestVehicle: async (payload: RequestVehicle) =>
+    apiClient.post<ApiSuccessResponse<VehicleOrder>>("/orders", payload),
 
-  requestVehicle: async (payload: RequestVehicle): Promise<VehicleOrder> => {
-    const response = await apiClient.post<ApiSuccessResponse<VehicleOrder>>(
-      "/orders",
-      payload,
-    );
+  getOrderById: async (id: string) =>
+    apiClient.get<ApiSuccessResponse<Order>>(`/orders/${id}`),
 
-    return response.data.data; // returns the created order
-  },
-
-  getOrderById: async (id: string): Promise<Order> => {
-    const response = await apiClient.get<ApiSuccessResponse<Order>>(
-      `/orders/${id}`,
-    );
-
-    return response.data.data;
-  },
-
-  getPredefinePrices: async (
-    id: string,
-    shippingMethod: string,
-  ): Promise<CostBreakdown> => {
-    const response = await apiClient.get<ApiSuccessResponse<CostBreakdown>>(
+  getPredefinePrices: async (id: string, shippingMethod: string) =>
+    apiClient.get<ApiSuccessResponse<CostBreakdown>>(
       `/orders/order-summary/${id}/?shippingMethod=${shippingMethod}`,
-    );
-
-    return response.data.data;
-  },
+    ),
 };

@@ -1,13 +1,15 @@
+"use client";
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Car, Mail, AlertCircle } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
 import { forgotPasswordSchema } from '../lib/validation/auth.schema';
-import { useAuthQuery } from '../hooks/useAuth';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 
 export function ForgotPassword() {
   const router = useRouter();
-  const { forgotPassword } = useAuthQuery();
+  const { forgotPassword } = useAuthMutations();
 
   const form = useForm({
     schema: forgotPasswordSchema,

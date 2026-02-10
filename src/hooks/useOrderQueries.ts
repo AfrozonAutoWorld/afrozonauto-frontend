@@ -9,7 +9,10 @@ import {
 export function useOrders() {
   const queryResult = useQuery<PaginatedOrders, Error>({
     queryKey: ["orders"],
-    queryFn: () => ordersApi.getAllOrder(),
+    queryFn: async () => {
+      const res = await ordersApi.getAllOrder();
+      return res.data.data.data;
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
   });
@@ -30,7 +33,10 @@ export function useOrders() {
 export function useOrder(orderId: string) {
   const queryResult = useQuery<Order, Error>({
     queryKey: ["orders", orderId],
-    queryFn: () => ordersApi.getOrderById(orderId),
+    queryFn: async () => {
+      const res = await ordersApi.getOrderById(orderId);
+      return res.data.data.data;
+    },
     enabled: !!orderId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
@@ -51,7 +57,13 @@ export function useCostBreakdown(
 ) {
   const queryResult = useQuery<CostBreakdown, Error>({
     queryKey: ["orders", "costBreakdown", vehicleId, shippingMethod],
-    queryFn: () => ordersApi.getPredefinePrices(vehicleId!, shippingMethod),
+    queryFn: async () => {
+      const res = await ordersApi.getPredefinePrices(
+        vehicleId!,
+        shippingMethod,
+      );
+      return res.data.data.data;
+    },
     enabled: !!vehicleId && !!shippingMethod,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,

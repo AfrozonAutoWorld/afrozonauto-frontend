@@ -109,7 +109,7 @@ export function useAuthMutations() {
         type: "success",
         message: "Login successful!",
       });
-      router.push("/dashboard");
+      router.push("/marketplace/buyer");
     },
     onError: (error: Error) => {
       showToast({

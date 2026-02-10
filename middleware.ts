@@ -51,6 +51,7 @@ export function middleware(request: NextRequest) {
 
   if (!accessToken) {
     const loginUrl = new URL("/login", request.url);
+    // ✅ IMPORTANT: Set the callback URL so user returns to this page after login
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -62,6 +63,7 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
+
   if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);

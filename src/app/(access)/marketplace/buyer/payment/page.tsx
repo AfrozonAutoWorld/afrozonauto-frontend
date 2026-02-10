@@ -1,12 +1,11 @@
-'use client';
-
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { VerifyPaymentCallback } from '@/views/VerifyPayment';
+import { Suspense } from 'react';
 
 export default function PaymentPage() {
   return (
-    <ProtectedRoute>
+    <Suspense fallback={<div>Verify Payment...</div>}>
       <VerifyPaymentCallback />
-    </ProtectedRoute>
+    </Suspense>
+
   );
 }

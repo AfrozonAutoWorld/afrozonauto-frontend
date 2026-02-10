@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { useVerifyPayment } from '../hooks/usePayments';
+import { useVerifyPayment } from '@/hooks/usePaymentMutation';
 
 type PaymentStatus = 'verifying' | 'success' | 'failed' | 'cancelled';
 
@@ -16,51 +18,42 @@ export function VerifyPaymentCallback() {
   useEffect(() => {
     const handlePaymentVerification = async () => {
       try {
-        // Get payment reference from URL params
         const reference = searchParams.get('reference');
-        //  const provider = searchParams.get('provider') || 'paystack';
-        const trxref = searchParams.get('trxref'); // Paystack uses this
-        const transaction_id = searchParams.get('transaction_id'); // Flutterwave uses this
+        const trxref = searchParams.get('trxref');
+        const transaction_id = searchParams.get('transaction_id');
 
-        // Handle cancelled payments
         const cancelled = searchParams.get('cancelled');
         if (cancelled === 'true') {
           setStatus('cancelled');
           setMessage('Payment was cancelled. You will be redirected to your dashboard.');
-          setTimeout(() => router.push('/dashboard'), 3000);
+          setTimeout(() => router.push('/marketplace/buyer'), 3000);
           return;
         }
 
-        // Determine the actual payment reference
         const paymentReference = reference || trxref || transaction_id;
 
         if (!paymentReference) {
           setStatus('failed');
           setMessage('No payment reference found. Please contact support if you were charged.');
-          setTimeout(() => router.push('/dashboard'), 5000);
+          setTimeout(() => router.push('/marketplace/buyer'), 5000);
           return;
         }
 
-        // Verify the payment
-        setMessage('Verifying payment with payment provider...');
+        setMessage('Verifying your payment, please have patience...');
         await verifyPayment({
           reference: paymentReference,
-          // provider: provider as 'paystack' | 'flutterwave'
         });
 
-        // Payment verified successfully
         setStatus('success');
-        setMessage('Payment successful! Redirecting to your dashboard...');
+        setMessage('Payment verification successful! Redirecting to your dashboard...');
 
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => router.push('/dashboard'), 2000);
+        setTimeout(() => router.push('/marketplace/buyer'), 2000);
 
       } catch (error: any) {
         console.error('Payment verification failed:', error);
 
         setStatus('failed');
 
-        // Provide more specific error messages
         if (error?.response?.data?.message) {
           setMessage(error.response.data.message);
         } else if (error?.message) {
@@ -69,8 +62,7 @@ export function VerifyPaymentCallback() {
           setMessage('Payment verification failed. Please contact support if you were charged.');
         }
 
-        // Still redirect to dashboard after 5 seconds so user can see their order status
-        setTimeout(() => router.push('/dashboard'), 5000);
+        setTimeout(() => router.push('/marketplace/buyer'), 5000);
       }
     };
 
@@ -123,7 +115,7 @@ export function VerifyPaymentCallback() {
         {(status === 'failed' || status === 'cancelled') && (
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/marketplace/buyer')}
               className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
             >
               Go to Dashboard

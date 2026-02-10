@@ -5,30 +5,30 @@ declare module "next-auth" {
     id: string;
     email: string;
     emailVerified: boolean;
-    fullName: string | null;
+    fullName?: string; // normalize null -> undefined
     firstName?: string;
     lastName?: string;
-    phone: string | null;
+    phone?: string;
     role: UserRole;
     isActive: boolean;
     isSuspended: boolean;
     googleId: string;
     appleId: string;
     isDeleted: boolean;
-    suspensionReason: string | null;
-    suspensionUntil: string | null;
+    suspensionReason?: string;
+    suspensionUntil?: string;
     walletBalance: number;
     currency: string;
     language: string;
     timezone: string;
-    notificationPreferences: NotificationPreferences | null;
-    lastLoginAt: string | null;
+    notificationPreferences?: NotificationPreferences;
+    lastLoginAt?: string;
     createdAt: string;
     updatedAt: string;
     online: boolean;
 
-    // Optional fields that might be added later
-    address: string | null;
+    // Optional fields
+    address?: string;
     city?: string;
     state?: string;
     country?: string;
@@ -38,23 +38,28 @@ declare module "next-auth" {
     gender?: "male" | "female" | "other" | "prefer_not_to_say";
     phoneVerified?: boolean;
     twoFactorEnabled?: boolean;
-    profile: {
+
+    profile?: {
       id: string;
       userId: string;
-      avatar: string | null;
-      dateOfBirth: string | null;
-      identificationNumber: string | null;
-      identificationType: string | null;
-      identificationDocument: string | null;
-      businessName: string | null;
-      taxId: string | null;
+      avatar?: string;
+      dateOfBirth?: string;
+      identificationNumber?: string;
+      identificationType?: string;
+      identificationDocument?: string;
+      businessName?: string;
+      taxId?: string;
       isVerified: boolean;
-      verifiedAt: string | null;
-      firstName: string | null;
-      lastName: string | null;
+      verifiedAt?: string;
+      firstName?: string;
+      lastName?: string;
       createdAt: string;
       updatedAt: string;
     };
+
+    // Include access tokens for session
+    accessToken?: string;
+    refreshToken?: string;
   }
 
   interface Session {
@@ -70,21 +75,21 @@ declare module "next-auth/jwt" {
     id?: string;
     email?: string;
     emailVerified?: boolean;
-    fullName?: string | null;
-    phone?: string | null;
+    fullName?: string;
+    phone?: string;
     role?: "SUPER_ADMIN" | "ADMIN" | "OPERATION" | "BUYER";
     isActive?: boolean;
     isSuspended?: boolean;
     googleId?: string;
     appleId?: string;
     isDeleted?: boolean;
-    suspensionReason?: string | null;
-    suspensionUntil?: string | null;
+    suspensionReason?: string;
+    suspensionUntil?: string;
     walletBalance?: number;
     currency?: string;
     language?: string;
     timezone?: string;
-    notificationPreferences?: string | null;
+    notificationPreferences?: string;
     lastLoginAt?: string;
     createdAt?: string;
     updatedAt?: string;
