@@ -34,7 +34,7 @@ export function useVehicle(id: string) {
     queryKey: ["vehicle", id],
     queryFn: async () => {
       const response = await vehiclesApi.getById(id);
-      return response.data; // ✅ return Vehicle
+      return response.data;
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 10,

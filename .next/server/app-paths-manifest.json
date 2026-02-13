@@ -1,7 +1,19 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/(access)/marketplace/[id]/page": "app/(access)/marketplace/[id]/page.js",
+  "/(access)/marketplace/buyer/order/[id]/page": "app/(access)/marketplace/buyer/order/[id]/page.js",
+  "/(access)/marketplace/calculator/page": "app/(access)/marketplace/calculator/page.js",
+  "/(access)/marketplace/buyer/page": "app/(access)/marketplace/buyer/page.js",
+  "/(access)/marketplace/buyer/payment/page": "app/(access)/marketplace/buyer/payment/page.js",
+  "/(access)/marketplace/page": "app/(access)/marketplace/page.js",
+  "/(access)/marketplace/how-it-works/page": "app/(access)/marketplace/how-it-works/page.js",
+  "/(access)/partners/page": "app/(access)/partners/page.js",
+  "/(auth)/complete-profile/page": "app/(auth)/complete-profile/page.js",
+  "/(auth)/forgot-password/page": "app/(auth)/forgot-password/page.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(access)/marketplace/buyer/page": "app/(access)/marketplace/buyer/page.js"
+  "/(auth)/verify/page": "app/(auth)/verify/page.js",
+  "/(auth)/onboarding/page": "app/(auth)/onboarding/page.js",
+  "/(auth)/reset-password/page": "app/(auth)/reset-password/page.js",
+  "/page": "app/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js"
 }
