@@ -17,8 +17,7 @@ export class ApiError extends Error {
 
 export const apiClient = axios.create({
   baseURL:
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://afrozonauto-backend.onrender.com/api",
+    process.env.NEXT_PUBLIC_BASE_URL || "https://api.afrozonauto.com/api",
   headers: {
     "Content-Type": "application/json",
   },

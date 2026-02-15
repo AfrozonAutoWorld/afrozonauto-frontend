@@ -45,7 +45,7 @@ export function VehicleListing() {
     }));
   }, [debouncedSearch, sortBy]);
 
-  // Use the new pagination hook
+  // Use the simplified pagination hook (50 per page)
   const {
     vehicles,
     meta,
@@ -53,6 +53,7 @@ export function VehicleListing() {
     isError,
     error,
     refetch,
+    isFetching,
     currentPage,
     totalPages,
     goToPage,
@@ -60,7 +61,6 @@ export function VehicleListing() {
     prevPage,
     hasNextPage,
     hasPrevPage,
-    resetPagination,
   } = useVehiclesWithPagination(baseFilters);
 
   const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
@@ -68,7 +68,6 @@ export function VehicleListing() {
       ...prev,
       ...newFilters,
     }));
-    resetPagination(); // Reset to page 1 when filters change
   };
 
   const handleClearFilters = () => {
@@ -78,7 +77,6 @@ export function VehicleListing() {
       includeApi: true,
       status: 'AVAILABLE',
     });
-    resetPagination();
   };
 
   if (isError) {
@@ -102,8 +100,8 @@ export function VehicleListing() {
   }
 
   const totalVehicles = meta?.total || meta?.fromApi || 0;
-  const displayStart = meta?.displayStart || 0;
-  const displayEnd = meta?.displayEnd || 0;
+  const displayStart = meta ? (currentPage - 1) * (meta.limit || 50) + 1 : 0;
+  const displayEnd = meta ? Math.min(currentPage * (meta.limit || 50), totalVehicles) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -171,23 +169,30 @@ export function VehicleListing() {
           <div className="flex-1">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <p className="text-gray-600">
-                {isLoading ? (
-                  'Loading vehicles...'
-                ) : totalVehicles === 0 ? (
-                  'No vehicles found'
-                ) : (
-                  <>
-                    Showing{' '}
-                    <span className="font-semibold">
-                      {displayStart}-{displayEnd}
-                    </span>{' '}
-                    of{' '}
-                    <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
-                    vehicles
-                  </>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-600">
+                  {isLoading ? (
+                    'Loading vehicles...'
+                  ) : totalVehicles === 0 ? (
+                    'No vehicles found'
+                  ) : (
+                    <>
+                      Showing{' '}
+                      <span className="font-semibold">{displayStart}-{displayEnd}</span>{' '}
+                      of{' '}
+                      <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
+                      vehicles
+                    </>
+                  )}
+                </p>
+
+                {isFetching && !isLoading && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Updating...</span>
+                  </div>
                 )}
-              </p>
+              </div>
 
               <div className="flex items-center gap-4">
                 {/* View Toggle */}
@@ -324,15 +329,6 @@ export function VehicleListing() {
                     Next
                   </button>
                 </div>
-
-                {/* Debug info - remove in production */}
-                {meta && (
-                  <div className="text-xs text-gray-400 mt-2">
-                    API Page: {meta.apiPage} of {meta.apiPages} |
-                    Frontend Page: {meta.frontendPage} of {meta.frontendPages} |
-                    Showing: {meta.frontendPageSize} per page
-                  </div>
-                )}
               </div>
             )}
           </div>
