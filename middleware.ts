@@ -1,114 +1,99 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-function decodeJWT(token: string): { role?: string; exp?: number } | null {
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/onboarding",
+  "/verify",
+  "/complete-profile",
+  "/forgot-password",
+  "/reset-password",
+  "/marketplace",
+  "/vehicles",
+  "/calculator",
+  "/how-it-works",
+];
+
+const ROLE_ROUTES = {
+  BUYER: ["/marketplace/buyer"],
+  SELLER: ["/seller"],
+  ADMIN: ["/admin"],
+  SUPER_ADMIN: ["/admin"],
+};
+
+const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+
+async function verifyToken(token: string) {
   try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
-    return payload;
+    const { payload } = await jwtVerify(token, secret);
+    return payload as { role?: string; exp?: number };
   } catch {
     return null;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = {
-    buyer: ["/marketplace/buyer"],
-    seller: ["/seller"],
-    admin: ["/admin"],
-  };
-
-  const publicRoutes = [
-    "/marketplace",
-    "/vehicles",
-    "/calculator",
-    "/how-it-works",
-    "/",
-    "/login",
-    "/onboarding",
-    "/verify",
-    "/complete-profile",
-    "/forgot-password",
-    "/reset-password",
-  ];
-
-  const isPublicRoute = publicRoutes.some(
+  // Allow public routes
+  const isPublic = PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-  if (isPublicRoute) {
+  if (isPublic) {
     return NextResponse.next();
   }
 
-  // Get tokens from cookies or headers
-  const accessToken =
-    request.cookies.get("next-auth.session-token")?.value ||
-    request.cookies.get("__Secure-next-auth.session-token")?.value ||
+  // Get token from cookies or header
+  const token =
+    request.cookies.get("accessToken")?.value ||
+    request.cookies.get("__Secure-accessToken")?.value ||
     request.headers.get("authorization")?.replace("Bearer ", "");
 
-  if (!accessToken) {
+  // No token → redirect login
+  if (!token) {
     const loginUrl = new URL("/login", request.url);
-    // ✅ IMPORTANT: Set the callback URL so user returns to this page after login
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  const decoded = decodeJWT(accessToken);
+  // Verify token cryptographically
+  const decoded = await verifyToken(token);
 
   if (!decoded) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("invalid", "true");
     return NextResponse.redirect(loginUrl);
   }
 
+  // Expiry check
   if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
     loginUrl.searchParams.set("expired", "true");
     return NextResponse.redirect(loginUrl);
   }
 
-  const userRole = decoded.role?.toUpperCase() || "BUYER";
+  const role = decoded.role?.toUpperCase() || "BUYER";
 
-  if (pathname.startsWith("/marketplace/buyer")) {
-    if (userRole !== "BUYER") {
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
+  // Role-based protection
+  for (const [allowedRole, routes] of Object.entries(ROLE_ROUTES)) {
+    for (const route of routes) {
+      if (
+        pathname.startsWith(route) &&
+        role !== allowedRole &&
+        role !== "SUPER_ADMIN"
+      ) {
+        return NextResponse.redirect(new URL("/unauthorized", request.url));
+      }
     }
   }
 
-  if (pathname.startsWith("/seller")) {
-    if (
-      userRole !== "SELLER" &&
-      userRole !== "ADMIN" &&
-      userRole !== "SUPER_ADMIN"
-    ) {
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
-    }
-  }
-
-  if (pathname.startsWith("/admin")) {
-    if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
-    }
-  }
-
-  // Allow access
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public directory)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
