@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
+import { VehicleCardSkeleton } from '../components/vehicles/VehicleCardSkeleton';
 import { useTrendingVehicles } from '../hooks/useVehicles';
 
 
@@ -203,22 +204,24 @@ export function Home() {
         <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
 
+            <h2 className="mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
+              Featured Vehicles
+            </h2>
+            <p className="mx-auto mb-6 max-w-2xl text-lg text-gray-600">
+              Browse our selection of verified US vehicles ready for import to Nigeria
+            </p>
             {isLoading ? (
-              <p className="mb-6 text-lg text-gray-300">Loading vehicles...</p>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <VehicleCardSkeleton key={i} />
+                ))}
+              </div>
             ) : (
-              <>
-                <h2 className="mb-4 text-3xl font-bold text-gray-900 md:text-4xl">
-                  Trending Vehicles
-                </h2>
-                <p className="mx-auto mb-6 max-w-2xl text-lg text-gray-600">
-                  Popular picks and hot vehicles—ordered by customers and curated for you
-                </p>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {displayVehicles.map((vehicle) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                  ))}
-                </div>
-              </>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {displayVehicles.map((vehicle) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                ))}
+              </div>
             )}
           </div>
 
