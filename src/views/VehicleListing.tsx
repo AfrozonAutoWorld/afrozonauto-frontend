@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Grid, List, ChevronDown, AlertCircle, Store } from 'lucide-react';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
+import { VehicleCardSkeleton } from '../components/vehicles/VehicleCardSkeleton';
 import { VehicleFilters } from '../components/vehicles/VehicleFilters';
 import { MarketplaceVehicleCard } from '../components/marketplace/MarketplaceVehicleCard';
-import { useVehiclesWithPagination } from '../hooks/useVehicles';
+import { useInfiniteVehicles, useCategories } from '../hooks/useVehicles';
 import { useMarketplaceVehicles } from '../hooks/useMarketplace';
 import type { VehicleFilters as VehicleFilterType } from '../types';
 
@@ -13,10 +14,12 @@ type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'year_desc' | 'mileage
 
 export function VehicleListing() {
   const { data: marketplaceVehicles } = useMarketplaceVehicles();
+  const { categories } = useCategories();
 
   const [baseFilters, setBaseFilters] = useState<Omit<VehicleFilterType, 'page' | 'limit'>>({
     includeApi: true,
     status: 'AVAILABLE',
+    category: '',
   });
 
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -45,23 +48,33 @@ export function VehicleListing() {
     }));
   }, [debouncedSearch, sortBy]);
 
-  // Use the simplified pagination hook (50 per page)
   const {
     vehicles,
-    meta,
+    hasMore,
+    loadMore,
     isLoading,
+    isFetching,
+    isFetchingMore,
     isError,
     error,
     refetch,
-    isFetching,
-    currentPage,
-    totalPages,
-    goToPage,
-    nextPage,
-    prevPage,
-    hasNextPage,
-    hasPrevPage,
-  } = useVehiclesWithPagination(baseFilters);
+    meta,
+  } = useInfiniteVehicles(baseFilters);
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!hasMore || isLoading || isFetchingMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, isLoading, isFetchingMore, loadMore]);
 
   const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
     setBaseFilters(prev => ({
@@ -76,21 +89,32 @@ export function VehicleListing() {
     setBaseFilters({
       includeApi: true,
       status: 'AVAILABLE',
+      category: '',
     });
   };
 
+  const setCategory = (slug: string) => {
+    setBaseFilters((prev) => ({ ...prev, category: slug }));
+  };
+
+  const isAll = !baseFilters?.category;
+  const activeCategoryLabel = baseFilters?.category
+    ? categories?.find((c) => c?.slug === baseFilters?.category)?.label ?? null
+    : null;
+  const listingLabel = activeCategoryLabel ? `${activeCategoryLabel} vehicles` : 'All vehicle listings';
+
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 shadow-lg max-w-md w-full">
-          <div className="flex items-center gap-3 text-red-600 mb-4">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="p-8 w-full max-w-md bg-white rounded-xl shadow-lg">
+          <div className="flex gap-3 items-center mb-4 text-red-600">
             <AlertCircle className="w-6 h-6" />
             <h2 className="text-xl font-semibold">Error Loading Vehicles</h2>
           </div>
-          <p className="text-gray-600 mb-6">{error?.message || 'Something went wrong'}</p>
+          <p className="mb-6 text-gray-600">{error?.message ?? 'Something went wrong'}</p>
           <button
             onClick={() => refetch()}
-            className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+            className="py-3 w-full text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
           >
             Try Again
           </button>
@@ -99,38 +123,27 @@ export function VehicleListing() {
     );
   }
 
-  const totalVehicles = meta?.total || meta?.fromApi || 0;
-  const displayStart = meta ? (currentPage - 1) * (meta.limit || 50) + 1 : 0;
-  const displayEnd = meta ? Math.min(currentPage * (meta.limit || 50), totalVehicles) : 0;
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-gray-900 to-emerald-900 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      <div className="py-12 bg-gradient-to-r from-gray-900 to-emerald-900">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl">
             Browse Vehicles
           </h1>
-          <p className="text-lg text-gray-300 mb-6">
-            {isLoading ? (
-              'Loading vehicles...'
-            ) : (
-              `${totalVehicles.toLocaleString()} verified vehicles available for import to Nigeria`
-            )}
-            {meta?.fromApi !== undefined && meta.fromApi > 0 && (
-              ` (${meta.fromApi} from live listings)`
-            )}
+          <p className="mb-6 max-w-xl text-lg text-gray-300">
+            Your next ride is one scroll away — vetted US cars, shipped to Nigeria. Discover, compare, and load more as you go.
           </p>
 
           {/* Search Bar */}
           <div className="relative max-w-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 w-5 h-5 text-gray-400 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by model, or VIN (e.g Chevelle, 10ARJYBS7RC154562, etc)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-xl border-0 focus:ring-2 focus:ring-emerald-500 text-lg"
+              className="py-4 pr-4 pl-12 w-full text-lg rounded-xl border-0 focus:ring-2 focus:ring-emerald-500"
             />
           </div>
         </div>
@@ -138,26 +151,57 @@ export function VehicleListing() {
 
       {/* Marketplace Listings */}
       {marketplaceVehicles && marketplaceVehicles.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="px-4 pt-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="flex gap-2 items-center mb-4">
             <Store className="w-5 h-5 text-emerald-600" />
             <h2 className="text-xl font-bold text-gray-900">Marketplace Listings</h2>
             <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-0.5 rounded-full">
               {marketplaceVehicles.length}
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-            {marketplaceVehicles.map((v) => (
-              <MarketplaceVehicleCard key={v.id} vehicle={v} />
+          <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {marketplaceVehicles.map((v, idx) => (
+              <MarketplaceVehicleCard key={v?.id ?? `marketplace-${idx}`} vehicle={v} />
             ))}
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
+      <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        {/* Category chips */}
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center mb-6">
+            <span className="mr-1 text-sm font-medium text-gray-600">Category:</span>
+            <button
+              type="button"
+              onClick={() => setCategory('')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                isAll
+                  ? 'text-white bg-emerald-600'
+                  : 'text-gray-700 bg-white border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat, idx) => (
+              <button
+                key={cat?.id ?? `cat-${idx}`}
+                type="button"
+                onClick={() => setCategory(cat?.slug ?? '')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  baseFilters?.category === cat?.slug
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {cat?.label ?? ''}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+          <div className="lg:w-64 flex-shrink-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <VehicleFilters
               filters={baseFilters as VehicleFilterType}
               onFilterChange={handleFilterChange}
@@ -165,38 +209,20 @@ export function VehicleListing() {
             />
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap gap-4 justify-between items-center mb-6">
+              <div className="flex gap-4 items-center">
                 <p className="text-gray-600">
-                  {isLoading ? (
-                    'Loading vehicles...'
-                  ) : totalVehicles === 0 ? (
-                    'No vehicles found'
-                  ) : (
-                    <>
-                      Showing{' '}
-                      <span className="font-semibold">{displayStart}-{displayEnd}</span>{' '}
-                      of{' '}
-                      <span className="font-semibold">{totalVehicles.toLocaleString()}</span>{' '}
-                      vehicles
-                    </>
-                  )}
+                  {isLoading && `Finding ${activeCategoryLabel ? activeCategoryLabel.toLowerCase() + ' ' : ''}vehicles...`}
+                  {!isLoading && vehicles.length === 0 && `No vehicles in ${activeCategoryLabel ? `this category` : 'this search'}`}
+                  {!isLoading && vehicles.length > 0 && (hasMore ? `${listingLabel} — scroll for more` : listingLabel)}
                 </p>
-
-                {isFetching && !isLoading && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                    <span>Updating...</span>
-                  </div>
-                )}
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex gap-4 items-center">
                 {/* View Toggle */}
-                <div className="hidden sm:flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
+                <div className="hidden gap-2 items-center p-1 bg-white rounded-lg border border-gray-200 sm:flex">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded transition-colors ${viewMode === 'grid'
@@ -224,49 +250,19 @@ export function VehicleListing() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer"
+                    className="px-4 py-2 pr-10 bg-white rounded-lg border border-gray-200 appearance-none cursor-pointer focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
                     <option value="newest">Newest First</option>
                     <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
                     <option value="year_desc">Year: Newest</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 w-4 h-4 text-gray-400 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex justify-center items-center py-20">
-                <div className="text-center">
-                  <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-gray-600">Loading vehicles...</p>
-                </div>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!isLoading && vehicles.length === 0 && (
-              <div className="bg-white rounded-xl p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No vehicles found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filters to find what you're looking for.
-                </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                  Clear All Filters
-                </button>
-              </div>
-            )}
-
-            {/* Vehicle Grid/List */}
-            {!isLoading && vehicles.length > 0 && (
+            {(isLoading || (vehicles.length === 0 && isFetching)) && (
               <div
                 className={
                   viewMode === 'grid'
@@ -274,62 +270,68 @@ export function VehicleListing() {
                     : 'space-y-4'
                 }
               >
-                {vehicles.map((vehicle) => (
-                  <VehicleCard
-                    key={vehicle.id}
-                    vehicle={vehicle}
-                    viewMode={viewMode}
-                  />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <VehicleCardSkeleton key={i} />
                 ))}
               </div>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-10 flex flex-col items-center gap-4">
-                <div className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
+            {!isLoading && !isFetching && vehicles.length === 0 && (
+              <div className="p-12 text-center bg-white rounded-xl">
+                <div className="flex justify-center items-center mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full">
+                  <Search className="w-8 h-8 text-gray-400" />
                 </div>
-
-                <div className="flex justify-center items-center gap-2 flex-wrap">
-                  <button
-                    onClick={prevPage}
-                    disabled={!hasPrevPage}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                  >
-                    Previous
-                  </button>
-
-                  {(() => {
-                    const startPage = Math.max(1, currentPage - 2);
-                    const endPage = Math.min(totalPages, currentPage + 2);
-
-                    return Array.from({ length: endPage - startPage + 1 }, (_, i) => {
-                      const page = startPage + i;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => goToPage(page)}
-                          className={`px-4 py-2 rounded-lg transition-colors ${currentPage === page
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-white border border-gray-200 hover:bg-gray-50'
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    });
-                  })()}
-
-                  <button
-                    onClick={nextPage}
-                    disabled={!hasNextPage}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">No vehicles found</h3>
+                <p className="mb-4 text-gray-600">
+                  Try adjusting your search or filters to find what you're looking for.
+                </p>
+                <button
+                  onClick={handleClearFilters}
+                  className="px-6 py-2 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
+                >
+                  Clear All Filters
+                </button>
               </div>
+            )}
+
+            {!isLoading && vehicles.length > 0 && (
+              <>
+                <div
+                  className={
+                    viewMode === 'grid'
+                      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+                      : 'space-y-4'
+                  }
+                >
+                  {vehicles.map((vehicle, index) => (
+                    <VehicleCard
+                      key={vehicle?.vin ? `${vehicle.vin}-${index}` : `${vehicle?.id ?? index}-${index}`}
+                      vehicle={vehicle}
+                      viewMode={viewMode}
+                    />
+                  ))}
+
+                  {isFetchingMore &&
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <VehicleCardSkeleton key={`more-${i}`} />
+                    ))}
+                </div>
+
+                <div ref={sentinelRef} className="h-4" aria-hidden />
+
+                {/* Load more button */}
+                {hasMore && !isFetchingMore && (
+                  <div className="flex justify-center py-10">
+                    <button
+                      type="button"
+                      onClick={loadMore}
+                      className="px-8 py-3 font-medium text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
+                    >
+                      Load more vehicles
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

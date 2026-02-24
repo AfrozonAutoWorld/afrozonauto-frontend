@@ -4,6 +4,8 @@ import type { VehicleFilters, VehicleType } from '../../types';
 import { VEHICLE_MAKES } from '../../lib/pricingCalculator';
 import { states } from '../../lib/state';
 import { carModels } from '../../lib/carModels';
+import { useMakeModelsReference } from '../../hooks/useVehicles';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface VehicleFiltersProps {
   filters: VehicleFilters;
@@ -21,22 +23,35 @@ const priceRanges = [
   { label: 'Over $50,000', min: 50000, max: 999999 },
 ];
 
-const yearRanges = [
-  { label: '2024-2025', min: 2024, max: 2025 },
-  { label: '2020 - 2023', min: 2020, max: 2023 },
-  { label: '2017 - 2019', min: 2017, max: 2019 },
-  { label: '2014 - 2016', min: 2014, max: 2016 },
-  { label: 'Before 2014', min: 1990, max: 2013 },
-];
+// Single years from current year down to 2005 (no range — avoids "first 40 all same year" when sorted by other fields)
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: currentYear - 2005 + 1 }, (_, i) => currentYear - i);
 
 export function VehicleFilters({ filters, onFilterChange, onClearFilters }: VehicleFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [localMileage, setLocalMileage] = useState<string>(filters.mileageMax?.toString() || '');
   const [debouncedMileage, setDebouncedMileage] = useState<string>(filters.mileageMax?.toString() || '');
 
-  const availableModels = filters.make && carModels[filters.make as keyof typeof carModels]
-    ? carModels[filters.make as keyof typeof carModels]
-    : [];
+  const { makeModels } = useMakeModelsReference();
+
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const resolveMakeKey = (make: string) => {
+    if (makeModels[make]) return make;
+    const target = normalize(make);
+    const hit = Object.keys(makeModels).find((k) => normalize(k) === target);
+    return hit ?? make;
+  };
+
+  const resolvedMakeKey = filters.make ? resolveMakeKey(filters.make) : undefined;
+  const availableModels =
+    resolvedMakeKey && makeModels[resolvedMakeKey]?.length
+      ? makeModels[resolvedMakeKey]
+      : (filters.make && carModels[filters.make as keyof typeof carModels]
+        ? carModels[filters.make as keyof typeof carModels]
+        : []);
+
+  const makeOptions =
+    Object.keys(makeModels).length > 0 ? Object.keys(makeModels).sort() : VEHICLE_MAKES;
 
   // Sync local mileage with filters when filters are cleared externally
   useEffect(() => {
@@ -67,7 +82,11 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   }, [debouncedMileage]);
 
   const handleMakeChange = (make: string) => {
-    onFilterChange({ ...filters, make: make || undefined });
+    onFilterChange({
+      ...filters,
+      make: make || undefined,
+      model: undefined, // reset model when make changes to avoid stale model filter
+    });
   };
 
   const handleTypeChange = (type: VehicleType | '') => {
@@ -88,12 +107,11 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
     }
   };
 
-  const handleYearChange = (rangeIndex: number) => {
-    if (rangeIndex === -1) {
+  const handleYearChange = (year: number | '') => {
+    if (year === '' || year === 0) {
       onFilterChange({ ...filters, yearMin: undefined, yearMax: undefined });
     } else {
-      const range = yearRanges[rangeIndex];
-      onFilterChange({ ...filters, yearMin: range.min, yearMax: range.max });
+      onFilterChange({ ...filters, yearMin: year, yearMax: year });
     }
   };
 
@@ -137,106 +155,102 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   const FilterContent = () => (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Make</label>
-        <select
-          value={filters.make || ''}
-          onChange={(e) => handleMakeChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value="">All Makes</option>
-          {VEHICLE_MAKES.map((make) => (
-            <option key={make} value={make}>{make}</option>
-          ))}
-        </select>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Make</label>
+        <SearchableSelect
+          options={makeOptions.map((make) => ({ value: make, label: make }))}
+          value={filters.make}
+          onValueChange={(v) => handleMakeChange(v ?? '')}
+          placeholder="All Makes"
+          searchPlaceholder="Search makes..."
+          emptyText="No make found."
+        />
       </div>
 
       {filters.make && availableModels.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
-          <select
-            value={filters.model || ''}
-            onChange={(e) => handleModelChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          >
-            <option value="">All Models</option>
-            {availableModels.map((model) => (
-              <option key={model} value={model}>{model}</option>
-            ))}
-          </select>
+          <label className="block mb-2 text-sm font-medium text-gray-700">Model</label>
+          <SearchableSelect
+            options={availableModels.map((model) => ({ value: model, label: model }))}
+            value={filters.model}
+            onValueChange={(v) => handleModelChange(v ?? '')}
+            placeholder="All Models"
+            searchPlaceholder="Search models..."
+            emptyText="No model found."
+          />
         </div>
       )}
 
-
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
-        <select
-          value={filters.vehicleType || ''}
-          onChange={(e) => handleTypeChange(e.target.value as VehicleType | '')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value="">All Types</option>
-          {vehicleTypes.map((type) => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Vehicle Type</label>
+        <SearchableSelect
+          options={vehicleTypes.map((type) => ({ value: type, label: type }))}
+          value={filters.vehicleType || undefined}
+          onValueChange={(v) => handleTypeChange((v ?? '') as VehicleType | '')}
+          placeholder="All Types"
+          searchPlaceholder="Search types..."
+          emptyText="No type found."
+        />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Price Range (USD)</label>
-        <select
+        <label className="block mb-2 text-sm font-medium text-gray-700">Price Range (USD)</label>
+        <SearchableSelect
+          options={priceRanges.map((range, index) => ({
+            value: String(index),
+            label: range.label,
+          }))}
           value={
             filters.priceMin !== undefined
-              ? priceRanges.findIndex(r => r.min === filters.priceMin && r.max === filters.priceMax)
-              : -1
+              ? String(
+                  priceRanges.findIndex(
+                    (r) => r.min === filters.priceMin && r.max === filters.priceMax
+                  )
+                )
+              : undefined
           }
-          onChange={(e) => handlePriceChange(parseInt(e.target.value))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value={-1}>All Prices</option>
-          {priceRanges.map((range, index) => (
-            <option key={index} value={index}>{range.label}</option>
-          ))}
-        </select>
+          onValueChange={(v) =>
+            handlePriceChange(v === undefined ? -1 : parseInt(v, 10))
+          }
+          placeholder="All Prices"
+          searchPlaceholder="Search price ranges..."
+          emptyText="No range found."
+        />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-        <select
+        <label className="block mb-2 text-sm font-medium text-gray-700">Year</label>
+        <SearchableSelect
+          options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
           value={
-            filters.yearMin !== undefined
-              ? yearRanges.findIndex(r => r.min === filters.yearMin && r.max === filters.yearMax)
-              : -1
+            filters.yearMin !== undefined && filters.yearMin === filters.yearMax
+              ? String(filters.yearMin)
+              : undefined
           }
-          onChange={(e) => handleYearChange(parseInt(e.target.value))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value={-1}>All Years</option>
-          {yearRanges.map((range, index) => (
-            <option key={index} value={index}>{range.label}</option>
-          ))}
-        </select>
+          onValueChange={(v) =>
+            handleYearChange(v === undefined ? '' : parseInt(v, 10))
+          }
+          placeholder="All Years"
+          searchPlaceholder="Search years..."
+          emptyText="No year found."
+        />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Location (US State)</label>
-        <select
-          value={filters.state || ''}
-          onChange={(e) => handleStateChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-        >
-          <option value="">All States</option>
-          {states.map((state) => (
-            <option key={state.abbrevCode} value={state.abbrevCode}>
-              {state.fullName}
-            </option>
-          ))}
-        </select>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Location (US State)</label>
+        <SearchableSelect
+          options={states.map((s) => ({ value: s.abbrevCode, label: s.fullName }))}
+          value={filters.state}
+          onValueChange={(v) => handleStateChange(v ?? '')}
+          placeholder="All States"
+          searchPlaceholder="Search states..."
+          emptyText="No state found."
+        />
       </div>
 
       {activeFiltersCount > 0 && (
         <button
           onClick={clearFilters}
-          className="w-full text-sm text-red-600 hover:text-red-700 font-medium py-2 px-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+          className="px-4 py-2 w-full text-sm font-medium text-red-600 rounded-lg border border-red-200 transition-colors hover:text-red-700 hover:bg-red-50"
         >
           Clear All Filters ({activeFiltersCount})
         </button>
@@ -247,8 +261,8 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
   return (
     <>
       <div className="hidden lg:block">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+        <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm min-h-dvh scrollbar-hide">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">Filters</h3>
           <FilterContent />
         </div>
       </div>
@@ -256,7 +270,7 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
       <div className="lg:hidden">
         <button
           onClick={() => setShowMobileFilters(true)}
-          className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200 text-gray-700"
+          className="flex gap-2 items-center px-4 py-2 text-gray-700 bg-white rounded-lg border border-gray-200"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -269,8 +283,8 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
 
         {showMobileFilters && (
           <div className="fixed inset-0 z-50 bg-black/50">
-            <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+            <div className="overflow-y-auto absolute top-0 right-0 bottom-0 w-full max-w-sm bg-white">
+              <div className="flex sticky top-0 justify-between items-center px-4 py-3 bg-white border-b border-gray-200">
                 <h3 className="text-lg font-semibold">Filters</h3>
                 <button
                   onClick={() => setShowMobileFilters(false)}
@@ -282,10 +296,10 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
               <div className="p-4">
                 <FilterContent />
               </div>
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+              <div className="sticky bottom-0 p-4 bg-white border-t border-gray-200">
                 <button
                   onClick={() => setShowMobileFilters(false)}
-                  className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium"
+                  className="py-3 w-full font-medium text-white bg-emerald-600 rounded-lg"
                 >
                   Apply Filters
                 </button>

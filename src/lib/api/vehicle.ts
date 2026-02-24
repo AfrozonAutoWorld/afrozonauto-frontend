@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import {
   Vehicle,
+  VehicleCategory,
   VehicleFilters,
   VehicleMeta,
   VehiclesApiResponse,
@@ -44,6 +45,8 @@ export interface SingleVehicleRes<T> {
   timestamp: string;
 }
 
+export type MakeModelsReference = Record<string, string[]>;
+
 export interface SaveVehicleResponse {
   success: boolean;
   data: Vehicle;
@@ -65,12 +68,21 @@ const buildQueryString = (filters?: VehicleFilters): string => {
   return queryString ? `?${queryString}` : "";
 };
 
+const defaultMeta: VehicleMeta = {
+  page: 1,
+  limit: 24,
+  total: 0,
+  pages: 0,
+  fromApi: 0,
+  hasMore: false,
+};
+
 const transformVehiclesResponse = (
-  apiResponse: VehiclesApiResponse,
+  apiResponse?: VehiclesApiResponse | null,
 ): VehicleListResponse => {
   return {
-    vehicles: apiResponse.data.data,
-    meta: apiResponse.data.meta,
+    vehicles: apiResponse?.data?.data ?? [],
+    meta: apiResponse?.data?.meta ?? defaultMeta,
   };
 };
 
@@ -87,10 +99,22 @@ export const vehiclesApi = {
         `/vehicles${queryString}`,
       );
 
-      return transformVehiclesResponse(response.data);
+      return transformVehiclesResponse(response?.data);
     } catch (error) {
       console.error("Error fetching vehicles:", error);
       throw new Error("Failed to fetch vehicles");
+    }
+  },
+
+  getMakeModelsReference: async (): Promise<MakeModelsReference> => {
+    try {
+      const response = await apiClient.get<SingleVehicleRes<MakeModelsReference>>(
+        `/vehicles/reference/models`,
+      );
+      return response?.data?.data?.data ?? {};
+    } catch (error) {
+      console.error("Error fetching make/models reference:", error);
+      throw new Error("Failed to fetch make/models reference");
     }
   },
 
@@ -104,7 +128,7 @@ export const vehiclesApi = {
       const response = await apiClient.get<SingleVehicleRes<Vehicle>>(
         `/vehicles/${id}`,
       );
-      return response.data.data;
+      return response?.data?.data?.data ?? response?.data?.data;
     } catch (error) {
       console.error(`Error fetching vehicle ${id}:`, error);
       throw new Error(`Failed to fetch vehicle with ID: ${id}`);
@@ -124,7 +148,7 @@ export const vehiclesApi = {
         payload,
       );
 
-      return response.data.data;
+      return response?.data?.data ?? response?.data;
     } catch (error) {
       console.error("Error saving vehicle:", error);
       throw new Error("Failed to save vehicle");
@@ -146,11 +170,28 @@ export const vehiclesApi = {
       search: query,
     });
   },
+
+  getTrending: async (): Promise<Vehicle[]> => {
+    const response = await apiClient.get<{ success: boolean; data: { data: Vehicle[] }; message: string }>(
+      "/vehicles/trending",
+    );
+    const payload = response?.data?.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
+
+  getCategories: async (): Promise<VehicleCategory[]> => {
+    const response = await apiClient.get<{ success: boolean; data: { data: VehicleCategory[] }; message: string }>(
+      "/vehicles/categories",
+    );
+    const payload = response?.data?.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
 };
 
 // Export types
 export type {
   Vehicle,
+  VehicleCategory,
   VehicleFilters,
   VehicleMeta,
   VehiclesApiResponse,

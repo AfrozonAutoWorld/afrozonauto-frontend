@@ -224,6 +224,20 @@ export interface Vehicle {
   updatedAt: string;
 }
 
+export interface VehicleCategory {
+  id: string;
+  slug: string;
+  label: string;
+  bodyStyle: string | null;
+  fuel: string | null;
+  luxuryMakes: string[];
+  priceMin: number | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface VehicleFilters {
   // Basic filters
   make?: string;
@@ -231,6 +245,8 @@ export interface VehicleFilters {
   year?: number;
   yearMin?: number;
   yearMax?: number;
+  /** Category slug from GET /vehicles/categories (e.g. electric, suv, sedan) */
+  category?: string;
 
   // Price and mileage
   priceMin?: number;
@@ -276,6 +292,7 @@ export interface VehicleMeta {
   total: number;
   pages: number;
   fromApi: number;
+  hasMore?: boolean;
 }
 
 export interface VehiclesApiResponse {
