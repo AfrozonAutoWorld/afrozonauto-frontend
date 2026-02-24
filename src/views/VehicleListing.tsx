@@ -63,18 +63,19 @@ export function VehicleListing() {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasMore || isLoading || isFetchingMore) return;
     const el = sentinelRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) loadMore();
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        loadMore();
       },
-      { rootMargin: '200px', threshold: 0 }
+      { rootMargin: '300px', threshold: 0 }
     );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [hasMore, isLoading, isFetchingMore, loadMore]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
     setBaseFilters(prev => ({
@@ -169,7 +170,7 @@ export function VehicleListing() {
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Category chips */}
-        {categories.length > 0 && (
+        {/* {categories.length > 0 && (
           <div className="flex flex-wrap gap-2 items-center mb-6">
             <span className="mr-1 text-sm font-medium text-gray-600">Category:</span>
             <button
@@ -198,7 +199,7 @@ export function VehicleListing() {
               </button>
             ))}
           </div>
-        )}
+        )} */}
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <div className="lg:w-64 flex-shrink-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
@@ -317,7 +318,7 @@ export function VehicleListing() {
                     ))}
                 </div>
 
-                <div ref={sentinelRef} className="h-4" aria-hidden />
+                <div ref={sentinelRef} className="h-1 min-h-[1px]" aria-hidden />
 
                 {/* Load more button */}
                 {hasMore && !isFetchingMore && (

@@ -60,6 +60,7 @@ function vehiclesQueryKey(filters?: VehicleFilters): unknown[] {
     filters.category ?? "",
     filters.make ?? "",
     filters.model ?? "",
+    filters.vehicleType ?? "",
     filters.page ?? 1,
     filters.limit ?? 24,
     filters.sortBy ?? "",
@@ -146,46 +147,54 @@ export function useInfiniteVehicles(baseFilters?: Omit<VehicleFilters, "page" | 
     }
   }, [page, vehicles]);
 
+  // When any filter changes, reset to page 1 and clear list (query key change will refetch)
   const prevFilterKeyRef = useRef<string>("");
   useEffect(() => {
     const filterKey = [
       baseFilters?.category,
       baseFilters?.make,
       baseFilters?.model,
+      baseFilters?.vehicleType,
       baseFilters?.search,
+      baseFilters?.yearMin,
+      baseFilters?.yearMax,
+      baseFilters?.priceMin,
+      baseFilters?.priceMax,
+      baseFilters?.state,
     ].join("|");
     if (prevFilterKeyRef.current === filterKey) return;
     prevFilterKeyRef.current = filterKey;
-
     setPage(1);
     setAccumulated([]);
     lastAppliedPageRef.current = 0;
   }, [
+    baseFilters?.category,
     baseFilters?.make,
     baseFilters?.model,
     baseFilters?.vehicleType,
+    baseFilters?.search,
     baseFilters?.yearMin,
     baseFilters?.yearMax,
     baseFilters?.priceMin,
     baseFilters?.priceMax,
     baseFilters?.state,
-    baseFilters?.search,
-    baseFilters?.category,
   ]);
 
-  // When category (including "All") changes, refetch so we get fresh data for the new key
-  const prevCategoryRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    const next = baseFilters?.category ?? "__all__";
-    if (prevCategoryRef.current === next) return;
-    prevCategoryRef.current = next;
-    refetch();
-  }, [baseFilters?.category, refetch]);
-
   const hasMore = meta?.hasMore ?? (vehicles?.length === VEHICLES_PAGE_SIZE);
+
+  // Refs so the intersection observer can call loadMore without effect deps changing (avoids loops)
+  const isFetchingRef = useRef(false);
+  const hasMoreRef = useRef(false);
+  useEffect(() => {
+    isFetchingRef.current = isFetching;
+  }, [isFetching]);
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
   const loadMore = useCallback(() => {
-    if (!isFetching && hasMore) setPage((p) => p + 1);
-  }, [isFetching, hasMore]);
+    if (isFetchingRef.current || !hasMoreRef.current) return;
+    setPage((p) => p + 1);
+  }, []);
 
   return {
     vehicles: accumulated,
