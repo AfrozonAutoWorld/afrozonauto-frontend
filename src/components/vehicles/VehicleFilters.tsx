@@ -15,6 +15,25 @@ interface VehicleFiltersProps {
 
 const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE', 'MOTORCYCLE'];
 
+const conditionOptions = [
+  { value: '' as const, label: 'All' },
+  { value: 'new' as const, label: 'New' },
+  { value: 'used' as const, label: 'Used' },
+  { value: 'cpo' as const, label: 'CPO (Certified Pre-Owned)' },
+];
+
+const bodyStyleOptions = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Van', 'Pickup Truck', 'Truck'];
+
+const fuelOptions = ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-In Hybrid', 'Flex Fuel'];
+
+const transmissionOptions = ['Automatic', 'Manual', 'CVT', 'Dual-Clutch', 'Single-Speed'];
+
+const drivetrainOptions = ['AWD', 'FWD', 'RWD', '4WD'];
+
+const exteriorColorOptions = ['Black', 'White', 'Gray', 'Silver', 'Blue', 'Red', 'Green', 'Brown', 'Yellow', 'Orange', 'Beige', 'Gold'];
+
+const interiorColorOptions = ['Black', 'Gray', 'Beige', 'Brown', 'White', 'Red', 'Blue', 'Tan'];
+
 const priceRanges = [
   { label: 'Under $10,000', min: 1, max: 10000 },
   { label: '$10,000 - $20,000', min: 10000, max: 20000 },
@@ -26,6 +45,14 @@ const priceRanges = [
 // Single years from current year down to 2005 (no range — avoids "first 40 all same year" when sorted by other fields)
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: currentYear - 2005 + 1 }, (_, i) => currentYear - i);
+
+const mileagePresets = [
+  { label: 'Any', value: undefined },
+  { label: 'Under 30k mi', value: 30000 },
+  { label: 'Under 60k mi', value: 60000 },
+  { label: 'Under 100k mi', value: 100000 },
+  { label: 'Under 150k mi', value: 150000 },
+];
 
 export function VehicleFilters({ filters, onFilterChange, onClearFilters }: VehicleFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -123,6 +150,50 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
     onFilterChange({ ...filters, model: model || undefined });
   };
 
+  const handleConditionChange = (v: string) => {
+    const value = v === 'new' || v === 'used' || v === 'cpo' ? v : undefined;
+    onFilterChange({ ...filters, condition: value });
+  };
+
+  const handleBodyStyleChange = (v: string) => {
+    onFilterChange({ ...filters, bodyStyle: v || undefined });
+  };
+
+  const handleFuelChange = (v: string) => {
+    onFilterChange({ ...filters, fuelType: v || undefined });
+  };
+
+  const handleTransmissionChange = (v: string) => {
+    onFilterChange({ ...filters, transmission: (v || undefined) as VehicleFilters['transmission'] });
+  };
+
+  const handleDrivetrainChange = (v: string) => {
+    onFilterChange({ ...filters, drivetrain: v || undefined });
+  };
+
+  const handleExteriorColorChange = (v: string) => {
+    onFilterChange({ ...filters, exteriorColor: v || undefined });
+  };
+
+  const handleInteriorColorChange = (v: string) => {
+    onFilterChange({ ...filters, interiorColor: v || undefined });
+  };
+
+  const handleMileagePresetChange = (value: number | undefined) => {
+    onFilterChange({ ...filters, mileageMax: value });
+    setLocalMileage(value?.toString() ?? '');
+    setDebouncedMileage(value?.toString() ?? '');
+  };
+
+  const handleZipChange = (v: string) => {
+    onFilterChange({ ...filters, zip: v || undefined });
+  };
+
+  const handleDistanceChange = (v: string) => {
+    const num = v ? parseInt(v, 10) : undefined;
+    onFilterChange({ ...filters, distance: Number.isFinite(num) && num! > 0 ? num : undefined });
+  };
+
   const clearFilters = () => {
     setLocalMileage('');
     setDebouncedMileage('');
@@ -135,6 +206,7 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
         limit: filters.limit,
         includeApi: filters.includeApi,
         status: filters.status,
+        category: filters.category,
       });
     }
   };
@@ -143,14 +215,23 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
     filters.make,
     filters.vehicleType,
     filters.model,
+    filters.condition,
+    filters.bodyStyle,
+    filters.transmission,
+    filters.fuelType,
+    filters.drivetrain,
+    filters.exteriorColor,
+    filters.interiorColor,
     filters.priceMin,
     filters.priceMax,
     filters.yearMin,
     filters.yearMax,
+    filters.mileageMax,
     filters.state,
-    //filters.mileageMax,
+    filters.zip,
+    filters.distance,
     filters.search,
-  ].filter(v => v !== undefined).length;
+  ].filter(v => v !== undefined && v !== '').length;
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -193,6 +274,30 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
       </div>
 
       <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Condition</label>
+        <SearchableSelect
+          options={conditionOptions.map((o) => ({ value: o.value || 'all', label: o.label }))}
+          value={filters.condition ?? 'all'}
+          onValueChange={(v) => handleConditionChange(v === 'all' ? '' : v ?? '')}
+          placeholder="All"
+          searchPlaceholder="Search..."
+          emptyText="No option found."
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Body Style</label>
+        <SearchableSelect
+          options={bodyStyleOptions.map((s) => ({ value: s, label: s }))}
+          value={filters.bodyStyle}
+          onValueChange={(v) => handleBodyStyleChange(v ?? '')}
+          placeholder="All body styles"
+          searchPlaceholder="Search..."
+          emptyText="No style found."
+        />
+      </div>
+
+      <div>
         <label className="block mb-2 text-sm font-medium text-gray-700">Price Range (USD)</label>
         <SearchableSelect
           options={priceRanges.map((range, index) => ({
@@ -218,6 +323,42 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
       </div>
 
       <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Fuel Type</label>
+        <SearchableSelect
+          options={fuelOptions.map((f) => ({ value: f, label: f }))}
+          value={filters.fuelType}
+          onValueChange={(v) => handleFuelChange(v ?? '')}
+          placeholder="All fuel types"
+          searchPlaceholder="Search..."
+          emptyText="No fuel type found."
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Transmission</label>
+        <SearchableSelect
+          options={transmissionOptions.map((t) => ({ value: t, label: t }))}
+          value={filters.transmission}
+          onValueChange={(v) => handleTransmissionChange(v ?? '')}
+          placeholder="All transmissions"
+          searchPlaceholder="Search..."
+          emptyText="No transmission found."
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Drivetrain</label>
+        <SearchableSelect
+          options={drivetrainOptions.map((d) => ({ value: d, label: d }))}
+          value={filters.drivetrain}
+          onValueChange={(v) => handleDrivetrainChange(v ?? '')}
+          placeholder="All drivetrains"
+          searchPlaceholder="Search..."
+          emptyText="No drivetrain found."
+        />
+      </div>
+
+      <div>
         <label className="block mb-2 text-sm font-medium text-gray-700">Year</label>
         <SearchableSelect
           options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
@@ -236,6 +377,50 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
       </div>
 
       <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Max Mileage</label>
+        <SearchableSelect
+          options={mileagePresets.map((p) => ({ value: p.value?.toString() ?? '', label: p.label }))}
+          value={filters.mileageMax?.toString() ?? ''}
+          onValueChange={(v) => handleMileagePresetChange(v ? parseInt(v, 10) : undefined)}
+          placeholder="Any mileage"
+          searchPlaceholder="Search..."
+          emptyText="No option found."
+        />
+        <input
+          type="number"
+          min={0}
+          placeholder="Or enter max miles"
+          value={localMileage}
+          onChange={(e) => setLocalMileage(e.target.value)}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Exterior Color</label>
+        <SearchableSelect
+          options={exteriorColorOptions.map((c) => ({ value: c, label: c }))}
+          value={filters.exteriorColor}
+          onValueChange={(v) => handleExteriorColorChange(v ?? '')}
+          placeholder="Any color"
+          searchPlaceholder="Search..."
+          emptyText="No color found."
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Interior Color</label>
+        <SearchableSelect
+          options={interiorColorOptions.map((c) => ({ value: c, label: c }))}
+          value={filters.interiorColor}
+          onValueChange={(v) => handleInteriorColorChange(v ?? '')}
+          placeholder="Any color"
+          searchPlaceholder="Search..."
+          emptyText="No color found."
+        />
+      </div>
+
+      <div>
         <label className="block mb-2 text-sm font-medium text-gray-700">Location (US State)</label>
         <SearchableSelect
           options={states.map((s) => ({ value: s.abbrevCode, label: s.fullName }))}
@@ -244,6 +429,30 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters }: Vehi
           placeholder="All States"
           searchPlaceholder="Search states..."
           emptyText="No state found."
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">ZIP Code</label>
+        <input
+          type="text"
+          placeholder="e.g. 90210"
+          value={filters.zip ?? ''}
+          onChange={(e) => handleZipChange(e.target.value)}
+          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </div>
+
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-700">Distance (miles from ZIP)</label>
+        <input
+          type="number"
+          min={1}
+          max={500}
+          placeholder="e.g. 50"
+          value={filters.distance ?? ''}
+          onChange={(e) => handleDistanceChange(e.target.value)}
+          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
 

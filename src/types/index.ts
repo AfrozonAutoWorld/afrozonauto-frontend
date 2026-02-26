@@ -256,15 +256,21 @@ export interface VehicleFilters {
 
   // Vehicle characteristics
   vehicleType?: VehicleType;
+  bodyStyle?: string;
   transmission?: TransmissionType;
   fuelType?: string;
   drivetrain?: string;
+  condition?: 'new' | 'used' | 'cpo';
+  exteriorColor?: string;
+  interiorColor?: string;
 
   // Status and location
   status?: VehicleStatus;
   state?: string;
   city?: string;
   zipCode?: string;
+  zip?: string;
+  distance?: number;
 
   // Special filters
   featured?: boolean;

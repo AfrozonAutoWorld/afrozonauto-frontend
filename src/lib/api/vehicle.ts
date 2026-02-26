@@ -57,11 +57,18 @@ const buildQueryString = (filters?: VehicleFilters): string => {
   if (!filters) return "";
 
   const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
+  const append = (key: string, value: unknown) => {
     if (value !== undefined && value !== null && value !== "") {
       params.append(key, String(value));
     }
+  };
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (key === "fuelType") {
+      if (value !== undefined && value !== null && value !== "") params.append("fuel", String(value));
+      return;
+    }
+    append(key, value);
   });
 
   const queryString = params.toString();
