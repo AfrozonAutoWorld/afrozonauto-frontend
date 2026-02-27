@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useVerifyPayment } from "@/hooks/usePaymentMutation";
 
-const PaymentCallbackPage = () => {
+function PaymentCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference") || searchParams.get("trxref");
 
   const {
     mutate: verifyPayment,
-    data,
     isPending,
     isSuccess,
     isError,
@@ -108,7 +107,27 @@ const PaymentCallbackPage = () => {
       </div>
     </div>
   );
+}
+
+const PaymentCallbackPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <div className="max-w-md rounded-xl bg-white p-8 text-center shadow-sm">
+            <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-emerald-600" />
+            <h1 className="mb-2 text-xl font-semibold text-gray-900">
+              Preparing payment callback...
+            </h1>
+          </div>
+        </div>
+      }
+    >
+      <PaymentCallbackInner />
+    </Suspense>
+  );
 };
 
-export default PaymentCallbackPage;
+export const dynamic = "force-dynamic";
 
+export default PaymentCallbackPage;
