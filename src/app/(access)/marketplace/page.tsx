@@ -1,12 +1,12 @@
-import { VehicleListing } from '@/views/VehicleListing'
-import React from 'react'
+'use client';
 
-const page = () => {
+import { Suspense } from 'react';
+import { VehicleListing } from '@/views/VehicleListing';
+
+export default function MarketplacePage() {
   return (
-    <div>
+    <Suspense fallback={null}>
       <VehicleListing />
-    </div>
-  )
+    </Suspense>
+  );
 }
-
-export default page
