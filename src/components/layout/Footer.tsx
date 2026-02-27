@@ -9,46 +9,47 @@ import {
   Send,
   Facebook,
   Instagram,
-  Twitter
+  Twitter,
 } from "lucide-react";
 import { Logo } from "@/lib/Logo";
 
 function FooterBrandColumn() {
   return (
-    <div className="space-y-6">
-      <div className="flex gap-3 items-center">
-        <Link href="/" className="flex gap-2 items-center">
-          <Logo className="w-10 h-10 text-emerald-600" src="/logo_on_dark.svg"/>
+    <div className="space-y-6 text-center md:text-left">
+      <div className="flex flex-col items-center gap-3 md:flex-row md:items-center">
+        <Link href="/" className="flex items-center gap-2">
+          <Logo
+            className="h-10 w-10 text-emerald-600"
+            src="/logo_on_dark.svg"
+          />
           <div className="hidden sm:block">
             <span className="text-xl font-bold text-white">Afrozon</span>
-            <span className="text-xl font-light text-[#0C623C]">
-              {" "}AutoGlobal
-            </span>
+            <span className="text-xl font-light text-[#0C623C]"> AutoGlobal</span>
           </div>
         </Link>
       </div>
 
-      <p className="max-w-xs font-body text-sm leading-5 text-[#E8E8E8]">
+      <p className="mx-auto max-w-xs font-body text-sm leading-5 text-[#E8E8E8] md:mx-0">
         Your trusted partner for importing verified vehicles from the United
         States to Africa. We handle everything from sourcing to delivery.
       </p>
 
-      <div className="space-y-3 text-sm leading-5">
-        <div className="flex gap-3 items-center">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
-            <Mail className="w-3 h-3 text-white" aria-hidden />
+      <div className="flex flex-col items-center space-y-3 text-sm leading-5 md:items-start">
+        <div className="flex items-center gap-3">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00A67E]">
+            <Mail className="h-3 w-3 text-white" aria-hidden />
           </span>
           <span>support@afrozonauto.com</span>
         </div>
-        <div className="flex gap-3 items-center">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
-            <Phone className="w-3 h-3 text-white" aria-hidden />
+        <div className="flex items-center gap-3">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00A67E]">
+            <Phone className="h-3 w-3 text-white" aria-hidden />
           </span>
           <span>+234 800 000 0000</span>
         </div>
-        <div className="flex gap-3 items-center">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
-            <MapPin className="w-3 h-3 text-white" aria-hidden />
+        <div className="flex items-center gap-3">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00A67E]">
+            <MapPin className="h-3 w-3 text-white" aria-hidden />
           </span>
           <span>Lagos, Nigeria</span>
         </div>
@@ -59,7 +60,7 @@ function FooterBrandColumn() {
 
 function FooterLinksColumn() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-center md:text-left">
       <h3 className="font-body text-[18px] leading-7 font-bold text-white">
         Quick Links
       </h3>
@@ -108,7 +109,7 @@ function FooterLinksColumn() {
 
 function FooterLegalColumn() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-center md:text-left">
       <h3 className="font-body text-[18px] leading-7 font-bold text-white">
         Legal
       </h3>
@@ -152,28 +153,28 @@ function FooterLegalColumn() {
 
 function FooterNewsletterColumn() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-center md:text-left">
       <h3 className="font-body text-[18px] leading-7 font-bold text-white">
         Newsletter
       </h3>
-      <p className="max-w-xs font-body text-sm leading-5 text-[#E8E8E8]">
+      <p className="mx-auto max-w-xs font-body text-sm leading-5 text-[#E8E8E8] md:mx-0">
         Subscribe to get the latest vehicle deals and export news.
       </p>
       <form
         onSubmit={e => e.preventDefault()}
-        className="flex overflow-hidden w-full max-w-xs rounded-lg border border-white/10 bg-white/5"
+        className="flex w-full max-w-xs overflow-hidden rounded-lg border border-white/10 bg-white/5 mx-auto md:mx-0"
       >
         <input
           type="email"
           placeholder="Email address"
-          className="flex-1 px-4 py-2.5 text-sm bg-transparent text-white placeholder:text-[#A3ADBB] focus:outline-none"
+          className="flex-1 bg-transparent px-4 py-2.5 text-sm text-white placeholder:text-[#A3ADBB] focus:outline-none"
         />
         <button
           type="submit"
-          className="flex items-center justify-center px-3 bg-[#00A67E] transition-colors hover:bg-[#059669]"
+          className="flex items-center justify-center bg-[#00A67E] px-3 transition-colors hover:bg-[#059669]"
           aria-label="Subscribe to newsletter"
         >
-          <Send className="w-4 h-4 text-white" aria-hidden />
+          <Send className="h-4 w-4 text-white" aria-hidden />
         </button>
       </form>
     </div>
@@ -184,11 +185,11 @@ function FooterBottomBar() {
   const year = new Date().getFullYear();
 
   return (
-    <div className="flex flex-col gap-4 justify-between items-start pt-6 border-t border-white/5 md:flex-row">
+    <div className="flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-6 text-center md:flex-row md:text-left">
       <p className="font-body text-[12px] leading-4 text-[#A3ADBB]">
         © {year} Afrozon AutoGlobal. All rights reserved.
       </p>
-      <div className="flex gap-4 items-center">
+      <div className="flex items-center gap-4">
         <Link
           href="https://facebook.com"
           aria-label="Facebook"

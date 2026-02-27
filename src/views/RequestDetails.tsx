@@ -179,9 +179,9 @@ export function RequestDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full border-4 border-emerald-600 animate-spin border-t-transparent" />
           <p className="text-gray-600">Loading order details...</p>
         </div>
       </div>
@@ -190,16 +190,16 @@ export function RequestDetail() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 shadow-sm max-w-md text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h2>
-          <p className="text-gray-600 mb-4">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="p-8 max-w-md text-center bg-white rounded-xl shadow-sm">
+          <AlertCircle className="mx-auto mb-4 w-16 h-16 text-red-500" />
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">Order Not Found</h2>
+          <p className="mb-4 text-gray-600">
             We couldn't find the order you're looking for.
           </p>
           <button
             onClick={() => router.push('/marketplace/buyer')}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
+            className="px-6 py-3 font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
           >
             Back to Dashboard
           </button>
@@ -210,16 +210,16 @@ export function RequestDetail() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 shadow-sm max-w-md text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Order</h2>
-          <p className="text-gray-600 mb-4">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="p-8 max-w-md text-center bg-white rounded-xl shadow-sm">
+          <AlertCircle className="mx-auto mb-4 w-16 h-16 text-red-500" />
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">Error Loading Order</h2>
+          <p className="mb-4 text-gray-600">
             There was an error fetching your order details. Please try again.
           </p>
           <button
             onClick={() => refetch()}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-700"
+            className="px-6 py-3 font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
           >
             Retry
           </button>
@@ -259,10 +259,10 @@ export function RequestDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <button
             onClick={() => router.push('/marketplace/buyer')}
-            className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+            className="flex gap-2 items-center text-gray-600 transition-colors hover:text-emerald-600"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Dashboard
@@ -270,16 +270,16 @@ export function RequestDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Status Banner */}
         <div className={`rounded-xl border-2 p-6 mb-6 ${statusConfig?.color || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-4 items-center">
               <div className="p-3 bg-white rounded-lg">
                 <StatusIcon className="w-8 h-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold mb-1">{statusConfig?.label || order.status}</h2>
+                <h2 className="mb-1 text-2xl font-bold">{statusConfig?.label || order.status}</h2>
                 <p className="text-sm opacity-90">{statusConfig?.description}</p>
               </div>
             </div>
@@ -290,25 +290,25 @@ export function RequestDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* Vehicle Information */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-hidden bg-white rounded-xl shadow-sm">
               <div className="p-6 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">Vehicle Information</h3>
               </div>
               <div className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col gap-6 md:flex-row">
                   <img
                     src={vehicleImage}
                     alt={vehicleName}
-                    className="w-full md:w-64 h-48 object-cover rounded-lg"
+                    className="object-cover w-full h-48 rounded-lg md:w-64"
                   />
                   <div className="flex-1">
-                    <h4 className="text-2xl font-bold text-gray-900 mb-2">{vehicleName}</h4>
+                    <h4 className="mb-2 text-2xl font-bold text-gray-900">{vehicleName}</h4>
                     {order.vehicleSnapshot?.vin && (
-                      <p className="text-sm text-gray-500 mb-4">VIN: {order.vehicleSnapshot.vin}</p>
+                      <p className="mb-4 text-sm text-gray-500">VIN: {order.vehicleSnapshot.vin}</p>
                     )}
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -341,7 +341,7 @@ export function RequestDetail() {
                     </div>
 
                     {order.vehicleSnapshot?.dealerName && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="pt-4 mt-4 border-t border-gray-100">
                         <p className="text-xs text-gray-500">Dealer</p>
                         <p className="font-medium text-gray-900">{order.vehicleSnapshot.dealerName}</p>
                         <p className="text-sm text-gray-600">
@@ -355,21 +355,21 @@ export function RequestDetail() {
             </div>
 
             {/* Shipping & Delivery */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-hidden bg-white rounded-xl shadow-sm">
               <div className="p-6 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">Shipping & Delivery</h3>
               </div>
               <div className="p-6 space-y-4">
-                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                  <Ship className="w-6 h-6 text-emerald-600 mt-1" />
+                <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                  <Ship className="mt-1 w-6 h-6 text-emerald-600" />
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900">Shipping Method</p>
                     <p className="text-gray-600">{order.shippingMethod || 'Not specified'}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                  <MapPin className="w-6 h-6 text-emerald-600 mt-1" />
+                <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                  <MapPin className="mt-1 w-6 h-6 text-emerald-600" />
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900">Delivery Address</p>
                     <p className="text-gray-600">{order.destinationAddress}</p>
@@ -381,8 +381,8 @@ export function RequestDetail() {
                 </div>
 
                 {order.estimatedDeliveryDate && (
-                  <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                    <Calendar className="w-6 h-6 text-emerald-600 mt-1" />
+                  <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                    <Calendar className="mt-1 w-6 h-6 text-emerald-600" />
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">Estimated Delivery</p>
                       <p className="text-gray-600">{formatDate(order.estimatedDeliveryDate)}</p>
@@ -392,14 +392,14 @@ export function RequestDetail() {
 
                 {order.deliveryInstructions && (
                   <div className="pt-4 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Delivery Instructions</p>
+                    <p className="mb-1 text-sm font-medium text-gray-700">Delivery Instructions</p>
                     <p className="text-sm text-gray-600">{order.deliveryInstructions}</p>
                   </div>
                 )}
 
                 {order.customerNotes && (
                   <div className="pt-4 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Your Notes</p>
+                    <p className="mb-1 text-sm font-medium text-gray-700">Your Notes</p>
                     <p className="text-sm text-gray-600">{order.customerNotes}</p>
                   </div>
                 )}
@@ -408,48 +408,100 @@ export function RequestDetail() {
 
             {/* Payment History */}
             {order.payments && order.payments.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="overflow-hidden bg-white rounded-xl shadow-sm">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Track all deposits, balances and refunds linked to this order.
+                  </p>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Amount</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Reference</th>
+                        <th className="px-4 py-3 text-xs font-semibold tracking-wide text-left text-gray-500 uppercase">
+                          Date
+                        </th>
+                        <th className="px-4 py-3 text-xs font-semibold tracking-wide text-left text-gray-500 uppercase">
+                          Type
+                        </th>
+                        <th className="px-4 py-3 text-xs font-semibold tracking-wide text-left text-gray-500 uppercase">
+                          Amount
+                        </th>
+                        <th className="px-4 py-3 text-xs font-semibold tracking-wide text-left text-gray-500 uppercase">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-xs font-semibold tracking-wide text-left text-gray-500 uppercase">
+                          Reference
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {order.payments.map((payment: any) => (
-                        <tr key={payment.id}>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {formatDate(payment.createdAt || payment.created_at)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 capitalize">
-                            {payment.paymentType || payment.payment_type}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {formatCurrency(payment.amountUsd || payment.amount_usd)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${payment.status === 'completed'
-                              ? 'bg-green-100 text-green-700'
-                              : payment.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-red-100 text-red-700'
-                              }`}>
-                              {payment.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {payment.reference || payment.paymentReference || '-'}
-                          </td>
-                        </tr>
-                      ))}
+                      {order.payments.map((payment: any) => {
+                        const rawStatus = payment.status || payment.payment_status || "";
+                        const normalized = rawStatus.toString().toUpperCase();
+
+                        let statusClass =
+                          "bg-gray-100 text-gray-700 border border-gray-200";
+                        if (normalized === "COMPLETED" || normalized === "SUCCESS") {
+                          statusClass =
+                            "bg-emerald-100 text-emerald-700 border border-emerald-200";
+                        } else if (
+                          normalized === "PENDING" ||
+                          normalized === "PROCESSING" ||
+                          normalized === "INITIATED"
+                        ) {
+                          statusClass =
+                            "bg-amber-100 text-amber-700 border border-amber-200";
+                        } else if (
+                          normalized === "FAILED" ||
+                          normalized === "CANCELLED" ||
+                          normalized === "REFUNDED"
+                        ) {
+                          statusClass =
+                            "bg-red-100 text-red-700 border border-red-200";
+                        }
+
+                        const statusLabel =
+                          normalized
+                            .toLowerCase()
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Unknown";
+
+                        const typeLabel =
+                          (payment.paymentType || payment.payment_type || "")
+                            .toString()
+                            .toLowerCase()
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c: string) => c.toUpperCase()) || "-";
+
+                        return (
+                          <tr key={payment.id}>
+                            <td className="px-4 py-3 text-gray-900 whitespace-nowrap">
+                              {formatDate(payment.createdAt || payment.created_at)}
+                            </td>
+                            <td className="px-4 py-3 text-gray-900 whitespace-nowrap">
+                              {typeLabel}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                              {formatCurrency(payment.amountUsd || payment.amount_usd)}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass}`}
+                              >
+                                {statusLabel}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500">
+                              {payment.transactionRef ||
+                                payment.reference ||
+                                payment.paymentReference ||
+                                "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -460,8 +512,8 @@ export function RequestDetail() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Cost Summary */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Summary</h3>
+            <div className="p-6 bg-white rounded-xl shadow-sm">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Cost Summary</h3>
 
               {order.paymentBreakdown?.breakdown ? (
                 <div className="space-y-3 text-sm">
@@ -501,14 +553,14 @@ export function RequestDetail() {
                 </div>
               )}
 
-              <div className="border-t border-gray-100 pt-3 mt-3">
-                <div className="flex justify-between text-lg mb-2">
+              <div className="pt-3 mt-3 border-t border-gray-100">
+                <div className="flex justify-between mb-2 text-lg">
                   <span className="font-semibold text-gray-900">Total Cost</span>
                   <span className="font-bold text-gray-900">{formatCurrency(order.paymentBreakdown?.totalUsd ?? 0)}</span>
                 </div>
 
                 {order.totalLandedCostLocal && order.localCurrency && (
-                  <p className="text-right text-sm text-gray-600">
+                  <p className="text-sm text-right text-gray-600">
                     ≈ {formatCurrency(
                       order.totalLandedCostLocal,
                       order.localCurrency === 'USD' || order.localCurrency === 'NGN'
@@ -522,13 +574,13 @@ export function RequestDetail() {
               {/* Payment Progress */}
               <div className="mt-6 space-y-3">
                 <div>
-                  <div className="flex justify-between text-sm mb-1">
+                  <div className="flex justify-between mb-1 text-sm">
                     <span className="text-gray-600">Paid</span>
                     <span className="font-medium text-green-600">{formatCurrency(totalPaid)}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full h-2 bg-gray-200 rounded-full">
                     <div
-                      className="bg-green-600 h-2 rounded-full transition-all"
+                      className="h-2 bg-green-600 rounded-full transition-all"
                       style={{ width: `${Math.min((totalPaid / totalCost) * 100, 100)}%` }}
                     />
                   </div>
@@ -544,8 +596,8 @@ export function RequestDetail() {
 
               {/* Payment Actions */}
               {totalCost === 0 && order.status === 'PENDING_QUOTE' && (
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 font-medium mb-1">Quote Pending</p>
+                <div className="p-4 mt-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="mb-1 text-sm font-medium text-blue-800">Quote Pending</p>
                   <p className="text-xs text-blue-600">
                     Our team is preparing your detailed quote. Payment options will be available once the quote is ready.
                   </p>
@@ -557,7 +609,7 @@ export function RequestDetail() {
                 <div className="mt-6">
                   <button
                     onClick={() => setShowPaymentModal(true)}
-                    className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                    className="flex gap-2 justify-center items-center py-3 w-full font-medium text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
                   >
                     <CreditCard className="w-5 h-5" />
                     Make Payment
@@ -568,19 +620,19 @@ export function RequestDetail() {
 
               {/* Fully paid indicator */}
               {FULLY_PAID_STATUSES.includes(order.status) && (
-                <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <p className="text-sm text-green-800 font-medium">Payment complete</p>
+                <div className="flex gap-3 items-center p-4 mt-6 bg-green-50 rounded-lg border border-green-200">
+                  <CheckCircle className="flex-shrink-0 w-5 h-5 text-green-600" />
+                  <p className="text-sm font-medium text-green-800">Payment complete</p>
                 </div>
               )}
             </div>
 
             {/* Order Timeline */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Timeline</h3>
+            <div className="p-6 bg-white rounded-xl shadow-sm">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Order Timeline</h3>
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="flex gap-3 items-start">
+                  <div className="flex flex-shrink-0 justify-center items-center w-8 h-8 bg-emerald-100 rounded-full">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
                   </div>
                   <div className="flex-1">
@@ -590,8 +642,8 @@ export function RequestDetail() {
                 </div>
 
                 {order.statusChangedAt && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex gap-3 items-start">
+                    <div className="flex flex-shrink-0 justify-center items-center w-8 h-8 bg-blue-100 rounded-full">
                       <StatusIcon className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
@@ -602,8 +654,8 @@ export function RequestDetail() {
                 )}
 
                 {order.estimatedDeliveryDate && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex gap-3 items-start">
+                    <div className="flex flex-shrink-0 justify-center items-center w-8 h-8 bg-gray-100 rounded-full">
                       <Calendar className="w-4 h-4 text-gray-600" />
                     </div>
                     <div className="flex-1">
@@ -616,19 +668,19 @@ export function RequestDetail() {
             </div>
 
             {/* Documents */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
+            <div className="p-6 bg-white rounded-xl shadow-sm">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Documents</h3>
               <div className="space-y-2">
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-3">
+                <button className="flex justify-between items-center p-3 w-full rounded-lg border border-gray-200 transition-colors hover:bg-gray-50">
+                  <div className="flex gap-3 items-center">
                     <FileText className="w-5 h-5 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Quote Document</span>
                   </div>
                   <Download className="w-4 h-4 text-gray-400" />
                 </button>
 
-                <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors opacity-50 cursor-not-allowed">
-                  <div className="flex items-center gap-3">
+                <button className="flex justify-between items-center p-3 w-full rounded-lg border border-gray-200 opacity-50 transition-colors cursor-not-allowed hover:bg-gray-50">
+                  <div className="flex gap-3 items-center">
                     <FileText className="w-5 h-5 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Inspection Report</span>
                   </div>
@@ -638,17 +690,17 @@ export function RequestDetail() {
             </div>
 
             {/* Help */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <div className="flex items-start gap-3">
+            <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex gap-3 items-start">
                 <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-blue-900 mb-1">Need Help?</h4>
-                  <p className="text-sm text-blue-700 mb-3">
+                  <h4 className="mb-1 font-semibold text-blue-900">Need Help?</h4>
+                  <p className="mb-3 text-sm text-blue-700">
                     Our support team is here to assist you with your order.
                   </p>
                   <Link
                     href="/contact"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700 underline"
+                    className="text-sm font-medium text-blue-600 underline hover:text-blue-700"
                   >
                     Contact Support
                   </Link>
@@ -732,11 +784,11 @@ function PaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl flex flex-col">
+    <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
+      <div className="flex flex-col w-full max-w-md bg-white rounded-xl shadow-2xl">
         {/* Header */}
         <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <h3 className="text-xl font-semibold text-gray-900">Make Payment</h3>
             <button
               onClick={onClose}
@@ -749,7 +801,7 @@ function PaymentModal({
         </div>
 
         {/* Options */}
-        <div className="p-6 space-y-3 flex-1">
+        <div className="flex-1 p-6 space-y-3">
 
           {/* Option A: Pay Deposit (only when deposit not yet paid) */}
           {canPayDeposit && (
@@ -761,14 +813,14 @@ function PaymentModal({
                 : 'border-gray-200 hover:border-gray-300'
                 } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-gray-900">Pay Deposit</p>
                   <p className="text-sm text-gray-500 mt-0.5">
                     Secure your order now, pay the rest later
                   </p>
                 </div>
-                <p className="text-lg font-bold text-emerald-600 whitespace-nowrap ml-4">
+                <p className="ml-4 text-lg font-bold text-emerald-600 whitespace-nowrap">
                   {formatCurrency(depositAmount)}
                 </p>
               </div>
@@ -785,14 +837,14 @@ function PaymentModal({
                 : 'border-gray-200 hover:border-gray-300'
                 } ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-gray-900">Pay Full Amount</p>
                   <p className="text-sm text-gray-500 mt-0.5">
                     Complete the entire payment at once
                   </p>
                 </div>
-                <p className="text-lg font-bold text-emerald-600 whitespace-nowrap ml-4">
+                <p className="ml-4 text-lg font-bold text-emerald-600 whitespace-nowrap">
                   {formatCurrency(totalCost)}
                 </p>
               </div>
@@ -804,17 +856,16 @@ function PaymentModal({
             <button
               onClick={() => setPaymentOption('balance')}
               disabled={isPending}
-              className={`w-full p-4 border-2 rounded-lg text-left transition-all border-emerald-500 bg-emerald-50 ${isPending ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+              className={`w-full p-4 border-2 rounded-lg text-left transition-all border-emerald-500 bg-emerald-50 ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-gray-900">Pay Remaining Balance</p>
                   <p className="text-sm text-gray-500 mt-0.5">
                     Complete your outstanding balance
                   </p>
                 </div>
-                <p className="text-lg font-bold text-emerald-600 whitespace-nowrap ml-4">
+                <p className="ml-4 text-lg font-bold text-emerald-600 whitespace-nowrap">
                   {formatCurrency(remainingBalance)}
                 </p>
               </div>
@@ -827,11 +878,11 @@ function PaymentModal({
           <button
             onClick={handlePayment}
             disabled={isPending || selected.amount === 0}
-            className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex gap-2 justify-center items-center px-4 py-3 w-full font-medium text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 rounded-full border-2 border-white animate-spin border-t-transparent" />
                 Processing...
               </>
             ) : (
