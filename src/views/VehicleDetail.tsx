@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -21,8 +21,190 @@ import { useVehicle } from '../hooks/useVehicles';
 import { useSession } from 'next-auth/react';
 import { useCostBreakdown } from '@/hooks/useOrderQueries';
 import { useCreateOrder } from '@/hooks/useOrderMutation';
+import type { Vehicle } from '../types';
 
 type ShippingMethod = 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS';
+
+interface VehicleSpec {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number | undefined;
+}
+
+interface VehicleImageGalleryProps {
+  images: string[];
+  currentIndex: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onSelectIndex: (index: number) => void;
+  alt: string;
+}
+
+function VehicleImageGallery({
+  images,
+  currentIndex,
+  onNext,
+  onPrev,
+  onSelectIndex,
+  alt,
+}: VehicleImageGalleryProps) {
+  const hasMultiple = images.length > 1;
+  const src =
+    images[currentIndex] ||
+    'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
+
+  return (
+    <div className="overflow-hidden relative bg-white rounded-2xl shadow-sm">
+      <div className="relative aspect-[16/10]">
+        <img src={src} alt={alt} className="object-cover w-full h-full" />
+
+        {hasMultiple && (
+          <>
+            <button
+              type="button"
+              onClick={onPrev}
+              className="flex absolute left-4 top-1/2 justify-center items-center w-10 h-10 text-white rounded-full transition-colors -translate-y-1/2 bg-black/50 hover:bg-black/70"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="flex absolute right-4 top-1/2 justify-center items-center w-10 h-10 text-white rounded-full transition-colors -translate-y-1/2 bg-black/50 hover:bg-black/70"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
+
+        {hasMultiple && (
+          <div className="flex absolute bottom-4 left-1/2 gap-2 -translate-x-1/2">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => onSelectIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VehicleDetailHeader({ vehicle }: { vehicle: Vehicle }) {
+  return (
+    <div className="flex flex-wrap gap-4 justify-between items-start mb-6">
+      <div>
+        <div className="flex gap-2 items-center mb-2">
+          <span className="px-3 py-1 text-sm font-medium text-emerald-700 bg-emerald-100 rounded-full">
+            {vehicle.vehicleType}
+          </span>
+          <span className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">
+            {vehicle.status}
+          </span>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {vehicle.year} {vehicle.make} {vehicle.model}
+        </h1>
+        <div className="flex gap-2 items-center mt-2 text-gray-500">
+          <MapPin className="w-4 h-4" />
+          <span>
+            {vehicle.dealerName} - {vehicle.dealerCity}, {vehicle.dealerState}
+          </span>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-sm text-gray-500">US Price</p>
+        <p className="text-3xl font-bold text-gray-900">
+          {formatCurrency(vehicle.priceUsd)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function VehicleSpecsGrid({ specs }: { specs: VehicleSpec[] }) {
+  return (
+    <div className="pt-6 border-t border-gray-100">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        Vehicle Specifications
+      </h2>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {specs.map((spec, index) => (
+          <div key={index} className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex gap-2 items-center mb-1 text-gray-500">
+              <spec.icon className="w-4 h-4" />
+              <span className="text-sm">{spec.label}</span>
+            </div>
+            <p className="font-semibold text-gray-900">
+              {spec.value ?? 'N/A'}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VehicleVinSection({ vin }: { vin: string }) {
+  return (
+    <div className="pt-6 mt-6 border-t border-gray-100">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        VIN Information
+      </h2>
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <p className="font-mono text-lg text-gray-900">{vin}</p>
+        <p className="mt-2 text-sm text-gray-500">
+          Full VIN history report will be provided after inspection
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function VehicleFeaturesSection({ features }: { features: string[] }) {
+  if (!features.length) return null;
+
+  return (
+    <div className="pt-6 mt-6 border-t border-gray-100">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">Features</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {features.map((feature, index) => (
+          <div key={index} className="flex gap-2 items-center">
+            <CheckCircle className="w-5 h-5 text-emerald-500" />
+            <span className="text-gray-700">{feature}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VehicleDisclaimerCard() {
+  return (
+    <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+      <div className="flex gap-3 items-start">
+        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-800">
+            Important Disclaimer
+          </p>
+          <p className="mt-1 text-sm text-amber-700">
+            Afrozon purchases vehicles on your behalf from verified US sources
+            and handles export and delivery. All prices are estimates and
+            subject to market conditions. A professional inspection will be
+            conducted before final purchase approval.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -40,9 +222,9 @@ export function VehicleDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full border-4 border-emerald-600 animate-spin border-t-transparent" />
           <p className="text-gray-600">Loading vehicle details...</p>
         </div>
       </div>
@@ -51,14 +233,14 @@ export function VehicleDetail() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Vehicle</h2>
-          <p className="text-gray-600 mb-6">{error?.message || 'Failed to load vehicle details'}</p>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="px-4 mx-auto max-w-md text-center">
+          <AlertCircle className="mx-auto mb-4 w-16 h-16 text-red-500" />
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Error Loading Vehicle</h2>
+          <p className="mb-6 text-gray-600">{error?.message || 'Failed to load vehicle details'}</p>
           <button
             onClick={() => router.push('/marketplace')}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+            className="px-6 py-3 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
           >
             Back to Vehicles
           </button>
@@ -69,14 +251,14 @@ export function VehicleDetail() {
 
   if (!vehicle) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Not Found</h2>
-          <p className="text-gray-600 mb-6">The vehicle you're looking for doesn't exist or has been removed.</p>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="px-4 mx-auto max-w-md text-center">
+          <AlertCircle className="mx-auto mb-4 w-16 h-16 text-gray-400" />
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Vehicle Not Found</h2>
+          <p className="mb-6 text-gray-600">The vehicle you're looking for doesn't exist or has been removed.</p>
           <button
             onClick={() => router.push('/marketplace')}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+            className="px-6 py-3 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
           >
             Browse Vehicles
           </button>
@@ -111,7 +293,7 @@ export function VehicleDetail() {
     setCurrentImageIndex((prev) => (prev - 1 + vehicle.images.length) % vehicle.images.length);
   };
 
-  const specs = [
+  const specs: VehicleSpec[] = [
     { icon: Calendar, label: 'Year', value: vehicle.year },
     {
       icon: Car,
@@ -121,163 +303,51 @@ export function VehicleDetail() {
     { icon: Settings, label: 'Transmission', value: vehicle.transmission },
     { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },
     { icon: Settings, label: 'Engine', value: vehicle.engineSize },
-    { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity}, ${vehicle.dealerState}` },
+    { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity || 'N/A'}, ${vehicle.dealerState || 'N/A'}` },
   ];
 
   const images = vehicle.images ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gradient-to-r from-gray-900 to-emerald-900">
+        <div className="flex flex-col gap-3 px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between">
           <button
+            type="button"
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+            className="inline-flex gap-2 items-center text-sm font-medium text-gray-200 transition-colors hover:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Search
+            Back to search
           </button>
+          <p className="text-sm text-emerald-100 truncate sm:text-right">
+            {vehicle.year} {vehicle.make} {vehicle.model}
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm">
-              <div className="relative aspect-[16/10]">
-                <img
-                  src={images[currentImageIndex] || 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800'}
-                  alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                  className="w-full h-full object-cover"
-                />
+      <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <VehicleImageGallery
+              images={images}
+              currentIndex={currentImageIndex}
+              onNext={nextImage}
+              onPrev={prevImage}
+              onSelectIndex={setCurrentImageIndex}
+              alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+            />
 
-                {vehicle.images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                    >
-                      <ChevronLeft className="w-6 h-6" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </button>
-                  </>
-                )}
-
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {vehicle.images.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* <div className="absolute top-4 right-4 flex gap-2">
-                <button
-                  onClick={handleSaveVehicle}
-                  disabled={isSaving || isSaved}
-                  className={`p-3 rounded-full transition-colors ${isSaved
-                    ? 'bg-red-500 text-white cursor-not-allowed'
-                    : 'bg-white/90 text-gray-600 hover:bg-red-500 hover:text-white'
-                    } ${isSaving ? 'opacity-50 cursor-wait' : ''}`}
-                  title={isSaved ? 'Already saved' : 'Save vehicle'}
-                >
-                  <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
-                </button>
-                <button className="p-3 bg-white/90 rounded-full text-gray-600 hover:bg-emerald-500 hover:text-white transition-colors">
-                  <Share2 className="w-5 h-5" />
-                </button>
-              </div> */}
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-emerald-100 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
-                      {vehicle.vehicleType}
-                    </span>
-                    <span className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
-                      {vehicle.status}
-                    </span>
-                  </div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {vehicle.year} {vehicle.make} {vehicle.model}
-                  </h1>
-                  <div className="flex items-center gap-2 text-gray-500 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{vehicle.dealerName} - {vehicle.dealerCity}, {vehicle.dealerState}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">US Price</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(vehicle.priceUsd)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Vehicle Specifications</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {specs.map((spec, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-gray-500 mb-1">
-                        <spec.icon className="w-4 h-4" />
-                        <span className="text-sm">{spec.label}</span>
-                      </div>
-                      <p className="font-semibold text-gray-900">{spec.value || 'N/A'}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-6 mt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">VIN Information</h2>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="font-mono text-lg text-gray-900">{vehicle.vin}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Full VIN history report will be provided after inspection
-                  </p>
-                </div>
-              </div>
-
+            <div className="p-6 bg-white rounded-2xl shadow-sm">
+              <VehicleDetailHeader vehicle={vehicle as Vehicle} />
+              <VehicleSpecsGrid specs={specs} />
+              <VehicleVinSection vin={vehicle.vin} />
               {vehicle.features && vehicle.features.length > 0 && (
-                <div className="border-t border-gray-100 pt-6 mt-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
-                  <div className="grid grid-cols-2 gap-3">
-                    {vehicle.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
-                        <span className="text-gray-700">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <VehicleFeaturesSection features={vehicle.features} />
               )}
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-amber-800 font-medium">Important Disclaimer</p>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Afrozon purchases vehicles on your behalf from verified US sources and handles
-                    export and delivery. All prices are estimates and subject to market conditions.
-                    A professional inspection will be conducted before final purchase approval.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <VehicleDisclaimerCard />
           </div>
 
           <div className="space-y-6">
@@ -289,22 +359,22 @@ export function VehicleDetail() {
               onShippingMethodChange={handleShippingMethodChange}
             />
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
               <button
                 onClick={handleRequestVehicle}
                 disabled={createOrderMutation.isPending}
-                className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                className="flex gap-2 justify-center items-center py-4 w-full text-lg font-semibold text-white bg-emerald-600 rounded-xl transition-colors hover:bg-emerald-700"
               >
                 <Shield className="w-5 h-5" />
                 Request This Vehicle
               </button>
-              <p className="text-center text-sm text-gray-500 mt-3">
+              <p className="mt-3 text-sm text-center text-gray-500">
                 30% deposit required to secure this vehicle
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Why Choose Afrozon?</h3>
+            <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="mb-4 font-semibold text-gray-900">Why Choose Afrozon?</h3>
               <div className="space-y-3">
                 {[
                   'Professional pre-purchase inspection',
@@ -314,7 +384,7 @@ export function VehicleDetail() {
                   'Real-time tracking',
                   'Customer support throughout',
                 ].map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={index} className="flex gap-2 items-center">
                     <CheckCircle className="w-5 h-5 text-emerald-500" />
                     <span className="text-sm text-gray-600">{item}</span>
                   </div>

@@ -1,99 +1,233 @@
-import Link from 'next/link';
-import { Car, Mail, Phone, MapPin } from 'lucide-react';
+"use client";
+
+import Link from "next/link";
+import {
+  Car,
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  Facebook,
+  Instagram,
+  Twitter
+} from "lucide-react";
+import { Logo } from "@/lib/Logo";
+
+function FooterBrandColumn() {
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-3 items-center">
+        <Link href="/" className="flex gap-2 items-center">
+          <Logo className="w-10 h-10 text-emerald-600" src="/logo_on_dark.svg"/>
+          <div className="hidden sm:block">
+            <span className="text-xl font-bold text-white">Afrozon</span>
+            <span className="text-xl font-light text-[#0C623C]">
+              {" "}AutoGlobal
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      <p className="max-w-xs font-body text-sm leading-5 text-[#E8E8E8]">
+        Your trusted partner for importing verified vehicles from the United
+        States to Africa. We handle everything from sourcing to delivery.
+      </p>
+
+      <div className="space-y-3 text-sm leading-5">
+        <div className="flex gap-3 items-center">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
+            <Mail className="w-3 h-3 text-white" aria-hidden />
+          </span>
+          <span>support@afrozonauto.com</span>
+        </div>
+        <div className="flex gap-3 items-center">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
+            <Phone className="w-3 h-3 text-white" aria-hidden />
+          </span>
+          <span>+234 800 000 0000</span>
+        </div>
+        <div className="flex gap-3 items-center">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#00A67E]">
+            <MapPin className="w-3 h-3 text-white" aria-hidden />
+          </span>
+          <span>Lagos, Nigeria</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FooterLinksColumn() {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-body text-[18px] leading-7 font-bold text-white">
+        Quick Links
+      </h3>
+      <ul className="space-y-3 font-body text-sm leading-5 text-[#E8E8E8]">
+        <li>
+          <Link
+            href="/marketplace"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Browse Vehicles
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/calculator"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Price Calculator
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/marketplace/how-it-works"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            How It Works
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/broker-service"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Broker Service
+          </Link>
+        </li>
+        <li>
+          <Link href="/faq" className="transition-colors hover:text-[#00A67E]">
+            FAQs
+          </Link>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function FooterLegalColumn() {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-body text-[18px] leading-7 font-bold text-white">
+        Legal
+      </h3>
+      <ul className="space-y-3 font-body text-sm leading-5 text-[#E8E8E8]">
+        <li>
+          <Link
+            href="/terms"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Terms of Service
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/privacy"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Privacy Policy
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/refund-policy"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Refund Policy
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/cookie-policy"
+            className="transition-colors hover:text-[#00A67E]"
+          >
+            Cookie Policy
+          </Link>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function FooterNewsletterColumn() {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-body text-[18px] leading-7 font-bold text-white">
+        Newsletter
+      </h3>
+      <p className="max-w-xs font-body text-sm leading-5 text-[#E8E8E8]">
+        Subscribe to get the latest vehicle deals and export news.
+      </p>
+      <form
+        onSubmit={e => e.preventDefault()}
+        className="flex overflow-hidden w-full max-w-xs rounded-lg border border-white/10 bg-white/5"
+      >
+        <input
+          type="email"
+          placeholder="Email address"
+          className="flex-1 px-4 py-2.5 text-sm bg-transparent text-white placeholder:text-[#A3ADBB] focus:outline-none"
+        />
+        <button
+          type="submit"
+          className="flex items-center justify-center px-3 bg-[#00A67E] transition-colors hover:bg-[#059669]"
+          aria-label="Subscribe to newsletter"
+        >
+          <Send className="w-4 h-4 text-white" aria-hidden />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function FooterBottomBar() {
+  const year = new Date().getFullYear();
+
+  return (
+    <div className="flex flex-col gap-4 justify-between items-start pt-6 border-t border-white/5 md:flex-row">
+      <p className="font-body text-[12px] leading-4 text-[#A3ADBB]">
+        © {year} Afrozon AutoGlobal. All rights reserved.
+      </p>
+      <div className="flex gap-4 items-center">
+        <Link
+          href="https://facebook.com"
+          aria-label="Facebook"
+          className="text-[#A3ADBB] transition-colors hover:text-white"
+        >
+          <Facebook className="w-5 h-5" aria-hidden />
+        </Link>
+        <Link
+          href="https://instagram.com"
+          aria-label="Instagram"
+          className="text-[#A3ADBB] transition-colors hover:text-white"
+        >
+          <Instagram className="w-5 h-5" aria-hidden />
+        </Link>
+        <Link
+          href="https://twitter.com"
+          aria-label="Twitter"
+          className="text-[#A3ADBB] transition-colors hover:text-white"
+        >
+          <Twitter className="w-5 h-5" aria-hidden />
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="text-xl font-bold text-white">Afrozon</span>
-                <span className="text-xl font-light text-emerald-400"> AutoGlobal</span>
-              </div>
-            </div>
-            <p className="text-gray-400 max-w-md mb-6">
-              Your trusted partner for importing verified vehicles from the United States to Africa.
-              We handle everything from sourcing to delivery.
-            </p>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-emerald-500" />
-                <span>support@afrozonauto.com</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 text-emerald-500" />
-                <span>+234 800 000 0000</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-emerald-500" />
-                <span>Lagos, Nigeria</span>
-              </div>
-            </div>
+    <footer className="bg-[#0B1222] text-[#E8E8E8]">
+      <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:py-16">
+        <div className="flex flex-col gap-10">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+            <FooterBrandColumn />
+            <FooterLinksColumn />
+            <FooterLegalColumn />
+            <FooterNewsletterColumn />
           </div>
 
-          <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/marketplace" className="hover:text-emerald-400 transition-colors">
-                  Browse Vehicles
-                </Link>
-              </li>
-              <li>
-                <Link href="/marketplace/calculator" className="hover:text-emerald-400 transition-colors">
-                  Price Calculator
-                </Link>
-              </li>
-              <li>
-                <Link href="/marketplace/how-it-works" className="hover:text-emerald-400 transition-colors">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-emerald-400 transition-colors">
-                  FAQs
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-white font-semibold mb-4">Legal</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/terms" className="hover:text-emerald-400 transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-emerald-400 transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/refund-policy" className="hover:text-emerald-400 transition-colors">
-                  Refund Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} Afrozon AutoGlobal. All rights reserved.
-            </p>
-            <p className="text-xs text-gray-600 text-center md:text-right max-w-lg">
-              Afrozon purchases vehicles on your behalf from verified US sources and handles export and delivery.
-              All transactions are subject to our terms and conditions.
-            </p>
-          </div>
+          <FooterBottomBar />
         </div>
       </div>
     </footer>

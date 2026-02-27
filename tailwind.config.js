@@ -5,9 +5,22 @@ module.exports = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/views/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: [
+  				'var(--font-sora)',
+  				'system-ui',
+  				'sans-serif'
+  			],
+  			body: [
+  				'var(--font-dm-sans)',
+  				'system-ui',
+  				'sans-serif'
+  			]
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -53,7 +66,43 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			filter: {
+  				bg: 'var(--filter-bg)',
+  				surface: 'var(--filter-surface)',
+  				border: 'var(--filter-border)',
+  				label: 'var(--filter-label)',
+  				muted: 'var(--filter-label-muted)',
+  				subtle: 'var(--filter-label-subtle)',
+  				dark: 'var(--filter-label-dark)',
+  				primary: 'var(--filter-primary)',
+  				'primary-dark': 'var(--filter-primary-dark)',
+  				'primary-light': 'var(--filter-primary-light)',
+  				'primary-active': 'var(--filter-primary-active)',
+  				'checkbox-border': 'var(--filter-checkbox-border)'
   			}
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
   		}
   	}
   },

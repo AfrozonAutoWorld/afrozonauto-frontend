@@ -49,33 +49,37 @@ export function PriceCalculator({ costBreakdown, isLoading, onShippingMethodChan
     onShippingMethodChange?.(method);
   };
 
-  const costItems = paymentData ? [
-    {
-      label: 'Vehicle Price',
-      value: paymentData.breakdown.vehiclePriceUsd ?? 0,
-      info: 'Base price of the vehicle in USD'
-    },
-    {
-      label: 'Afrozon Sourcing Fee',
-      value: paymentData.breakdown.sourcingFee ?? 0,
-      info: '5% of vehicle price (min $500)'
-    },
-    {
-      label: 'Pre-Purchase Inspection',
-      value: paymentData.breakdown.prePurchaseInspectionUsd ?? 0,
-      info: 'Professional vehicle inspection'
-    },
-    {
-      label: 'US Handling Fee',
-      value: paymentData.breakdown.usHandlingFeeUsd ?? 0,
-      info: 'Documentation and export prep'
-    },
-    {
-      label: 'Shipping Cost',
-      value: paymentData.breakdown.shippingCostUsd ?? 0,
-      info: `${shippingMethod} shipping method`
-    },
-  ] : [];
+  const costItems = paymentData
+    ? [
+        {
+          label: 'Vehicle Price',
+          value: paymentData.breakdown.vehiclePriceUsd ?? 0,
+          info: 'Base price of the vehicle in USD',
+        },
+        {
+          label: 'Afrozon Sourcing Fee',
+          value: paymentData.breakdown.sourcingFee ?? 0,
+          info: '5% of vehicle price (min $500)',
+        },
+        {
+          label: 'Pre-Purchase Inspection',
+          value: paymentData.breakdown.prePurchaseInspectionUsd ?? 0,
+          info: 'Professional vehicle inspection',
+        },
+        {
+          label: 'US Handling Fee',
+          value: paymentData.breakdown.usHandlingFeeUsd ?? 0,
+          info: 'Documentation and export prep',
+        },
+        {
+          label: 'Shipping Cost',
+          value: paymentData.breakdown.shippingCostUsd ?? 0,
+          info: `${shippingMethod} shipping method`,
+        },
+      ]
+    : [];
+
+  const computedTotalUsd = costItems.reduce((sum, item) => sum + (item.value || 0), 0);
 
   // Calculate exchange rate from default pricing if available
   const exchangeRate = defaultPricing ? 1550 : 1550; // Fallback to 1550 if not available
@@ -156,10 +160,10 @@ export function PriceCalculator({ costBreakdown, isLoading, onShippingMethodChan
                 <div>
                   <p className="text-sm text-gray-600">Total Landed Cost</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(paymentData.totalUsd ?? 0)}
+                    {formatCurrency(computedTotalUsd)}
                   </p>
                   <p className="text-lg text-emerald-600 font-medium">
-                    {formatCurrency((paymentData.totalUsd ?? 0) * exchangeRate, 'NGN')}
+                    {formatCurrency(computedTotalUsd * exchangeRate, 'NGN')}
                   </p>
                 </div>
                 <div className="text-right">
@@ -197,7 +201,7 @@ export function PriceCalculator({ costBreakdown, isLoading, onShippingMethodChan
                     <tr className="bg-emerald-50 font-semibold">
                       <td className="px-4 py-3 text-emerald-800">Total</td>
                       <td className="px-4 py-3 text-right text-emerald-800">
-                        {formatCurrency(paymentData.totalUsd ?? 0)}
+                        {formatCurrency(computedTotalUsd)}
                       </td>
                     </tr>
                   </tbody>

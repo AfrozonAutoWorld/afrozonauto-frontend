@@ -1,10 +1,23 @@
 import type { Metadata } from 'next';
+import { Sora, DM_Sans } from 'next/font/google';
 import './globals.css';
 import ReactQueryProvider from '@/providers/QueryProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from 'sonner';
 import { Providers } from '@/providers/SessionProvider';
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
+  display: 'swap',
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Afrozon AutoGlobal - Import Verified US Vehicles to Nigeria',
@@ -18,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={`${sora.variable} ${dmSans.variable}`}>
+      <body className={sora.className}>
         <Providers>
           <ReactQueryProvider>
             <Header />

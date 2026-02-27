@@ -29,7 +29,7 @@ export function useCreateOrder() {
         message: "Request sent successfully! Redirecting to checkout page...",
       });
 
-      router.push(`/marketplace/order/${order.id}`);
+      router.push(`/marketplace/buyer/order/${order.id}`);
     },
     onError: (error: ApiError) => {
       showToast({
