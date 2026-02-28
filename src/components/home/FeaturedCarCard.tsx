@@ -1,13 +1,21 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Settings2, Check, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Settings2, Check, ArrowRight, Lightbulb, Heart } from 'lucide-react';
 import type { Vehicle } from '@/types';
 import { formatCurrency } from '@/lib/pricingCalculator';
-import { getPrimaryImage } from '@/components/vehicles/VehicleCard';
+import { getPrimaryImage } from '@/lib/vehicleUtils';
 import Image from 'next/image';
+
 export interface FeaturedCarCardProps {
   vehicle: Vehicle;
-  /** Optional landed price in NGN. If not provided, a placeholder is shown. */
   landedPriceNgn?: number;
+  badge?: 'verified' | 'recommended';
+  recommendationReason?: string;
+  /** When set, show save button and call onSaveClick(vehicle) when clicked. */
+  isSaved?: boolean;
+  onSaveClick?: (vehicle: Vehicle) => void;
 }
 
 function VehicleImageTags({ vehicle }: { vehicle: Vehicle }) {
@@ -44,10 +52,62 @@ function VerifiedBadge() {
   );
 }
 
-const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
+function RecommendedBadge() {
+  return (
+    <div
+      className="flex absolute right-4 top-4 flex-row items-center gap-1 px-2 py-1 rounded-lg z-[3]"
+      style={{ background: '#2D7D8F' }}
+    >
+      <div className="flex items-center justify-center w-[11px] h-[10px] shrink-0" aria-hidden>
+        <Image
+          src="/recommend.svg"
+          alt=""
+          width={11}
+          height={10}
+          className="object-contain"
+        />
+      </div>
+      <span className="font-body font-bold text-[10px] leading-[12px] text-white uppercase">
+        Recommended
+      </span>
+    </div>
+  );
+}
 
-export function FeaturedCarCard({ vehicle, landedPriceNgn }: FeaturedCarCardProps) {
+function RecommendationBanner({ text }: { text: string }) {
+  return (
+    <div
+      className="flex flex-row items-center gap-2.5 p-2.5 rounded self-stretch"
+      style={{ background: '#E6F6F4', borderRadius: 4 }}
+    >
+      <Lightbulb
+        className="w-5 h-5 shrink-0"
+        style={{ color: '#007F6D', strokeWidth: 1.5 }}
+        aria-hidden
+      />
+      <p
+        className="flex flex-1 items-center min-w-0 text-xs font-normal leading-4 font-body"
+        style={{ color: '#007F6D' }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+export function FeaturedCarCard({
+  vehicle,
+  landedPriceNgn,
+  badge = 'verified',
+  recommendationReason,
+  isSaved,
+  onSaveClick,
+}: FeaturedCarCardProps) {
   const primaryImage = getPrimaryImage(vehicle);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (!primaryImage || imageFailed) return null;
+
   const location = [vehicle.dealerCity, vehicle.dealerState].filter(Boolean).join(', ') || '—';
   const href = `/marketplace/${vehicle.id}`;
 
@@ -58,14 +118,31 @@ export function FeaturedCarCard({ vehicle, landedPriceNgn }: FeaturedCarCardProp
         <Image
           src={primaryImage}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
           className="object-cover"
-          onError={(e) => {
-            e.currentTarget.src = fallbackImage;
-          }}
+          onError={() => setImageFailed(true)}
         />
         <VehicleImageTags vehicle={vehicle} />
-        <VerifiedBadge />
+        {badge === 'recommended' ? <RecommendedBadge /> : <VerifiedBadge />}
+        {onSaveClick != null && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSaveClick(vehicle);
+            }}
+            className={`absolute left-4 top-4 z-[2] p-2 rounded-full transition-colors ${
+              isSaved
+                ? 'text-white bg-red-500'
+                : 'text-gray-600 bg-white/90 hover:bg-red-500 hover:text-white'
+            }`}
+            aria-label={isSaved ? 'Remove from saved' : 'Save vehicle'}
+          >
+            <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
+          </button>
+        )}
       </div>
 
       {/* Content container - padding 24px, gap 24px */}
@@ -92,6 +169,10 @@ export function FeaturedCarCard({ vehicle, landedPriceNgn }: FeaturedCarCardProp
             </div>
           </div>
         </div>
+
+        {recommendationReason && (
+          <RecommendationBanner text={recommendationReason} />
+        )}
 
         {/* Divider - Line 1 */}
         <div className="w-full border-t border-[#E8E8E8] -my-1" aria-hidden />

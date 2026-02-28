@@ -2,27 +2,16 @@ import Link from 'next/link';
 import { MapPin, Calendar, Heart, ArrowRight } from 'lucide-react';
 import { Vehicle } from '../../types';
 import { formatCurrency } from '../../lib/pricingCalculator';
+import { useState } from 'react';
+import { getPrimaryImage } from '@/lib/vehicleUtils';
+
+export { getPrimaryImage };
 
 interface VehicleCardProps {
   vehicle: Vehicle;
   viewMode?: 'grid' | 'list';
   onSave?: (vehicleId: string) => void;
   isSaved?: boolean;
-}
-
-export function getPrimaryImage(vehicle: Vehicle): string {
-  const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
-
-  const primaryImage = vehicle.apiData?.listing?.retailListing?.primaryImage
-    || vehicle.apiData?.listing?.wholesaleListing?.primaryImage;
-
-  if (primaryImage) return primaryImage;
-
-  if (vehicle?.images?.length) {
-    return vehicle.images[0];
-  }
-
-  return fallbackImage;
 }
 
 // function getMileage(vehicle: Vehicle): number | undefined {
@@ -32,14 +21,10 @@ export function getPrimaryImage(vehicle: Vehicle): string {
 // }
 
 export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
-  // const landedCost = calculateLandedCost(
-  //   vehicle.priceUsd,
-  //   vehicle.vehicleType,
-  //   'RoRo',
-  //   'Lagos'
-  // );
-
   const primaryImage = getPrimaryImage(vehicle);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (!primaryImage || imageFailed) return null;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
@@ -48,10 +33,7 @@ export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
           src={primaryImage}
           alt={`${vehicle?.year ?? ''} ${vehicle?.make ?? ''} ${vehicle?.model ?? 'Vehicle'}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            // Fallback if image fails to load
-            e.currentTarget.src = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
-          }}
+          onError={() => setImageFailed(true)}
         />
         <div className="absolute top-3 left-3">
           <span className="bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded">

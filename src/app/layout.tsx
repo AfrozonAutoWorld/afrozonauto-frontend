@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   title: 'Afrozon AutoGlobal - Import Verified US Vehicles to Nigeria',
   description:
     'Afrozon AutoGlobal is your trusted partner for importing verified vehicles from the United States to Nigeria. We handle sourcing, inspection, shipping, and delivery.',
+  icons: {
+    icon: '/logo_image.svg',
+  },
 };
 
 export default function RootLayout({

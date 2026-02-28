@@ -1,4 +1,4 @@
-import { FeaturedVehiclesSection, HeroBreadcrumb, HeroSection, PopularMakesSection, FindMyCarBanner } from '@/components/home';
+import { FeaturedVehiclesSection, HeroBreadcrumb, HeroSection, PopularMakesSection, RecommendedForYouSection, FindMyCarBanner } from '@/components/home';
 import {
   AlertCircle,
   ArrowRight,
@@ -14,7 +14,7 @@ import {
   Truck,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useTrendingVehicles } from '../hooks/useVehicles';
+import { useTrendingVehicles, useRecommendedVehicles } from '../hooks/useVehicles';
 import { HowItWorks } from '../components/home/HowItWorks';
 
 
@@ -100,6 +100,7 @@ const testimonials = [
 
 export function Home() {
   const { vehicles: trendingVehicles, isLoading, isError, error, refetch } = useTrendingVehicles();
+  const { items: recommendedItems, isLoading: recommendedLoading } = useRecommendedVehicles(12);
 
   if (isError) {
     return (
@@ -130,6 +131,12 @@ export function Home() {
         descriptionText="Your next ride is one scroll away — vetted US cars, shipped to Nigeria. Discover, compare, and load more as you go."
         shouldShowSearch
         shouldShowFilters
+      />
+
+      <RecommendedForYouSection
+        vehicles={recommendedItems}
+        isLoading={recommendedLoading}
+        showLandedPrice
       />
 
       <PopularMakesSection />

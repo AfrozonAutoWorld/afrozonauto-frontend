@@ -44,7 +44,7 @@ export function useAddressMutate() {
     onError: (error: ApiError) => {
       showToast({
         type: "error",
-        message: error.message || "Failed to add address",
+        message: error.message || "Failed to update address",
       });
     },
   });
@@ -57,14 +57,14 @@ export function useAddressMutate() {
       queryClient.invalidateQueries({ queryKey: ["addresses", "default"] });
       showToast({
         type: "success",
-        message: "Address added successfully!",
+        message: "Address deleted successfully.",
       });
     },
 
     onError: (error: ApiError) => {
       showToast({
         type: "error",
-        message: error.message || "Failed to add address",
+        message: error.message || "Failed to delete address",
       });
     },
   });
@@ -94,40 +94,30 @@ export function useGetAddresses() {
   };
 }
 
+function isEmptyDefaultAddress(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value !== "object") return true;
+  const obj = value as Record<string, unknown>;
+  return !obj.id && Object.keys(obj).length === 0;
+}
+
 export function useGetDefaultAddress() {
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["addresses", "default"],
     queryFn: async () => {
-      try {
-        const response = await addressApi.getDefualtAllAddress();
-        const defaultAddress = response?.data?.data;
-        return defaultAddress ? [defaultAddress] : [];
-      } catch (err: any) {
-        if (err?.status === 404 || err?.response?.status === 404) {
-          return [];
-        }
-        throw err;
-      }
+      const response = await addressApi.getDefualtAllAddress();
+      const raw = response?.data?.data;
+      if (raw == null || isEmptyDefaultAddress(raw)) return [];
+      const defaultAddress = raw && typeof raw === "object" && "id" in raw ? raw : null;
+      return defaultAddress ? [defaultAddress] : [];
     },
-    retry: (failureCount, error: any) => {
-      if (error?.status === 404 || error?.response?.status === 404) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    retry: 1,
   });
-
-  const isNotFound =
-    error &&
-    ((error as any)?.status === 404 ||
-      (error as any)?.response?.status === 404);
 
   return {
     defaultAddresses: data || [],
     isLoading,
-    isError: isError && !isNotFound,
-    isNotFound,
-    error,
+    isError,
     refetch,
   };
 }

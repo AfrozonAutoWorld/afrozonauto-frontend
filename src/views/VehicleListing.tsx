@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Grid, List, AlertCircle, Store } from 'lucide-react';
+import { useRef } from 'react';
+import { Search, Store } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { HeroSection, HeroBreadcrumb } from '@/components/home';
 import { FeaturedCarCard } from '../components/home/FeaturedCarCard';
 import { VehicleCardSkeleton } from '../components/vehicles/VehicleCardSkeleton';
@@ -10,200 +10,61 @@ import { VehicleFilters } from '../components/vehicles/VehicleFilters';
 import { MarketplaceVehicleCard } from '../components/marketplace/MarketplaceVehicleCard';
 import { useInfiniteVehicles, useCategories } from '../hooks/useVehicles';
 import { useMarketplaceVehicles } from '../hooks/useMarketplace';
+import { useMarketplaceFilters } from '../hooks/useMarketplaceFilters';
+import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
+import { useSavedVehiclesApi, useToggleSaved } from '../hooks/useSavedVehiclesApi';
+import { buildActiveFilterChips } from '../lib/activeFilterChips';
 import type { VehicleFilters as VehicleFilterType, Vehicle } from '../types';
-import { ActiveFiltersBar, type ActiveFilterChip } from '../components/vehicles/ActiveFiltersBar';
-import { ResultsSortBar, type SortOption } from '../components/vehicles/ResultsSortBar';
+import { ActiveFiltersBar } from '../components/vehicles/ActiveFiltersBar';
+import { ResultsSortBar } from '../components/vehicles/ResultsSortBar';
+import { AlertCircle } from 'lucide-react';
 
 export function VehicleListing() {
+  const { status } = useSession();
   const { data: marketplaceVehicles } = useMarketplaceVehicles();
   const { categories } = useCategories();
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { isSaved } = useSavedVehiclesApi();
+  const { toggle, isPending } = useToggleSaved();
+  const showSave = status === 'authenticated';
 
-  const [baseFilters, setBaseFilters] = useState<Omit<VehicleFilterType, 'page' | 'limit'>>({
-    includeApi: true,
-    category: '',
-  });
-
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  // Sync filters from URL params (make, model, search, etc.)
-  useEffect(() => {
-    if (!searchParams) return;
-
-    const q = searchParams.get('q') ?? '';
-    const make = searchParams.get('make') ?? '';
-    const model = searchParams.get('model') ?? '';
-    const bodyStyle = searchParams.get('bodyStyle') ?? '';
-    const fuelType = searchParams.get('fuelType') ?? '';
-    const drivetrain = searchParams.get('drivetrain') ?? '';
-    const priceMax = searchParams.get('priceMax');
-    const yearMin = searchParams.get('yearMin');
-    const yearMax = searchParams.get('yearMax');
-
-    setBaseFilters(prev => ({
-      ...prev,
-      search: q || undefined,
-      ...(make ? { make } : {}),
-      ...(model ? { model } : {}),
-      ...(bodyStyle ? { bodyStyle } : {}),
-      ...(fuelType ? { fuelType } : {}),
-      ...(drivetrain ? { drivetrain } : {}),
-      priceMax: priceMax ? Number(priceMax) : undefined,
-      yearMin: yearMin ? Number(yearMin) : undefined,
-      yearMax: yearMax ? Number(yearMax) : undefined,
-    }));
-  }, [searchParams]);
-
-  // Update sort-related filters when sort option changes
-  useEffect(() => {
-    setBaseFilters(prev => ({
-      ...prev,
-      sortBy:
-        sortBy === 'newest'
-          ? 'createdAt'
-          : sortBy === 'price_asc' || sortBy === 'price_desc'
-            ? 'price'
-            : sortBy === 'year_desc'
-              ? 'year'
-              : 'mileage',
-      sortOrder: sortBy === 'price_desc' || sortBy === 'year_desc' ? 'desc' : 'asc',
-    }));
-  }, [sortBy]);
+  const {
+    baseFilters,
+    sortBy,
+    viewMode,
+    vehiclesFilterKey,
+    handleFilterChange,
+    handleClearFilters,
+    handleSortChange,
+    setCategory,
+  } = useMarketplaceFilters();
 
   const {
     vehicles,
-    hasMore,
+    reachedEnd,
     loadMore,
     isLoading,
+    isInitialLoading,
     isFetching,
     isFetchingMore,
     isError,
     error,
     refetch,
     meta,
-  } = useInfiniteVehicles(baseFilters);
+    isFetched,
+  } = useInfiniteVehicles(baseFilters, vehiclesFilterKey);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        loadMore();
-      },
-      { rootMargin: '300px', threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadMore]);
+  const listShown = vehicles.length > 0 || isFetchingMore;
+  const sentinelRef = useInfiniteScrollSentinel(loadMore, listShown);
 
-  const handleFilterChange = (newFilters: Partial<VehicleFilterType>) => {
-    setBaseFilters(prev => ({
-      ...prev,
-      ...newFilters,
-    }));
-  };
+  const activeFilterChips = buildActiveFilterChips(baseFilters, handleFilterChange);
+  const hasActiveFilters = activeFilterChips.length > 0;
 
-  const handleClearFilters = () => {
-    // Clear URL query params so filters/search are reset at the URL level too
-    router.replace('/marketplace');
-
-    setSortBy('newest');
-    setBaseFilters((prev) => ({
-      includeApi: prev.includeApi,
-      category: '',
-    }));
-  };
-
-  const setCategory = (slug: string) => {
-    setBaseFilters((prev) => ({ ...prev, category: slug }));
-  };
-
-  const isAll = !baseFilters?.category;
   const activeCategoryLabel = baseFilters?.category
     ? categories?.find((c) => c?.slug === baseFilters?.category)?.label ?? null
     : null;
-  const listingLabel = activeCategoryLabel ? `${activeCategoryLabel} vehicles` : 'All vehicle listings';
-
-  const makeFromParams = searchParams?.get('make') ?? baseFilters.make ?? '';
-
-  const activeFilterChips: ActiveFilterChip[] = [];
-
-  const addChip = (id: string, label: string, clear: () => void) => {
-    activeFilterChips.push({ id, label, onRemove: clear });
-  };
-
-  if (baseFilters.make) {
-    addChip('make', baseFilters.make, () =>
-      handleFilterChange({ make: undefined, model: undefined }),
-    );
-  }
-  if (baseFilters.model) {
-    addChip('model', baseFilters.model, () => handleFilterChange({ model: undefined }));
-  }
-  if (baseFilters.yearMin || baseFilters.yearMax) {
-    const from = baseFilters.yearMin ?? 'Any';
-    const to = baseFilters.yearMax ?? 'Any';
-    addChip('year', `${from}-${to}`, () =>
-      handleFilterChange({ yearMin: undefined, yearMax: undefined }),
-    );
-  }
-  if (baseFilters.condition) {
-    const conditionLabel =
-      baseFilters.condition === 'cpo'
-        ? 'CPO'
-        : baseFilters.condition[0].toUpperCase() + baseFilters.condition.slice(1);
-    addChip('condition', conditionLabel, () =>
-      handleFilterChange({ condition: undefined }),
-    );
-  }
-  if (baseFilters.bodyStyle) {
-    addChip('bodyStyle', baseFilters.bodyStyle, () =>
-      handleFilterChange({ bodyStyle: undefined }),
-    );
-  }
-  if (baseFilters.fuelType) {
-    addChip('fuelType', baseFilters.fuelType, () =>
-      handleFilterChange({ fuelType: undefined }),
-    );
-  }
-  if (baseFilters.drivetrain) {
-    addChip('drivetrain', baseFilters.drivetrain, () =>
-      handleFilterChange({ drivetrain: undefined }),
-    );
-  }
-  if (baseFilters.exteriorColor) {
-    addChip('exteriorColor', baseFilters.exteriorColor, () =>
-      handleFilterChange({ exteriorColor: undefined }),
-    );
-  }
-  if (baseFilters.interiorColor) {
-    addChip('interiorColor', baseFilters.interiorColor, () =>
-      handleFilterChange({ interiorColor: undefined }),
-    );
-  }
-  if (baseFilters.priceMin || baseFilters.priceMax) {
-    addChip(
-      'price',
-      `${baseFilters.priceMin?.toLocaleString() ?? 'Any'}–${
-        baseFilters.priceMax?.toLocaleString() ?? 'Any'
-      }`,
-      () => handleFilterChange({ priceMin: undefined, priceMax: undefined }),
-    );
-  }
-  if (baseFilters.mileageMax) {
-    addChip(
-      'mileage',
-      `Under ${baseFilters.mileageMax.toLocaleString()} mi`,
-      () => handleFilterChange({ mileageMax: undefined }),
-    );
-  }
-
-  const hasActiveFilters = activeFilterChips.length > 0;
+  const listingLabel = activeCategoryLabel
+    ? `${activeCategoryLabel} vehicles`
+    : 'All vehicle listings';
 
   if (isError) {
     return (
@@ -225,6 +86,11 @@ export function VehicleListing() {
     );
   }
 
+  const gridClass =
+    viewMode === 'grid'
+      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+      : 'space-y-4';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <HeroSection
@@ -232,7 +98,6 @@ export function VehicleListing() {
         minHeightClass="min-h-[340px] sm:min-h-[380px] lg:min-h-[420px]"
       />
 
-      {/* Marketplace Listings */}
       {marketplaceVehicles && marketplaceVehicles.length > 0 && (
         <div className="px-4 pt-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex gap-2 items-center mb-4">
@@ -252,14 +117,14 @@ export function VehicleListing() {
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-          <div className="lg:w-64 flex-shrink-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          <aside className="lg:w-64 flex-shrink-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <VehicleFilters
               filters={baseFilters as VehicleFilterType}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
               resultCount={meta?.total ?? 0}
             />
-          </div>
+          </aside>
 
           <div className="flex flex-col flex-1 gap-4 min-w-0">
             {hasActiveFilters && (
@@ -270,67 +135,65 @@ export function VehicleListing() {
               isLoading={isLoading}
               label={listingLabel}
               sortBy={sortBy}
-              onSortChange={(value) => setSortBy(value)}
+              onSortChange={handleSortChange}
             />
 
-            {(isLoading || (vehicles.length === 0 && isFetching)) && (
-              <div
-                className={
-                  viewMode === 'grid'
-                    ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-                    : 'space-y-4'
-                }
-              >
+            {isInitialLoading && (
+              <div className={gridClass}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <VehicleCardSkeleton key={i} />
                 ))}
               </div>
             )}
 
-            {!isLoading && !isFetching && vehicles.length === 0 && (
-              <div className="p-12 text-center bg-white rounded-xl">
-                <div className="flex justify-center items-center mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full">
-                  <Search className="w-8 h-8 text-gray-400" />
+            {isFetched &&
+              !isFetching &&
+              vehicles.length === 0 &&
+              !isFetchingMore &&
+              (meta == null || meta.total === 0) && (
+                <div className="p-12 text-center bg-white rounded-xl">
+                  <div className="flex justify-center items-center mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full">
+                    <Search className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    No vehicles found
+                  </h3>
+                  <p className="mb-4 text-gray-600">
+                    Try adjusting your search or filters to find what you're looking for.
+                  </p>
+                  <button
+                    onClick={handleClearFilters}
+                    className="px-6 py-2 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
+                  >
+                    Clear All Filters
+                  </button>
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">No vehicles found</h3>
-                <p className="mb-4 text-gray-600">
-                  Try adjusting your search or filters to find what you're looking for.
-                </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="px-6 py-2 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
-                >
-                  Clear All Filters
-                </button>
-              </div>
-            )}
+              )}
 
-            {!isLoading && vehicles.length > 0 && (
+            {!isInitialLoading && (vehicles.length > 0 || isFetchingMore) && (
               <>
-                <div
-                  className={
-                    viewMode === 'grid'
-                      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
-                      : 'space-y-4'
-                  }
-                >
+                <div className={gridClass}>
                   {vehicles.map((vehicle, index) => (
                     <FeaturedCarCard
-                      key={vehicle?.vin ? `${vehicle.vin}-${index}` : `${vehicle?.id ?? index}-${index}`}
+                      key={
+                        vehicle?.vin
+                          ? `${vehicle.vin}-${index}`
+                          : `${vehicle?.id ?? index}-${index}`
+                      }
                       vehicle={vehicle as Vehicle}
+                      // isSaved={showSave ? isSaved((vehicle as Vehicle).id) : undefined}
+                      // onSaveClick={showSave ? (v) => toggle(v) : undefined}
                     />
                   ))}
-
                   {isFetchingMore &&
-                    Array.from({ length: 3 }).map((_, i) => (
+                    Array.from({ length: 4 }).map((_, i) => (
                       <VehicleCardSkeleton key={`more-${i}`} />
                     ))}
                 </div>
 
                 <div ref={sentinelRef} className="h-1 min-h-[1px]" aria-hidden />
 
-                {/* Load more button */}
-                {hasMore && !isFetchingMore && (
+                {!reachedEnd && !isFetchingMore && (
                   <div className="flex justify-center py-10">
                     <button
                       type="button"
@@ -339,6 +202,11 @@ export function VehicleListing() {
                     >
                       Load more vehicles
                     </button>
+                  </div>
+                )}
+                {reachedEnd && vehicles.length > 0 && (
+                  <div className="py-10 text-center text-gray-500">
+                    You have reached the end
                   </div>
                 )}
               </>

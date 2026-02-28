@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   AlertCircle,
   Ship,
   Truck,
@@ -18,6 +17,7 @@ import {
   Download,
   Shield,
 } from 'lucide-react';
+import { GradientPageBar } from '@/components/ui/GradientPageBar';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
 import { useInitializePayment } from '@/hooks/usePaymentMutation';
 import { useOrder } from '@/hooks/useOrderQueries';
@@ -257,18 +257,10 @@ export function RequestDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <button
-            onClick={() => router.push('/marketplace/buyer')}
-            className="flex gap-2 items-center text-gray-600 transition-colors hover:text-emerald-600"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
+      <GradientPageBar
+        backLabel="Back to Dashboard"
+        onBack={() => router.push('/marketplace/buyer')}
+      />
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Status Banner */}

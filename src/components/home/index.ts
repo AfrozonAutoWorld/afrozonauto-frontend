@@ -11,4 +11,9 @@ export { FeaturedCarCard } from './FeaturedCarCard';
 export type { FeaturedCarCardProps } from './FeaturedCarCard';
 export { FeaturedVehiclesSection } from './FeaturedVehiclesSection';
 export type { FeaturedVehiclesSectionProps } from './FeaturedVehiclesSection';
+export { RecommendedForYouSection } from './RecommendedForYouSection';
+export type {
+  RecommendedForYouSectionProps,
+  RecommendedVehicle,
+} from './RecommendedForYouSection';
 export { FindMyCarBanner } from './FindMyCarBanner';

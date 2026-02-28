@@ -17,11 +17,13 @@ export const addressApi = {
       const response = await apiClient.get<any>(
         `/addresses/default?type=NORMAL`,
       );
-
       return response;
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
-      throw new Error("Failed to fetch vehicles");
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return { data: { data: null } };
+      }
+      console.error("Error fetching default address:", error);
+      throw new Error("Failed to fetch default address");
     }
   },
   addUserAddress: async (data: AddressInput): Promise<any> => {

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   MapPin,
   Car,
   Calendar,
@@ -14,12 +13,15 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Heart,
 } from 'lucide-react';
+import { GradientPageBar } from '@/components/ui/GradientPageBar';
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
 import { useSession } from 'next-auth/react';
 import { useCostBreakdown } from '@/hooks/useOrderQueries';
+import { useSavedVehiclesApi, useToggleSaved } from '@/hooks/useSavedVehiclesApi';
 import { useCreateOrder } from '@/hooks/useOrderMutation';
 import type { Vehicle } from '../types';
 
@@ -216,6 +218,9 @@ export function VehicleDetail() {
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
   const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+  const { status } = useSession();
+  const { isSaved } = useSavedVehiclesApi();
+  const { toggle, isPending: isSavePending } = useToggleSaved();
 
   const createOrderMutation = useCreateOrder();
 
@@ -310,21 +315,10 @@ export function VehicleDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-gray-900 to-emerald-900">
-        <div className="flex flex-col gap-3 px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex gap-2 items-center text-sm font-medium text-gray-200 transition-colors hover:text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to search
-          </button>
-          <p className="text-sm text-emerald-100 truncate sm:text-right">
-            {vehicle.year} {vehicle.make} {vehicle.model}
-          </p>
-        </div>
-      </div>
+      <GradientPageBar
+        backLabel="Back to search"
+        rightContent={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+      />
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -339,7 +333,24 @@ export function VehicleDetail() {
             />
 
             <div className="p-6 bg-white rounded-2xl shadow-sm">
-              <VehicleDetailHeader vehicle={vehicle as Vehicle} />
+              <div className="flex flex-wrap gap-4 justify-between items-start">
+                <VehicleDetailHeader vehicle={vehicle as Vehicle} />
+                {status === 'authenticated' && (
+                  <button
+                    type="button"
+                    onClick={() => toggle(vehicle as Vehicle)}
+                    disabled={isSavePending}
+                    className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      isSaved(vehicle.id)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
+                    }`}
+                  >
+                    <Heart className={`w-5 h-5 ${isSaved(vehicle.id) ? 'fill-current' : ''}`} />
+                    {isSaved(vehicle.id) ? 'Saved' : 'Save vehicle'}
+                  </button>
+                )}
+              </div>
               <VehicleSpecsGrid specs={specs} />
               <VehicleVinSection vin={vehicle.vin} />
               {vehicle.features && vehicle.features.length > 0 && (

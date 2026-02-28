@@ -297,7 +297,12 @@ export interface VehicleMeta {
   limit: number;
   total: number;
   pages: number;
+  /** Raw count returned by the API (before our de-dup / price filter). Use this to know if we truly reached the end. */
   fromApi: number;
+  /** Count of API listings that made it into the response after de-dup and price filter. */
+  filteredCount?: number;
+  /** True when this response used the Auto.dev API (so fromApi is the raw API count). */
+  apiUsed?: boolean;
   hasMore?: boolean;
 }
 

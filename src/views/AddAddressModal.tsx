@@ -93,15 +93,21 @@ export function AddAddressModal({ onClose, onSuccess }: Props) {
           <FormInput label="Additional Info (Optional)" name="additionalInfo" type="text" form={form} />
 
           {/* Checkbox */}
-          <div className="flex items-center gap-2 md:col-span-2">
-            <input
-              type="checkbox"
-              name="isDefault"
-              checked={form.values.isDefault}
-              onChange={form.handleChange}
-              className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-            />
-            <label className="text-sm font-medium cursor-pointer">Set as default address</label>
+          <div className="flex flex-col gap-1 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="isDefault"
+                checked={form.values.isDefault}
+                onChange={form.handleChange}
+                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                id="add-address-default"
+              />
+              <label htmlFor="add-address-default" className="text-sm font-medium cursor-pointer">
+                Set as default address
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">Used for checkout and delivery when you have multiple addresses.</p>
           </div>
 
           {/* Submit / Cancel */}

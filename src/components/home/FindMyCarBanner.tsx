@@ -26,7 +26,7 @@ export function FindMyCarBanner() {
             </p>
 
             <Link
-              href="/marketplace"
+              href="/find-a-car"
               className="inline-flex items-center gap-2 px-8 py-4 mt-2 text-base sm:text-lg font-medium text-white bg-[#003B33] rounded-lg shadow-sm hover:bg-[#012821] transition-colors w-fit"
             >
               <span>Find my car</span>

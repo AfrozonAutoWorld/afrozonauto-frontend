@@ -81,6 +81,7 @@ const defaultMeta: VehicleMeta = {
   total: 0,
   pages: 0,
   fromApi: 0,
+  filteredCount: 0,
   hasMore: false,
 };
 
@@ -186,12 +187,51 @@ export const vehiclesApi = {
     return Array.isArray(payload) ? payload : (payload?.data ?? []);
   },
 
+  /** Recommended for you: admin-curated; when logged in, includes saved vehicles with reason "You saved this". */
+  getRecommended: async (limit?: number): Promise<Array<{ vehicle: Vehicle; reason?: string }>> => {
+    const params = limit != null ? { limit } : undefined;
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { data: Array<{ vehicle: Vehicle; reason?: string }> };
+      message: string;
+    }>("/vehicles/recommended", { params });
+    const payload = response?.data?.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
+
   getCategories: async (): Promise<VehicleCategory[]> => {
     const response = await apiClient.get<{ success: boolean; data: { data: VehicleCategory[] }; message: string }>(
       "/vehicles/categories",
     );
     const payload = response?.data?.data;
     return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
+
+  /** Get current user's saved vehicles (auth required). */
+  getSavedVehicles: async (): Promise<Array<{ vehicle: Vehicle; savedAt: string }>> => {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { data: Array<{ vehicle: Vehicle; savedAt: string }> };
+      message: string;
+    }>("/vehicles/saved");
+    const payload = response?.data?.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
+
+  /** Add vehicle to saved list (auth required). Vehicle must exist in DB; use saveVehicle first for API-only listings. */
+  addSavedVehicle: async (vehicleId: string): Promise<{ savedAt: string }> => {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: { savedAt: string };
+      message: string;
+    }>("/vehicles/saved", { vehicleId });
+    const data = response?.data?.data;
+    return data ?? (response?.data as any)?.data;
+  },
+
+  /** Remove vehicle from saved list (auth required). */
+  removeSavedVehicle: async (vehicleId: string): Promise<void> => {
+    await apiClient.delete(`/vehicles/saved/${vehicleId}`);
   },
 };
 
