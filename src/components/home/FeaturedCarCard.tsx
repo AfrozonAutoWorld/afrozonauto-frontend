@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Settings2, Check, ArrowRight, Lightbulb, Heart } from 'lucide-react';
+import { MapPin, Calendar, Settings2, Check, ArrowRight, Lightbulb, Heart, Star } from 'lucide-react';
 import type { Vehicle } from '@/types';
 import { formatCurrency } from '@/lib/pricingCalculator';
 import { getPrimaryImage } from '@/lib/vehicleUtils';
@@ -11,7 +11,7 @@ import Image from 'next/image';
 export interface FeaturedCarCardProps {
   vehicle: Vehicle;
   landedPriceNgn?: number;
-  badge?: 'verified' | 'recommended';
+  badge?: 'verified' | 'recommended' | 'specialty';
   recommendationReason?: string;
   /** When set, show save button and call onSaveClick(vehicle) when clicked. */
   isSaved?: boolean;
@@ -41,12 +41,27 @@ function VehicleImageTags({ vehicle }: { vehicle: Vehicle }) {
 
 function VerifiedBadge() {
   return (
-    <div className="flex absolute top-4 right-4 flex-row gap-1 items-center px-2 py-1 rounded-lg bg-white/90">
+    <div className="flex absolute top-4 left-4 flex-row gap-1 items-center px-2 py-1 rounded-lg bg-white/90">
       <span className="flex items-center justify-center w-[11px] h-[10px] text-[#00A67E]" aria-hidden>
         <Check className="w-[11px] h-[10px]" strokeWidth={3} />
       </span>
       <span className="font-body font-bold text-[10px] leading-3 text-[#1D242D]">
         VERIFIED
+      </span>
+    </div>
+  );
+}
+
+function SpecialtyBadge() {
+  return (
+    <div
+      className="flex absolute left-4 top-4 flex-row items-center gap-1 px-2 py-1 rounded-lg z-[3] bg-[#2D7D8F]"
+    >
+      <span className="flex items-center justify-center w-[11px] h-[10px] shrink-0" aria-hidden>
+        <Star className="w-[11px] h-[10px] text-white" strokeWidth={2.5} />
+      </span>
+      <span className="font-body font-bold text-[10px] leading-[12px] text-white uppercase tracking-[0.04em]">
+        Specialty
       </span>
     </div>
   );
@@ -74,7 +89,7 @@ function RecommendedBadge() {
   );
 }
 
-function RecommendationBanner({ text }: { text: string }) {
+function RecommendationBanner({ text }: Readonly<{ text: string }>) {
   return (
     <div
       className="flex flex-row items-center gap-2.5 p-2.5 rounded self-stretch"
@@ -111,6 +126,15 @@ export function FeaturedCarCard({
   const location = [vehicle.dealerCity, vehicle.dealerState].filter(Boolean).join(', ') || '—';
   const href = `/marketplace/${vehicle.id}`;
 
+  let badgeElement: JSX.Element;
+  if (badge === 'recommended') {
+    badgeElement = <RecommendedBadge />;
+  } else if (badge === 'specialty') {
+    badgeElement = <SpecialtyBadge />;
+  } else {
+    badgeElement = <VerifiedBadge />;
+  }
+
   return (
     <article className="box-border flex flex-col items-start w-full max-w-[400px] bg-white border border-[#F1F5F9] rounded-2xl shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden isolate">
       {/* Image container */}
@@ -124,7 +148,7 @@ export function FeaturedCarCard({
           onError={() => setImageFailed(true)}
         />
         <VehicleImageTags vehicle={vehicle} />
-        {badge === 'recommended' ? <RecommendedBadge /> : <VerifiedBadge />}
+        {badgeElement}
         {onSaveClick != null && (
           <button
             type="button"

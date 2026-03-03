@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 export class ApiError extends Error {
   constructor(
@@ -42,8 +42,19 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      window.location.href = "/login";
+    const status = error.response?.status;
+    if (typeof globalThis !== "undefined" && globalThis.window && status === 401) {
+      const currentPath = globalThis.window.location.pathname;
+      const url = error.config?.url as string | undefined;
+      const isAuthEndpoint = url?.includes("/auth/");
+
+      // Only act when we're not already on the login page
+      // and the failing call isn't a NextAuth auth endpoint
+      if (!currentPath.startsWith("/login") && !isAuthEndpoint) {
+        // Clear the NextAuth session so we stop reusing an invalid token,
+        // then send the user to the login page.
+        void signOut({ callbackUrl: "/login" });
+      }
     }
     return Promise.reject(error);
   },

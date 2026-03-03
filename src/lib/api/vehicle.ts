@@ -199,6 +199,18 @@ export const vehiclesApi = {
     return Array.isArray(payload) ? payload : (payload?.data ?? []);
   },
 
+  /** Specialty vehicles rail: rule-driven + DB specialty flag. */
+  getSpecialty: async (limit?: number): Promise<Array<{ vehicle: Vehicle; reason?: string }>> => {
+    const params = limit != null ? { limit } : undefined;
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { data: Array<{ vehicle: Vehicle; reason?: string }> };
+      message: string;
+    }>("/vehicles/specialty", { params });
+    const payload = response?.data?.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  },
+
   getCategories: async (): Promise<VehicleCategory[]> => {
     const response = await apiClient.get<{ success: boolean; data: { data: VehicleCategory[] }; message: string }>(
       "/vehicles/categories",

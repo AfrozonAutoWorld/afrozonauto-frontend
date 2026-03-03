@@ -16,4 +16,6 @@ export type {
   RecommendedForYouSectionProps,
   RecommendedVehicle,
 } from './RecommendedForYouSection';
+export { SpecialtyVehiclesSection } from './SpecialtyVehiclesSection';
+export type { SpecialtyVehiclesSectionProps } from './SpecialtyVehiclesSection';
 export { FindMyCarBanner } from './FindMyCarBanner';

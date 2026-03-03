@@ -1,7 +1,6 @@
-import { FeaturedVehiclesSection, HeroBreadcrumb, HeroSection, PopularMakesSection, RecommendedForYouSection, FindMyCarBanner } from '@/components/home';
+import { FeaturedVehiclesSection, HeroBreadcrumb, HeroSection, PopularMakesSection, RecommendedForYouSection, SpecialtyVehiclesSection, FindMyCarBanner } from '@/components/home';
 import {
   AlertCircle,
-  ArrowRight,
   CheckCircle,
   Clock,
   CreditCard,
@@ -10,11 +9,9 @@ import {
   Search,
   Shield,
   Ship,
-  Star,
   Truck,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useTrendingVehicles, useRecommendedVehicles } from '../hooks/useVehicles';
+import { useTrendingVehicles, useRecommendedVehicles, useSpecialtyVehicles } from '../hooks/useVehicles';
 import { HowItWorks } from '../components/home/HowItWorks';
 
 
@@ -101,6 +98,7 @@ const testimonials = [
 export function Home() {
   const { vehicles: trendingVehicles, isLoading, isError, error, refetch } = useTrendingVehicles();
   const { items: recommendedItems, isLoading: recommendedLoading } = useRecommendedVehicles(12);
+  const { items: specialtyItems, isLoading: specialtyLoading } = useSpecialtyVehicles(12);
 
   if (isError) {
     return (
@@ -136,6 +134,12 @@ export function Home() {
       <RecommendedForYouSection
         vehicles={recommendedItems}
         isLoading={recommendedLoading}
+        showLandedPrice
+      />
+
+      <SpecialtyVehiclesSection
+        vehicles={specialtyItems}
+        isLoading={specialtyLoading}
         showLandedPrice
       />
 

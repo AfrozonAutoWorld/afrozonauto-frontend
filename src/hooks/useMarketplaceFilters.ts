@@ -99,6 +99,7 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
         baseFilters?.interiorColor ?? '',
         baseFilters?.mileageMax ?? '',
         baseFilters?.state ?? '',
+        baseFilters?.section ?? '',
       ].join('|'),
     [
       searchParamsString,
@@ -121,6 +122,7 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
       baseFilters?.interiorColor,
       baseFilters?.mileageMax,
       baseFilters?.state,
+      baseFilters?.section,
     ]
   );
 

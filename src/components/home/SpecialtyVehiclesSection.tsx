@@ -8,37 +8,30 @@ import type { Vehicle } from '@/types';
 import { FeaturedCarCard } from './FeaturedCarCard';
 import { VehicleCardSkeleton } from '@/components/vehicles/VehicleCardSkeleton';
 import { calculateLandedCost } from '@/lib/pricingCalculator';
+import type { RecommendedVehicle } from './RecommendedForYouSection';
 
-export interface RecommendedVehicle {
-  vehicle: Vehicle;
-  reason?: string;
-}
-
-export interface RecommendedForYouSectionProps {
+export interface SpecialtyVehiclesSectionProps {
   vehicles: RecommendedVehicle[] | Vehicle[];
   isLoading?: boolean;
-  defaultReason?: string;
   showLandedPrice?: boolean;
 }
 
 const CARD_WIDTH = 400;
 const GAP = 24;
 const SCROLL_AMOUNT = CARD_WIDTH + GAP;
-const DEFAULT_REASON = 'Near-new, under 15k miles, exceptional condition at this price';
 
-export function RecommendedForYouSection({
+export function SpecialtyVehiclesSection({
   vehicles,
   isLoading = false,
-  defaultReason = DEFAULT_REASON,
   showLandedPrice = true,
-}: Readonly<RecommendedForYouSectionProps>) {
+}: Readonly<SpecialtyVehiclesSectionProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const [maxScroll, setMaxScroll] = useState(0);
 
   const normalized = vehicles.map((v) =>
-    'vehicle' in v ? v : { vehicle: v, reason: defaultReason }
+    'vehicle' in v ? v.vehicle : v
   );
   const displayList = normalized.slice(0, 12);
 
@@ -66,23 +59,23 @@ export function RecommendedForYouSection({
   };
 
   return (
-    <section className="py-20 bg-[#F9FAFB]" aria-labelledby="recommended-for-you-heading">
+    <section className="py-16 bg-[#F9FAFB]" aria-labelledby="specialty-vehicles-heading">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1 mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2
-              id="recommended-for-you-heading"
-              className="font-sans font-bold text-2xl sm:text-3xl text-[#0F172A]"
+              id="specialty-vehicles-heading"
+              className="font-sans text-2xl font-bold text-[#0F172A] sm:text-3xl"
             >
-              Recommended for you
+              Specialty Vehicles
             </h2>
-            <p className="mt-1 font-body text-sm sm:text-base text-[#64748B]">
-              Hand-picked vehicles that match your preferences and budget
+            <p className="mt-1 max-w-xl text-sm font-body sm:text-base text-[#64748B]">
+              Explore commercial, recreational, and high-performance vehicles beyond standard cars.
             </p>
           </div>
           <Link
-            href="/marketplace?section=recommended"
-            className="mt-4 sm:mt-0 inline-flex items-center gap-1 font-body font-medium text-[#0D7A4A] hover:text-[#0C623C] transition-colors shrink-0"
+            href="/marketplace?section=specialty"
+            className="inline-flex gap-1 items-center mt-4 font-medium text-[#0D7A4A] transition-colors sm:mt-0 font-body hover:text-[#0C623C] shrink-0"
           >
             View all
             <ArrowRight className="w-4 h-4" aria-hidden />
@@ -108,7 +101,7 @@ export function RecommendedForYouSection({
                 dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
                 whileTap={{ cursor: 'grabbing' }}
               >
-                {displayList.map(({ vehicle, reason }) => {
+                {displayList.map((vehicle) => {
                   const landed = showLandedPrice
                     ? calculateLandedCost(
                         vehicle.priceUsd ?? 0,
@@ -124,8 +117,7 @@ export function RecommendedForYouSection({
                       <FeaturedCarCard
                         vehicle={vehicle}
                         landedPriceNgn={landed}
-                        badge="recommended"
-                        recommendationReason={reason ?? defaultReason}
+                        badge="specialty"
                       />
                     </div>
                   );
@@ -136,7 +128,7 @@ export function RecommendedForYouSection({
               <button
                 type="button"
                 onClick={() => scroll('left')}
-                className="flex items-center justify-center w-10 h-10 rounded-lg border border-[#E8E8E8] bg-white text-[#546881] hover:bg-gray-50 hover:border-[#ccc] transition-colors"
+                className="flex justify-center items-center w-10 h-10 rounded-lg border transition-colors border-[#E2E8F0] bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] hover:border-[#94A3B8]"
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -144,7 +136,7 @@ export function RecommendedForYouSection({
               <button
                 type="button"
                 onClick={() => scroll('right')}
-                className="flex items-center justify-center w-10 h-10 rounded-lg border border-[#E8E8E8] bg-white text-[#546881] hover:bg-gray-50 hover:border-[#ccc] transition-colors"
+                className="flex justify-center items-center w-10 h-10 rounded-lg border transition-colors border-[#E2E8F0] bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] hover:border-[#94A3B8]"
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -156,3 +148,4 @@ export function RecommendedForYouSection({
     </section>
   );
 }
+

@@ -274,11 +274,15 @@ export interface VehicleFilters {
 
   // Special filters
   featured?: boolean;
+  recommended?: boolean;
+  specialty?: boolean;
   isActive?: boolean;
   source?: VehicleSource;
 
   // Search
   search?: string;
+  /** High-level section, used for deep links like section=recommended|specialty */
+  section?: 'recommended' | 'specialty';
 
   // Pagination
   page?: number;

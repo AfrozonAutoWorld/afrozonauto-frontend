@@ -40,6 +40,22 @@ export function useRecommendedVehicles(limit?: number) {
   };
 }
 
+export function useSpecialtyVehicles(limit?: number) {
+  const queryResult = useQuery<RecommendedVehicleItem[], Error>({
+    queryKey: ["vehicles", "specialty", limit],
+    queryFn: () => vehiclesApi.getSpecialty(limit),
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
+  return {
+    items: queryResult.data ?? [],
+    isLoading: queryResult.isLoading,
+    isError: queryResult.isError,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
+  };
+}
+
 export function useCategories() {
   const queryResult = useQuery<VehicleCategory[], Error>({
     queryKey: ["vehicles", "categories"],

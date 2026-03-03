@@ -33,6 +33,7 @@ export function buildMarketplaceQueryString(
   if (filters.exteriorColor) p.set('exteriorColor', filters.exteriorColor);
   if (filters.interiorColor) p.set('interiorColor', filters.interiorColor);
   if (filters.state) p.set('state', filters.state);
+  if (filters.section) p.set('section', filters.section);
   if (filters.yearMin != null) p.set('yearMin', String(filters.yearMin));
   if (filters.yearMax != null) p.set('yearMax', String(filters.yearMax));
   if (filters.priceMin != null) p.set('priceMin', String(filters.priceMin));
@@ -72,6 +73,7 @@ export function parseMarketplaceSearchParams(
   const exteriorColor = searchParams.get('exteriorColor') ?? '';
   const interiorColor = searchParams.get('interiorColor') ?? '';
   const state = searchParams.get('state') ?? '';
+  const section = searchParams.get('section') ?? '';
   const priceMin = searchParams.get('priceMin');
   const priceMax = searchParams.get('priceMax');
   const yearMin = searchParams.get('yearMin');
@@ -93,6 +95,7 @@ export function parseMarketplaceSearchParams(
     ...(exteriorColor && { exteriorColor }),
     ...(interiorColor && { interiorColor }),
     ...(state && { state }),
+    ...(section && { section: section as 'recommended' | 'specialty' }),
     ...(priceMin != null && { priceMin: Number(priceMin) }),
     ...(priceMax != null && { priceMax: Number(priceMax) }),
     ...(yearMin != null && { yearMin: Number(yearMin) }),
