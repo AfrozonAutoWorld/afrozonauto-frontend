@@ -1,4 +1,12 @@
-import { FeaturedVehiclesSection, HeroBreadcrumb, HeroSection, PopularMakesSection, RecommendedForYouSection, SpecialtyVehiclesSection, FindMyCarBanner } from '@/components/home';
+import {
+  FeaturedVehiclesSection,
+  HeroBreadcrumb,
+  HeroSection,
+  PopularMakesSection,
+  RecommendedForYouSection,
+  SpecialtyVehiclesSection,
+  FindMyCarBanner
+} from "@/components/home";
 import {
   AlertCircle,
   CheckCircle,
@@ -9,96 +17,115 @@ import {
   Search,
   Shield,
   Ship,
-  Truck,
-} from 'lucide-react';
-import { useTrendingVehicles, useRecommendedVehicles, useSpecialtyVehicles } from '../hooks/useVehicles';
-import { HowItWorks } from '../components/home/HowItWorks';
-
+  Truck
+} from "lucide-react";
+import {
+  useTrendingVehicles,
+  useRecommendedVehicles,
+  useSpecialtyVehicles
+} from "../hooks/useVehicles";
+import { HowItWorks } from "../components/home/HowItWorks";
 
 const features = [
   {
     icon: Shield,
-    title: 'Verified Vehicles',
-    description: 'Every vehicle undergoes professional inspection with VIN verification before purchase.',
+    title: "Verified Vehicles",
+    description:
+      "Every vehicle undergoes professional inspection with VIN verification before purchase."
   },
   {
     icon: Truck,
-    title: 'Door-to-Door Delivery',
-    description: 'From US dealers to your doorstep in Nigeria. We handle everything.',
+    title: "Door-to-Door Delivery",
+    description:
+      "From US dealers to your doorstep in Nigeria. We handle everything."
   },
   {
     icon: Clock,
-    title: 'Transparent Timeline',
-    description: 'Track your vehicle at every stage with real-time updates and notifications.',
+    title: "Transparent Timeline",
+    description:
+      "Track your vehicle at every stage with real-time updates and notifications."
   },
   {
     icon: CreditCard,
-    title: 'Secure Escrow',
-    description: 'Your funds are protected in escrow until you approve the purchase.',
-  },
+    title: "Secure Escrow",
+    description:
+      "Your funds are protected in escrow until you approve the purchase."
+  }
 ];
 
 const steps = [
   {
     icon: Search,
-    number: '01',
-    title: 'Search & Request',
-    description: 'Browse verified US vehicles and submit a request for your chosen car.',
+    number: "01",
+    title: "Search & Request",
+    description:
+      "Browse verified US vehicles and submit a request for your chosen car."
   },
   {
     icon: FileCheck,
-    number: '02',
-    title: 'Quote & Deposit',
-    description: 'Receive detailed pricing and pay a 30% deposit to secure your vehicle.',
+    number: "02",
+    title: "Quote & Deposit",
+    description:
+      "Receive detailed pricing and pay a 30% deposit to secure your vehicle."
   },
   {
     icon: CheckCircle,
-    number: '03',
-    title: 'Inspection & Approval',
-    description: 'Review professional inspection report and VIN history before we purchase.',
+    number: "03",
+    title: "Inspection & Approval",
+    description:
+      "Review professional inspection report and VIN history before we purchase."
   },
   {
     icon: Ship,
-    number: '04',
-    title: 'Purchase & Ship',
-    description: 'We buy the vehicle and handle export, shipping, and customs clearance.',
+    number: "04",
+    title: "Purchase & Ship",
+    description:
+      "We buy the vehicle and handle export, shipping, and customs clearance."
   },
   {
     icon: MapPin,
-    number: '05',
-    title: 'Delivery',
-    description: 'Receive your vehicle at your doorstep anywhere in Nigeria.',
-  },
+    number: "05",
+    title: "Delivery",
+    description: "Receive your vehicle at your doorstep anywhere in Nigeria."
+  }
 ];
 
 const testimonials = [
   {
-    name: 'Chukwuemeka O.',
-    location: 'Lagos',
+    name: "Chukwuemeka O.",
+    location: "Lagos",
     text: "Bought a 2021 Toyota Highlander through Afrozon. The process was seamless and the car arrived in perfect condition.",
     rating: 5,
-    vehicle: '2021 Toyota Highlander',
+    vehicle: "2021 Toyota Highlander"
   },
   {
-    name: 'Amina B.',
-    location: 'Abuja',
+    name: "Amina B.",
+    location: "Abuja",
     text: "Finally, a transparent auto import service! The calculator helped me budget properly and there were no surprise fees.",
     rating: 5,
-    vehicle: '2020 Honda CR-V',
+    vehicle: "2020 Honda CR-V"
   },
   {
-    name: 'Oluwaseun A.',
-    location: 'Port Harcourt',
+    name: "Oluwaseun A.",
+    location: "Port Harcourt",
     text: "The inspection report saved me from buying a car with hidden damage. Afrozon's team is truly professional.",
     rating: 5,
-    vehicle: '2019 Lexus RX 350',
-  },
+    vehicle: "2019 Lexus RX 350"
+  }
 ];
 
 export function Home() {
-  const { vehicles: trendingVehicles, isLoading, isError, error, refetch } = useTrendingVehicles();
-  const { items: recommendedItems, isLoading: recommendedLoading } = useRecommendedVehicles(12);
-  const { items: specialtyItems, isLoading: specialtyLoading } = useSpecialtyVehicles(12);
+  const {
+    vehicles: trendingVehicles,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useTrendingVehicles();
+  const { items: recommendedItems, isLoading: recommendedLoading } =
+    useRecommendedVehicles(12);
+  const { items: specialtyItems, isLoading: specialtyLoading } =
+    useSpecialtyVehicles(12);
 
   if (isError) {
     return (
@@ -108,7 +135,9 @@ export function Home() {
             <AlertCircle className="w-6 h-6" />
             <h2 className="text-xl font-semibold">Error Loading Vehicles</h2>
           </div>
-          <p className="mb-6 text-gray-600">{error?.message || 'Something went wrong'}</p>
+          <p className="mb-6 text-gray-600">
+            {error?.message || "Something went wrong"}
+          </p>
           <button
             onClick={() => refetch()}
             className="py-3 w-full text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
@@ -119,7 +148,6 @@ export function Home() {
       </div>
     );
   }
-
 
   return (
     <div>
@@ -137,26 +165,25 @@ export function Home() {
         showLandedPrice
       />
 
-      <SpecialtyVehiclesSection
-        vehicles={specialtyItems}
-        isLoading={specialtyLoading}
-        showLandedPrice
-      />
-
-      <PopularMakesSection />
-
       <FeaturedVehiclesSection
         vehicles={trendingVehicles}
         isLoading={isLoading}
         showLandedPrice
       />
-  
+
+      <PopularMakesSection />
+
+      <SpecialtyVehiclesSection
+        vehicles={specialtyItems}
+        isLoading={specialtyLoading}
+        showLandedPrice
+      />
+      
+      <FindMyCarBanner />
+
       <section className="">
         <HowItWorks />
       </section>
-
-      <FindMyCarBanner />
-
     </div>
   );
 }
