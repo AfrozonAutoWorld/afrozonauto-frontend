@@ -221,7 +221,6 @@ export function SellVehicleStep3() {
               <PhotoSlot
                 key={slot.key}
                 slot={slot}
-                index={index}
                 hasPhoto={photos[index] != null}
                 previewUrl={previewUrls[index]}
                 onPick={() => openFilePicker(index)}
@@ -254,7 +253,6 @@ export function SellVehicleStep3() {
             <PhotoSlot
               key={slot.key}
               slot={slot}
-              index={index}
               hasPhoto={photos[index] != null}
               previewUrl={previewUrls[index]}
               onPick={() => openFilePicker(index)}
