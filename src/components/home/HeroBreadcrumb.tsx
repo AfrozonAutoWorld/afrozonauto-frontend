@@ -1,7 +1,7 @@
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
-export function HeroBreadcrumb() {
+export function HeroBreadcrumb({ text = "BROWSE CARS" }: { text?: string }) {
   return (
     <nav
       className="flex isolate flex-row gap-6 items-center font-body"
@@ -18,7 +18,7 @@ export function HeroBreadcrumb() {
         aria-hidden
       />
       <span className="flex-none order-2 shrink-0 text-[14px] leading-5 font-semibold text-[#E6F6F4]">
-        BROWSE CARS
+        {text}
       </span>
     </nav>
   );

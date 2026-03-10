@@ -41,9 +41,13 @@ export function Header() {
             <Link href="/marketplace" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
               Browse Vehicles
             </Link>
+            <Link href="/seller/landing" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
+          Sell Your Vehicle            
+          </Link>
             <Link href="/marketplace/calculator" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
               Price Calculator
             </Link>
+
             <Link href="/marketplace/how-it-works" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
               How It Works
             </Link>
@@ -51,13 +55,21 @@ export function Header() {
             {user ? (
               <div className="flex gap-3 items-center">
                 {isSeller && (
-                  <Link
-                    href="/partners"
-                    className="flex items-center gap-1.5 text-[#1A1A1A] text-sm hover:text-emerald-600 transition-colors"
-                  >
-                    <Store className="w-4 h-4" />
-                    <span className="text-sm font-medium">Sell</span>
-                  </Link>
+                  <>
+                    <Link
+                      href="/seller"
+                      className="flex items-center gap-1.5 text-[#1A1A1A] text-sm hover:text-emerald-600 transition-colors"
+                    >
+                      <Store className="w-4 h-4" />
+                      <span className="text-sm font-medium">Seller Dashboard</span>
+                    </Link>
+                    <Link
+                      href="/seller/sell-your-car"
+                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                    >
+                      List a vehicle
+                    </Link>
+                  </>
                 )}
 
                 <Link
@@ -137,14 +149,23 @@ export function Header() {
               {user ? (
                 <>
                   {isSeller && (
-                    <Link
-                      href="/partners"
-                      className="flex gap-2 items-center text-[#1A1A1A] hover:text-emerald-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Store className="w-5 h-5" />
-                      <span>Seller Dashboard</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/seller"
+                        className="flex gap-2 items-center text-[#1A1A1A] hover:text-emerald-600"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Store className="w-5 h-5" />
+                        <span>Seller Dashboard</span>
+                      </Link>
+                      <Link
+                        href="/seller/sell-your-car"
+                        className="flex gap-2 items-center text-emerald-600 hover:text-emerald-700"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span>List a vehicle</span>
+                      </Link>
+                    </>
                   )}
 
                   <Link

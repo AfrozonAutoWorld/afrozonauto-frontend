@@ -197,7 +197,7 @@ export function SellerDashboard() {
             <p className="mt-1 text-gray-500">Manage your vehicle listings</p>
           </div>
           <Link
-            href="/seller/vehicles/new"
+            href="/seller/sell-your-car"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
           >
             <Plus className="h-5 w-5" />
@@ -266,7 +266,7 @@ export function SellerDashboard() {
                 </p>
                 {activeTab === 'all' && (
                   <Link
-                    href="/seller/vehicles/new"
+                    href="/seller/sell-your-car"
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
                   >
                     <Plus className="h-5 w-5" />
@@ -351,7 +351,7 @@ export function SellerDashboard() {
                           {/* Edit - for DRAFT and REJECTED */}
                           {(vehicle.status === 'DRAFT' || vehicle.status === 'REJECTED') && (
                             <Link
-                              href={`/seller/vehicles/${vehicle.id}/edit`}
+                              href={`/seller/sell-your-car?vehicleId=${vehicle.id}`}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                             >
                               <Edit className="h-4 w-4" />

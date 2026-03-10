@@ -153,7 +153,7 @@ export function Home() {
     <div>
       <HeroSection
         breadcrumbs={<HeroBreadcrumb />}
-        headerText="Browse from our 2000+ Verified Vehicles"
+        headerText="Browse from our <span class='text-[#2CE69B]'>2000+ </span> Verified Vehicles"
         descriptionText="Your next ride is one scroll away — vetted US cars, shipped to Nigeria. Discover, compare, and load more as you go."
         shouldShowSearch
         shouldShowFilters

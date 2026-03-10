@@ -55,6 +55,8 @@ declare module "next-auth" {
       lastName?: string;
       createdAt: string;
       updatedAt: string;
+      sellerStatus?: "NOT_APPLIED" | "PENDING" | "APPROVED" | "REJECTED";
+      isSeller?: boolean;
     };
 
     // Include access tokens for session
@@ -77,7 +79,7 @@ declare module "next-auth/jwt" {
     emailVerified?: boolean;
     fullName?: string;
     phone?: string;
-    role?: "SUPER_ADMIN" | "ADMIN" | "OPERATION" | "BUYER";
+    role?: "SUPER_ADMIN" | "ADMIN" | "OPERATION" | "BUYER" | "SELLER";
     isActive?: boolean;
     isSuspended?: boolean;
     googleId?: string;
