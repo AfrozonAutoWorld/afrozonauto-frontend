@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import { Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -55,11 +55,11 @@ function PhotoSlot({
         </span>
       )}
       {hasPhoto && previewUrl ? (
-        <span className="absolute inset-0 block w-full h-full">
+        <span className="block absolute inset-0 w-full h-full">
           <img
             src={previewUrl}
             alt={slot.label}
-            className="w-full h-full object-cover rounded-2xl"
+            className="object-cover w-full h-full rounded-2xl"
           />
         </span>
       ) : null}
@@ -67,7 +67,7 @@ function PhotoSlot({
         className={`flex flex-col justify-center items-center gap-1.5 relative z-[1] ${hasPhoto && previewUrl ? 'absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 opacity-0 hover:opacity-100 transition-opacity' : ''}`}
       >
         {hasPhoto && previewUrl && (
-          <span className="font-body text-xs text-white font-medium">Change photo</span>
+          <span className="text-xs font-medium text-white font-body">Change photo</span>
         )}
         {hasPhoto && !previewUrl && (
           <span className="font-body text-xs text-[#0D7A4A] font-medium">Added</span>
@@ -112,34 +112,38 @@ function Field({
   );
 }
 
-export function SellVehicleStep3() {
+export interface SellVehicleStep3Value {
+  photos: (File | null)[];
+  askingPrice: string;
+  additionalNotes: string;
+}
+
+export interface SellVehicleStep3Props {
+  value: SellVehicleStep3Value;
+  onChange: (value: SellVehicleStep3Value) => void;
+}
+
+export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3Props>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
-  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
-  const [photos, setPhotos] = useState<(File | null)[]>(new Array(PHOTO_SLOTS.length).fill(null));
-  const [previewUrls, setPreviewUrls] = useState<(string | null)[]>(
-    new Array(PHOTO_SLOTS.length).fill(null)
-  );
+  const previewUrlsRef = useRef<string[]>([]);
   const [maxScroll, setMaxScroll] = useState(0);
-  const [price, setPrice] = useState('');
-  const [letAfrozonValue, setLetAfrozonValue] = useState(false);
-  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
 
-  const photoCount = photos.filter(Boolean).length;
+  const photoCount = value.photos.filter(Boolean).length;
 
   // Object URL previews and cleanup
-  const previewUrlsRef = useRef<string[]>([]);
-  useEffect(() => {
+  const previewUrls = (() => {
+    // Generate preview URLs from current photos
     previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-    const urls: (string | null)[] = photos.map((file) =>
-      file ? URL.createObjectURL(file) : null
+    const urls: (string | null)[] = value.photos.map((file) =>
+      file ? URL.createObjectURL(file) : null,
     );
     previewUrlsRef.current = urls.filter((u): u is string => u != null);
-    setPreviewUrls(urls);
-    return () => previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-  }, [photos]);
+    return urls;
+  })();
 
   // Slider max scroll on mobile
   useEffect(() => {
@@ -156,7 +160,7 @@ export function SellVehicleStep3() {
     ro.observe(container);
     ro.observe(content);
     return () => ro.disconnect();
-  }, [photos.length]);
+  }, [value.photos.length]);
 
   const openFilePicker = (index: number) => {
     setActiveSlotIndex(index);
@@ -166,10 +170,11 @@ export function SellVehicleStep3() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file != null && activeSlotIndex != null) {
-      setPhotos((prev) => {
-        const next = [...prev];
-        next[activeSlotIndex] = file;
-        return next;
+      const next = [...value.photos];
+      next[activeSlotIndex] = file;
+      onChange({
+        ...value,
+        photos: next,
       });
     }
     setActiveSlotIndex(null);
@@ -189,7 +194,7 @@ export function SellVehicleStep3() {
     <div className="flex flex-col gap-10">
       {/* Vehicle Photos */}
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2 justify-between items-center">
           <span className={labelBase}>
             Vehicle Photos <span className="text-red-500">*</span>
           </span>
@@ -206,10 +211,10 @@ export function SellVehicleStep3() {
           aria-label="Upload vehicle photo"
         />
         {/* Mobile: horizontal slider */}
-        <div ref={containerRef} className="overflow-hidden sm:hidden -mx-1">
+        <div ref={containerRef} className="overflow-hidden -mx-1 sm:hidden">
           <motion.div
             ref={contentRef}
-            className="flex flex-row gap-4 w-max cursor-grab active:cursor-grabbing py-1"
+            className="flex flex-row gap-4 py-1 w-max cursor-grab active:cursor-grabbing"
             style={{ x }}
             drag="x"
             dragConstraints={{ left: -maxScroll, right: 0 }}
@@ -221,7 +226,7 @@ export function SellVehicleStep3() {
               <PhotoSlot
                 key={slot.key}
                 slot={slot}
-                hasPhoto={photos[index] != null}
+                hasPhoto={value.photos[index] != null}
                 previewUrl={previewUrls[index]}
                 onPick={() => openFilePicker(index)}
                 className="shrink-0 w-[min(180px,40vw)] min-h-[120px]"
@@ -248,12 +253,12 @@ export function SellVehicleStep3() {
           </div>
         </div>
         {/* Desktop: grid */}
-        <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="hidden grid-cols-2 gap-4 sm:grid sm:grid-cols-3 lg:grid-cols-4">
           {PHOTO_SLOTS.map((slot, index) => (
             <PhotoSlot
               key={slot.key}
               slot={slot}
-              hasPhoto={photos[index] != null}
+              hasPhoto={value.photos[index] != null}
               previewUrl={previewUrls[index]}
               onPick={() => openFilePicker(index)}
               className="min-h-[158px]"
@@ -271,17 +276,23 @@ export function SellVehicleStep3() {
               inputMode="numeric"
               className={inputBase}
               placeholder="$ e.g 22000"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              disabled={letAfrozonValue}
+              value={value.askingPrice}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  askingPrice: e.target.value,
+                })
+              }
               aria-label="Asking price"
             />
             <label className="flex flex-row items-center gap-2.5 cursor-pointer">
               <input
                 type="radio"
                 name="price-source"
-                checked={!letAfrozonValue}
-                onChange={() => setLetAfrozonValue(false)}
+                checked={true}
+                onChange={() => {
+                  // keep single path for now – askingPrice is always required
+                }}
                 className="w-5 h-5 rounded-full border-2 border-[#49454F] text-[#0D7A4A] focus:ring-[#0D7A4A]"
                 aria-label="I have an asking price"
               />
@@ -293,8 +304,10 @@ export function SellVehicleStep3() {
               <input
                 type="radio"
                 name="price-source"
-                checked={letAfrozonValue}
-                onChange={() => setLetAfrozonValue(true)}
+                checked={false}
+                onChange={() => {
+                  // Placeholder – pricing assistance can be wired later
+                }}
                 className="w-5 h-5 rounded-full border-2 border-[#49454F] text-[#0D7A4A] focus:ring-[#0D7A4A]"
                 aria-label="Let Afrozon value it for me"
               />
@@ -309,8 +322,13 @@ export function SellVehicleStep3() {
           <textarea
             className={textareaBase}
             placeholder="Anything else buyers should know? Recent service history, new tyres, original receipts available, etc"
-            value={additionalNotes}
-            onChange={(e) => setAdditionalNotes(e.target.value)}
+            value={value.additionalNotes}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                additionalNotes: e.target.value,
+              })
+            }
             rows={4}
             aria-label="Additional notes"
           />

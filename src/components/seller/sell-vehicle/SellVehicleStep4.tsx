@@ -51,7 +51,19 @@ function Field({
   );
 }
 
+export interface SellVehicleStep4Value {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  cityState: string;
+  bestTime: string;
+  contactMethods: Set<string>;
+}
+
 export interface SellVehicleStep4Props {
+  value: SellVehicleStep4Value;
+  onChange: (value: SellVehicleStep4Value) => void;
   /** Optional summary from previous steps; falls back to placeholder */
   summary?: {
     vehicle?: string;
@@ -63,26 +75,22 @@ export interface SellVehicleStep4Props {
   };
 }
 
-export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [cityState, setCityState] = useState('');
-  const [bestTime, setBestTime] = useState('');
-  const [contactMethods, setContactMethods] = useState<Set<string>>(new Set());
-  const [confirmChecked, setConfirmChecked] = useState(false);
-
+export function SellVehicleStep4({ value, onChange, summary }: Readonly<SellVehicleStep4Props>) {
   const s = { ...DEFAULT_SUMMARY, ...summary };
   const photosLabel = s.photosCount === 1 ? '1 added' : `${s.photosCount} added`;
 
-  const toggleContactMethod = (method: string) => {
-    setContactMethods((prev) => {
-      const next = new Set(prev);
-      if (next.has(method)) next.delete(method);
-      else next.add(method);
-      return next;
+  const setField = (field: keyof SellVehicleStep4Value, fieldValue: any) => {
+    onChange({
+      ...value,
+      [field]: fieldValue,
     });
+  };
+
+  const toggleContactMethod = (method: string) => {
+    const next = new Set(value.contactMethods);
+    if (next.has(method)) next.delete(method);
+    else next.add(method);
+    setField('contactMethods', next);
   };
 
   return (
@@ -94,8 +102,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
             type="text"
             className={inputBase}
             placeholder="e.g., Biobele"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            value={value.firstName}
+            onChange={(e) => setField('firstName', e.target.value)}
             aria-label="First name"
           />
         </Field>
@@ -104,8 +112,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
             type="text"
             className={inputBase}
             placeholder="e.g., Owen"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            value={value.lastName}
+            onChange={(e) => setField('lastName', e.target.value)}
             aria-label="Last name"
           />
         </Field>
@@ -117,8 +125,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
           type="email"
           className={inputBase}
           placeholder="e.g., owenbiobele@gmail.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={value.email}
+          onChange={(e) => setField('email', e.target.value)}
           aria-label="Email address"
         />
       </Field>
@@ -134,8 +142,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
               type="tel"
               className="flex-1 min-w-0 h-11 px-3.5 py-2.5 font-body text-base leading-6 text-[#181D27] placeholder:text-[#B8B8B8] bg-transparent border-0 focus:outline-none"
               placeholder="800 000 000"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              value={value.phone}
+              onChange={(e) => setField('phone', e.target.value)}
               aria-label="Phone number"
             />
           </div>
@@ -143,8 +151,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
         <Field label="Best Time to Reach You" required>
           <select
             className={inputBase}
-            value={bestTime}
-            onChange={(e) => setBestTime(e.target.value)}
+            value={value.bestTime}
+            onChange={(e) => setField('bestTime', e.target.value)}
             aria-label="Best time to reach you"
           >
             {BEST_TIME_OPTIONS.map((opt) => (
@@ -162,8 +170,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
           type="text"
           className={inputBase}
           placeholder="e.g., Houston, TX"
-          value={cityState}
-          onChange={(e) => setCityState(e.target.value)}
+          value={value.cityState}
+          onChange={(e) => setField('cityState', e.target.value)}
           aria-label="City and state"
         />
       </Field>
@@ -177,7 +185,7 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
               key={method}
               type="button"
               onClick={() => toggleContactMethod(method)}
-              className={contactMethods.has(method) ? pillActive : pillInactive}
+              className={value.contactMethods.has(method) ? pillActive : pillInactive}
             >
               {method}
             </button>
@@ -202,8 +210,8 @@ export function SellVehicleStep4({ summary }: Readonly<SellVehicleStep4Props>) {
       <label className="flex flex-row items-start gap-2.5 cursor-pointer">
         <input
           type="checkbox"
-          checked={confirmChecked}
-          onChange={(e) => setConfirmChecked(e.target.checked)}
+          checked
+          onChange={() => {}}
           className="mt-0.5 w-[18px] h-[18px] rounded-[2px] border border-[#969696] text-[#0D7A4A] focus:ring-[#0D7A4A]"
           aria-label="Confirm details and consent"
         />

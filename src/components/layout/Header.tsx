@@ -145,6 +145,13 @@ export function Header() {
               >
                 How It Works
               </Link>
+              <Link
+                href="/seller/landing"
+                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sell Your Vehicle
+              </Link>
 
               {user ? (
                 <>
@@ -169,7 +176,7 @@ export function Header() {
                   )}
 
                   <Link
-                    href="/marketplace"
+                    href="/marketplace/buyer"
                     className="flex gap-2 items-center text-[#1A1A1A] hover:text-emerald-600"
                     onClick={() => setMobileMenuOpen(false)}
                   >

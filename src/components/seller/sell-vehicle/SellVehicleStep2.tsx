@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Sparkles, ThumbsUp, Wrench, ThumbsDown } from 'lucide-react';
 
 const labelBase = 'font-body text-sm font-medium leading-5 text-[#414651]';
@@ -63,19 +62,32 @@ const KNOWN_ISSUES = [
   { id: 'none', label: 'No known issues', detail: 'Everything works as expected' },
 ] as const;
 
-export function SellVehicleStep2() {
-  const [condition, setCondition] = useState<string | null>(null);
-  const [titleStatus, setTitleStatus] = useState<string | null>(null);
-  const [accident, setAccident] = useState<string | null>(null);
-  const [knownIssues, setKnownIssues] = useState<Set<string>>(new Set());
+export interface SellVehicleStep2Value {
+  condition: string | null;
+  titleStatus: string | null;
+  accidentHistory: string | null;
+  knownIssues: Set<string>;
+  modifications?: string;
+}
+
+export interface SellVehicleStep2Props {
+  value: SellVehicleStep2Value;
+  onChange: (value: SellVehicleStep2Value) => void;
+}
+
+export function SellVehicleStep2({ value, onChange }: Readonly<SellVehicleStep2Props>) {
+  const setField = (field: keyof SellVehicleStep2Value, fieldValue: any) => {
+    onChange({
+      ...value,
+      [field]: fieldValue,
+    });
+  };
 
   const toggleIssue = (id: string) => {
-    setKnownIssues((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    const next = new Set(value.knownIssues);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setField('knownIssues', next);
   };
 
   return (
@@ -90,9 +102,9 @@ export function SellVehicleStep2() {
             <button
               key={key}
               type="button"
-              onClick={() => setCondition(key)}
+              onClick={() => setField('condition', key)}
               className={`flex flex-col justify-center items-center gap-4 p-6 rounded-2xl border text-center transition-colors ${
-                condition === key
+                value.condition === key
                   ? 'bg-[#E6F6F4] border-[#0D7A4A]'
                   : 'bg-white border-[#969696] hover:border-[#0D7A4A]/50'
               }`}
@@ -119,8 +131,8 @@ export function SellVehicleStep2() {
             <button
               key={opt}
               type="button"
-              onClick={() => setTitleStatus(opt)}
-              className={titleStatus === opt ? pillActive : pillInactive}
+              onClick={() => setField('titleStatus', opt)}
+              className={value.titleStatus === opt ? pillActive : pillInactive}
             >
               {opt}
             </button>
@@ -138,8 +150,8 @@ export function SellVehicleStep2() {
             <button
               key={opt}
               type="button"
-              onClick={() => setAccident(opt)}
-              className={accident === opt ? pillActive : pillInactive}
+              onClick={() => setField('accidentHistory', opt)}
+              className={value.accidentHistory === opt ? pillActive : pillInactive}
             >
               {opt}
             </button>
@@ -158,7 +170,7 @@ export function SellVehicleStep2() {
             >
               <input
                 type="checkbox"
-                checked={knownIssues.has(id)}
+                checked={value.knownIssues.has(id)}
                 onChange={() => toggleIssue(id)}
                 className="w-[18px] h-[18px] rounded border border-[#969696] text-[#0D7A4A] focus:ring-[#0D7A4A]"
               />
@@ -178,6 +190,8 @@ export function SellVehicleStep2() {
           className="w-full min-h-[92px] px-3.5 py-2.5 font-body text-base leading-6 text-[#181D27] placeholder:text-[#B8B8B8] bg-white border border-[#D5D7DA] rounded-lg shadow-[0px_1px_2px_rgba(10,13,18,0.05)] focus:outline-none focus:ring-2 focus:ring-[#0D7A4A]/20 focus:border-[#0D7A4A] resize-y"
           placeholder="List any aftermarket parts, lift kits, tinting, audio upgrades, etc. Leave blank if stock."
           rows={3}
+          value={value.modifications ?? ''}
+          onChange={(e) => setField('modifications', e.target.value)}
         />
       </div>
     </div>

@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 const inputBase =
   'w-full h-11 px-3.5 py-2.5 font-body text-base leading-6 text-[#181D27] placeholder:text-[#B8B8B8] bg-white border border-[#D5D7DA] rounded-lg shadow-[0px_1px_2px_rgba(10,13,18,0.05)] focus:outline-none focus:ring-2 focus:ring-[#0D7A4A]/20 focus:border-[#0D7A4A]';
 const labelBase = 'font-body text-sm font-medium leading-5 text-[#414651]';
@@ -33,25 +31,63 @@ function Field({
   );
 }
 
-export function SellVehicleStep1() {
-  const [keysCount, setKeysCount] = useState<string | null>(null);
+export interface SellVehicleStep1Value {
+  year: string;
+  make: string;
+  model: string;
+  trim?: string;
+  bodyStyle?: string;
+  mileage: string;
+  drivetrain?: string;
+  transmission?: string;
+  fuelType?: string;
+  exteriorColor?: string;
+  keysCount?: string | null;
+}
+
+export interface SellVehicleStep1Props {
+  value: SellVehicleStep1Value;
+  onChange: (value: SellVehicleStep1Value) => void;
+}
+
+export function SellVehicleStep1({ value, onChange }: Readonly<SellVehicleStep1Props>) {
+  const handleFieldChange = (field: keyof SellVehicleStep1Value, fieldValue: string | null) => {
+    onChange({
+      ...value,
+      [field]: fieldValue,
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
       {/* Row 1: Year, Make, Model */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Field label="Year" required>
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.year}
+            onChange={(e) => handleFieldChange('year', e.target.value)}
+          >
             <option value="">Select year</option>
           </select>
         </Field>
         <Field label="Make" required>
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.make}
+            onChange={(e) => handleFieldChange('make', e.target.value)}
+          >
             <option value="">Select make</option>
           </select>
         </Field>
         <Field label="Model" required>
-          <input type="text" className={inputBase} placeholder="e.g. Highlander, RX 350" />
+          <input
+            type="text"
+            className={inputBase}
+            placeholder="e.g. Highlander, RX 350"
+            value={value.model}
+            onChange={(e) => handleFieldChange('model', e.target.value)}
+          />
         </Field>
       </div>
 
@@ -62,10 +98,16 @@ export function SellVehicleStep1() {
             type="text"
             className={inputBase}
             placeholder="e.g. XLE, F Sport, Limited, AMG Line"
+            value={value.trim ?? ''}
+            onChange={(e) => handleFieldChange('trim', e.target.value)}
           />
         </Field>
         <Field label="Body Style" required>
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.bodyStyle}
+            onChange={(e) => handleFieldChange('bodyStyle', e.target.value)}
+          >
             <option value="">Select body style</option>
           </select>
         </Field>
@@ -74,15 +116,29 @@ export function SellVehicleStep1() {
       {/* Row 3: Mileage, Drivetrain, Transmission */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Field label="Mileage" required>
-          <input type="text" className={inputBase} placeholder="e.g. 68000" />
+          <input
+            type="text"
+            className={inputBase}
+            placeholder="e.g. 68000"
+            value={value.mileage}
+            onChange={(e) => handleFieldChange('mileage', e.target.value)}
+          />
         </Field>
         <Field label="Drivetrain">
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.drivetrain}
+            onChange={(e) => handleFieldChange('drivetrain', e.target.value)}
+          >
             <option value="">Select</option>
           </select>
         </Field>
         <Field label="Transmission">
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.transmission}
+            onChange={(e) => handleFieldChange('transmission', e.target.value)}
+          >
             <option value="">Select</option>
           </select>
         </Field>
@@ -91,7 +147,11 @@ export function SellVehicleStep1() {
       {/* Row 4: Fuel Type, Exterior Color */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Fuel Type">
-          <select className={inputBase} defaultValue="">
+          <select
+            className={inputBase}
+            value={value.fuelType}
+            onChange={(e) => handleFieldChange('fuelType', e.target.value)}
+          >
             <option value="">Select</option>
           </select>
         </Field>
@@ -100,6 +160,8 @@ export function SellVehicleStep1() {
             type="text"
             className={inputBase}
             placeholder="e.g. Pearl White, Midnight Black"
+            value={value.exteriorColor ?? ''}
+            onChange={(e) => handleFieldChange('exteriorColor', e.target.value)}
           />
         </Field>
       </div>
@@ -114,8 +176,8 @@ export function SellVehicleStep1() {
             <button
               key={opt}
               type="button"
-              onClick={() => setKeysCount(opt)}
-              className={keysCount === opt ? pillActive : pillInactive}
+              onClick={() => handleFieldChange('keysCount', opt)}
+              className={value.keysCount === opt ? pillActive : pillInactive}
             >
               {opt}
             </button>
