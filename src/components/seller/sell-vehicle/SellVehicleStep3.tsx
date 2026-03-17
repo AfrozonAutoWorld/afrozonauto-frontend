@@ -116,6 +116,7 @@ export interface SellVehicleStep3Value {
   photos: (File | null)[];
   askingPrice: string;
   additionalNotes: string;
+  hasAskingPrice?: boolean;
 }
 
 export interface SellVehicleStep3Props {
@@ -133,6 +134,7 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
 
   const photoCount = value.photos.filter(Boolean).length;
+  const hasAskingPrice = value.hasAskingPrice !== false;
 
   // Object URL previews and cleanup
   const previewUrls = (() => {
@@ -271,28 +273,33 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
       <div className="flex flex-col gap-6">
         <Field label="Your Asking Price" required>
           <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              inputMode="numeric"
-              className={inputBase}
-              placeholder="$ e.g 22000"
-              value={value.askingPrice}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  askingPrice: e.target.value,
-                })
-              }
-              aria-label="Asking price"
-            />
+            {hasAskingPrice && (
+              <input
+                type="text"
+                inputMode="numeric"
+                className={inputBase}
+                placeholder="$ e.g 22000"
+                value={value.askingPrice}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    askingPrice: e.target.value,
+                  })
+                }
+                aria-label="Asking price"
+              />
+            )}
             <label className="flex flex-row items-center gap-2.5 cursor-pointer">
               <input
                 type="radio"
                 name="price-source"
-                checked={true}
-                onChange={() => {
-                  // keep single path for now – askingPrice is always required
-                }}
+                checked={hasAskingPrice}
+                onChange={() =>
+                  onChange({
+                    ...value,
+                    hasAskingPrice: true,
+                  })
+                }
                 className="w-5 h-5 rounded-full border-2 border-[#49454F] text-[#0D7A4A] focus:ring-[#0D7A4A]"
                 aria-label="I have an asking price"
               />
@@ -304,10 +311,14 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
               <input
                 type="radio"
                 name="price-source"
-                checked={false}
-                onChange={() => {
-                  // Placeholder – pricing assistance can be wired later
-                }}
+                checked={!hasAskingPrice}
+                onChange={() =>
+                  onChange({
+                    ...value,
+                    hasAskingPrice: false,
+                    askingPrice: '',
+                  })
+                }
                 className="w-5 h-5 rounded-full border-2 border-[#49454F] text-[#0D7A4A] focus:ring-[#0D7A4A]"
                 aria-label="Let Afrozon value it for me"
               />

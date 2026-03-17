@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { HeroSellBreadcrumb } from '@/components/seller/sell-vehicle/HeroSellBreadcrumb';
 import { HeroSellSection } from '@/components/seller/sell-vehicle/HeroSellSection';
@@ -11,6 +11,8 @@ import { SellVehicleStep2 } from '@/components/seller/sell-vehicle/SellVehicleSt
 import { SellVehicleStep3 } from '@/components/seller/sell-vehicle/SellVehicleStep3';
 import { SellVehicleStep4 } from '@/components/seller/sell-vehicle/SellVehicleStep4';
 import { SellVehicleSuccess } from '@/components/seller/sell-vehicle/SellVehicleSuccess';
+import { useSubmitSellerVehicle } from '@/hooks/useSellerVehicle';
+import { showToast } from '@/lib/showNotification';
 
 const STEP_ORDER: SellStepKey[] = ['vehicle', 'condition', 'photos-price', 'contact'];
 
@@ -45,6 +47,7 @@ type PhotosPriceDetails = {
   photos: (File | null)[];
   askingPrice: string;
   additionalNotes: string;
+  hasAskingPrice?: boolean;
 };
 
 type ContactDetails = {
@@ -54,6 +57,7 @@ type ContactDetails = {
   phone: string;
   cityState: string;
   bestTime: string;
+  zipCode: string;
   contactMethods: Set<string>;
 };
 
@@ -88,6 +92,7 @@ export function SellVehicle() {
     photos: new Array(9).fill(null),
     askingPrice: '',
     additionalNotes: '',
+    hasAskingPrice: true,
   });
 
   const [contactDetails, setContactDetails] = useState<ContactDetails>({
@@ -97,15 +102,52 @@ export function SellVehicle() {
     phone: '',
     cityState: '',
     bestTime: '',
+    zipCode: '',
     contactMethods: new Set<string>(),
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const submitSellerVehicle = useSubmitSellerVehicle();
 
   const currentStepIndex = STEP_ORDER.indexOf(step);
   const totalSteps = STEP_ORDER.length;
 
-  const goNext = () => {
+  const goNextFromVehicle = () => {
+    if (!vehicleDetails.year || !vehicleDetails.make || !vehicleDetails.model || !vehicleDetails.bodyStyle) {
+      showToast({ type: 'error', message: 'Please fill in year, make, model, and body style.' });
+      return;
+    }
+    if (!vehicleDetails.mileage || Number.isNaN(Number(vehicleDetails.mileage))) {
+      showToast({ type: 'error', message: 'Please enter a valid mileage.' });
+      return;
+    }
+    if (!vehicleDetails.keysCount) {
+      showToast({ type: 'error', message: 'Please select the number of keys.' });
+      return;
+    }
+    const next = STEP_ORDER[currentStepIndex + 1];
+    if (next) setStep(next);
+  };
+
+  const goNextFromCondition = () => {
+    if (!conditionDetails.condition || !conditionDetails.titleStatus || !conditionDetails.accidentHistory) {
+      showToast({ type: 'error', message: 'Please select condition, title status, and accident history.' });
+      return;
+    }
+    const next = STEP_ORDER[currentStepIndex + 1];
+    if (next) setStep(next);
+  };
+
+  const goNextFromPhotos = () => {
+    const photoCount = photosPrice.photos.filter(Boolean).length;
+    if (photoCount < 4) {
+      showToast({ type: 'error', message: 'Please add at least 4 photos of your vehicle.' });
+      return;
+    }
+    if (photosPrice.hasAskingPrice !== false && !photosPrice.askingPrice) {
+      showToast({ type: 'error', message: 'Please enter your asking price or select the valuation option.' });
+      return;
+    }
     const next = STEP_ORDER[currentStepIndex + 1];
     if (next) setStep(next);
   };
@@ -153,7 +195,8 @@ export function SellVehicle() {
         formData.append('condition', conditionDetails.condition.toUpperCase());
       }
       if (conditionDetails.titleStatus) {
-        formData.append('titleStatus', conditionDetails.titleStatus);
+        // Backend expects an array; use bracket notation so body parser creates an array.
+        formData.append('titleStatus[0]', conditionDetails.titleStatus);
       }
       if (conditionDetails.accidentHistory) {
         const mappedAccident =
@@ -164,8 +207,8 @@ export function SellVehicle() {
               : conditionDetails.accidentHistory;
         formData.append('accidentHistory', mappedAccident);
       }
-      conditionDetails.knownIssues.forEach((issue) => {
-        formData.append('knownIssues', issue);
+      Array.from(conditionDetails.knownIssues).forEach((issue, index) => {
+        formData.append(`knownIssues[${index}]`, issue);
       });
       if (conditionDetails.modifications) {
         formData.append('modifications', conditionDetails.modifications);
@@ -179,10 +222,15 @@ export function SellVehicle() {
         formData.append('files', file);
       });
 
-      if (!photosPrice.askingPrice) {
-        throw new Error('Please enter your asking price.');
+      if (photosPrice.hasAskingPrice !== false) {
+        if (!photosPrice.askingPrice) {
+          throw new Error('Please enter your asking price.');
+        }
+        formData.append('askingPrice', photosPrice.askingPrice);
+      } else {
+        // Backend currently requires askingPrice; send 0 as placeholder when user requests valuation
+        formData.append('askingPrice', '0');
       }
-      formData.append('askingPrice', photosPrice.askingPrice);
       formData.append('showAskingPrice', 'true');
       formData.append('allowOffers', 'true');
       if (photosPrice.additionalNotes) {
@@ -195,7 +243,7 @@ export function SellVehicle() {
       formData.append('contactEmail', contactDetails.email);
       formData.append('contactPhone', contactDetails.phone);
       formData.append('city', contactDetails.cityState);
-      formData.append('zipCode', '');
+      formData.append('zipCode', contactDetails.zipCode);
 
       // Map preferred contact to backend enum
       let preferred: string | null = null;
@@ -213,31 +261,14 @@ export function SellVehicle() {
         formData.append('bestTimeToReach', contactDetails.bestTime);
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!baseUrl) {
-        throw new Error('API base URL is not configured.');
-      }
-
-      const res = await fetch(`${baseUrl}/seller-vehicle/submit`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!res.ok) {
-        const error = await res.json().catch(() => null);
-        console.error('Sell vehicle submit failed', error);
-        throw new Error(error?.error || 'Failed to submit vehicle');
-      }
-
-      const data = await res.json();
+      const data = await submitSellerVehicle.mutateAsync(formData);
       const created = data?.data;
 
       setReferenceId(created?.id ?? generateReferenceId());
       setSubmitted(true);
-    } catch (err) {
-      console.error(err);
-      // TODO: surface user-friendly error toast/snackbar
+      } catch (err) {
+        console.error(err);
+      showToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to submit vehicle.' });
     } finally {
       setSubmitting(false);
     }
@@ -276,7 +307,7 @@ export function SellVehicle() {
               description="Tell us the basics about your car"
               stepLabel={`Step ${currentStepIndex + 1} of ${totalSteps}`}
               nextLabel="Next: Condition"
-              onNext={goNext}
+              onNext={goNextFromVehicle}
             >
               <SellVehicleStep1 value={vehicleDetails} onChange={setVehicleDetails} />
             </SellStepCard>
@@ -288,7 +319,7 @@ export function SellVehicle() {
               description="Be honest — buyers appreciate transparency, and it speeds up the deal."
               stepLabel={`Step ${currentStepIndex + 1} of ${totalSteps}`}
               nextLabel="Next: Photos & Price"
-              onNext={goNext}
+              onNext={goNextFromCondition}
               backLabel="Back"
               onBack={goBack}
             >
@@ -302,7 +333,7 @@ export function SellVehicle() {
               description="Clear photos get faster, higher offers. Minimum 4 required."
               stepLabel={`Step ${currentStepIndex + 1} of ${totalSteps}`}
               nextLabel="Your Details"
-              onNext={goNext}
+              onNext={goNextFromPhotos}
               backLabel="Back"
               onBack={goBack}
             >
@@ -320,7 +351,28 @@ export function SellVehicle() {
               backLabel="Back"
               onBack={goBack}
             >
-              <SellVehicleStep4 value={contactDetails} onChange={setContactDetails} />
+              <SellVehicleStep4
+                value={contactDetails}
+                onChange={setContactDetails}
+                summary={{
+                  vehicle: [vehicleDetails.year, vehicleDetails.make, vehicleDetails.model]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() || 'Vehicle details pending',
+                  mileage: vehicleDetails.mileage
+                    ? `${Number(vehicleDetails.mileage).toLocaleString()} mi`
+                    : 'Not specified',
+                  condition: conditionDetails.condition || 'Not specified',
+                  title: conditionDetails.titleStatus || 'Not specified',
+                  photosCount: photosPrice.photos.filter(Boolean).length,
+                  priceDisplay:
+                    photosPrice.hasAskingPrice === false
+                      ? 'Requesting Afrozon valuation'
+                      : photosPrice.askingPrice
+                      ? `$${photosPrice.askingPrice}`
+                      : 'Not specified',
+                }}
+              />
             </SellStepCard>
           )}
 

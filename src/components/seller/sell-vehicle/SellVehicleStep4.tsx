@@ -58,12 +58,13 @@ export interface SellVehicleStep4Value {
   phone: string;
   cityState: string;
   bestTime: string;
+   zipCode: string;
   contactMethods: Set<string>;
 }
 
 export interface SellVehicleStep4Props {
   value: SellVehicleStep4Value;
-  onChange: (value: SellVehicleStep4Value) => void;
+  onChange: React.Dispatch<React.SetStateAction<SellVehicleStep4Value>>;
   /** Optional summary from previous steps; falls back to placeholder */
   summary?: {
     vehicle?: string;
@@ -80,10 +81,10 @@ export function SellVehicleStep4({ value, onChange, summary }: Readonly<SellVehi
   const photosLabel = s.photosCount === 1 ? '1 added' : `${s.photosCount} added`;
 
   const setField = (field: keyof SellVehicleStep4Value, fieldValue: any) => {
-    onChange({
-      ...value,
+    onChange((prev) => ({
+      ...prev,
       [field]: fieldValue,
-    });
+    }));
   };
 
   const toggleContactMethod = (method: string) => {
@@ -131,22 +132,17 @@ export function SellVehicleStep4({ value, onChange, summary }: Readonly<SellVehi
         />
       </Field>
 
-      {/* Row: Phone (with +1), Best time */}
+      {/* Row: Phone, Best time */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Phone Number" required>
-          <div className="flex flex-row rounded-lg border border-[#D5D7DA] bg-white shadow-[0px_1px_2px_rgba(10,13,18,0.05)] overflow-hidden focus-within:ring-2 focus-within:ring-[#0D7A4A]/20 focus-within:border-[#0D7A4A]">
-            <span className="flex items-center px-3.5 h-11 bg-[#E8E8E8] font-body text-base leading-6 text-[#181D27]">
-              +1
-            </span>
-            <input
-              type="tel"
-              className="flex-1 min-w-0 h-11 px-3.5 py-2.5 font-body text-base leading-6 text-[#181D27] placeholder:text-[#B8B8B8] bg-transparent border-0 focus:outline-none"
-              placeholder="800 000 000"
-              value={value.phone}
-              onChange={(e) => setField('phone', e.target.value)}
-              aria-label="Phone number"
-            />
-          </div>
+          <input
+            type="tel"
+            className={inputBase}
+            placeholder="+1 800 000 000 (include country code)"
+            value={value.phone}
+            onChange={(e) => setField('phone', e.target.value)}
+            aria-label="Phone number with country code"
+          />
         </Field>
         <Field label="Best Time to Reach You" required>
           <select
@@ -164,17 +160,29 @@ export function SellVehicleStep4({ value, onChange, summary }: Readonly<SellVehi
         </Field>
       </div>
 
-      {/* City / State */}
-      <Field label="City / State (Vehicle Location)" required>
-        <input
-          type="text"
-          className={inputBase}
-          placeholder="e.g., Houston, TX"
-          value={value.cityState}
-          onChange={(e) => setField('cityState', e.target.value)}
-          aria-label="City and state"
-        />
-      </Field>
+      {/* City / State and ZIP */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="City / State (Vehicle Location)" required>
+          <input
+            type="text"
+            className={inputBase}
+            placeholder="e.g., Houston, TX"
+            value={value.cityState}
+            onChange={(e) => setField('cityState', e.target.value)}
+            aria-label="City and state"
+          />
+        </Field>
+        <Field label="ZIP / Postal Code" required>
+          <input
+            type="text"
+            className={inputBase}
+            placeholder="e.g., 77001"
+            value={value.zipCode}
+            onChange={(e) => setField('zipCode', e.target.value)}
+            aria-label="ZIP or postal code"
+          />
+        </Field>
+      </div>
 
       {/* Preferred Contact Method */}
       <div className="flex flex-col gap-2">

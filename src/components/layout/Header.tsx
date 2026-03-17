@@ -13,15 +13,16 @@ export function Header() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const user = session?.user;
+  const user = session?.user as any;
 
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
   };
 
-  const isSeller = user?.role === 'SELLER' || user?.role === 'ADMIN';
+  const isApprovedSeller = user?.role === 'SELLER' && user?.profile?.isSeller;
   const isAdmin = user?.role === 'ADMIN';
+  const isSeller = isApprovedSeller || isAdmin;
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
@@ -41,9 +42,14 @@ export function Header() {
             <Link href="/marketplace" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
               Browse Vehicles
             </Link>
-            <Link href="/seller/landing" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
-          Sell Your Vehicle            
-          </Link>
+            {!isSeller && (
+              <Link
+                href="/seller/landing"
+                className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
+              >
+                Sell Your Vehicle
+              </Link>
+            )}
             <Link href="/marketplace/calculator" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
               Price Calculator
             </Link>
@@ -55,21 +61,13 @@ export function Header() {
             {user ? (
               <div className="flex gap-3 items-center">
                 {isSeller && (
-                  <>
-                    <Link
-                      href="/seller"
-                      className="flex items-center gap-1.5 text-[#1A1A1A] text-sm hover:text-emerald-600 transition-colors"
-                    >
-                      <Store className="w-4 h-4" />
-                      <span className="text-sm font-medium">Seller Dashboard</span>
-                    </Link>
-                    <Link
-                      href="/seller/sell-your-car"
-                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                    >
-                      List a vehicle
-                    </Link>
-                  </>
+                  <Link
+                    href="/seller"
+                    className="flex items-center gap-1.5 text-[#1A1A1A] text-sm hover:text-emerald-600 transition-colors"
+                  >
+                    <Store className="w-4 h-4" />
+                    <span className="text-sm font-medium">Seller Dashboard</span>
+                  </Link>
                 )}
 
                 <Link
@@ -145,34 +143,27 @@ export function Header() {
               >
                 How It Works
               </Link>
-              <Link
-                href="/seller/landing"
-                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sell Your Vehicle
-              </Link>
+              {!isSeller && (
+                <Link
+                  href="/seller/landing"
+                  className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sell Your Vehicle
+                </Link>
+              )}
 
               {user ? (
                 <>
                   {isSeller && (
-                    <>
-                      <Link
-                        href="/seller"
-                        className="flex gap-2 items-center text-[#1A1A1A] hover:text-emerald-600"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Store className="w-5 h-5" />
-                        <span>Seller Dashboard</span>
-                      </Link>
-                      <Link
-                        href="/seller/sell-your-car"
-                        className="flex gap-2 items-center text-emerald-600 hover:text-emerald-700"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <span>List a vehicle</span>
-                      </Link>
-                    </>
+                    <Link
+                      href="/seller"
+                      className="flex gap-2 items-center text-[#1A1A1A] hover:text-emerald-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Store className="w-5 h-5" />
+                      <span>Seller Dashboard</span>
+                    </Link>
                   )}
 
                   <Link

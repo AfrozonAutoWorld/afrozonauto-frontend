@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronDown, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -40,15 +40,19 @@ export function SearchableSelect({
   const [triggerWidth, setTriggerWidth] = React.useState<number | null>(null)
 
   const selectedOption = options.find((o) => o.value === value)
-  const displayLabel = selectedOption
-    ? selectedOption.label
-    : triggerLabel ?? placeholder
+  const displayLabel =
+    selectedOption?.label ??
+    value ??
+    triggerLabel ??
+    placeholder
+
+  const trimmedSearch = search.toLowerCase().trim()
 
   const filtered =
     search.trim() === ""
       ? options
       : options.filter((o) =>
-          o.label.toLowerCase().includes(search.toLowerCase().trim())
+          o.label.toLowerCase().includes(trimmedSearch)
         )
 
   const handleSelect = React.useCallback(
@@ -100,17 +104,17 @@ export function SearchableSelect({
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "w-full justify-between font-normal",
-          !value && "text-muted-foreground",
+          "w-full justify-between font-normal h-11",
+          !value && "text-muted-foreground ",
           triggerClassName
         )}
       >
         <span className="truncate">{displayLabel}</span>
-        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <ChevronDown className="ml-2 w-4 h-4 opacity-50 shrink-0" />
       </Button>
       {open && (
         <div
-          className="absolute top-full left-0 z-50 mt-1 rounded-md border bg-popover p-2 shadow-md"
+          className="absolute left-0 top-full z-50 p-2 mt-1 rounded-md border shadow-md bg-popover"
           style={{ width: triggerWidth ?? containerRef.current?.offsetWidth ?? "auto", minWidth: 160 }}
         >
           <input
@@ -121,7 +125,7 @@ export function SearchableSelect({
             className="w-full border border-input bg-background rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             autoFocus
           />
-          <div className="max-h-80 overflow-y-auto text-sm mt-2">
+          <div className="overflow-y-auto mt-2 max-h-80 text-sm">
             <button
               type="button"
               onClick={() => handleSelect(undefined)}
@@ -131,7 +135,18 @@ export function SearchableSelect({
               <span>{placeholder}</span>
             </button>
             {filtered.length === 0 ? (
-              <div className="px-2 py-1.5 text-muted-foreground">{emptyText}</div>
+              <div className="flex flex-col gap-1">
+                <div className="px-2 py-1.5 text-muted-foreground">{emptyText}</div>
+                {trimmedSearch && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(search.trim())}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <span className="truncate">Use “{search.trim()}”</span>
+                  </button>
+                )}
+              </div>
             ) : (
               filtered.map((option) => (
                 <button

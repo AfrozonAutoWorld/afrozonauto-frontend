@@ -7,57 +7,81 @@ import type {
 } from "@/lib/marketplace/types";
 import { useSession } from "next-auth/react";
 
-function getHeaders() {
-  const { data: session } = useSession();
-  const token = session?.accessToken;
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...getHeaders(), ...options?.headers },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
 export function useMarketplaceVehicles(
   scope?: "seller" | "admin",
   status?: string,
 ) {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   const params = new URLSearchParams();
   if (scope) params.set("scope", scope);
   if (status) params.set("status", status);
 
   return useQuery<MarketplaceVehicle[]>({
     queryKey: ["marketplace-vehicles", scope, status],
-    queryFn: () => apiFetch(`/api/marketplace/vehicles?${params}`),
+    queryFn: async () => {
+      if (scope === "seller" || scope === "admin") {
+        return [];
+      }
+
+      const res = await fetch(`/api/marketplace/vehicles?${params}`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
   });
 }
 
 export function useMarketplaceVehicle(id: string) {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   return useQuery<MarketplaceVehicle>({
     queryKey: ["marketplace-vehicle", id],
-    queryFn: () => apiFetch(`/api/marketplace/vehicles/${id}`),
+    queryFn: async () => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     enabled: !!id,
   });
 }
 
 export function useCreateVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (data: VehicleFormData) =>
-      apiFetch<MarketplaceVehicle>("/api/marketplace/vehicles", {
+    mutationFn: async (data: VehicleFormData) => {
+      const res = await fetch("/api/marketplace/vehicles", {
         method: "POST",
+        headers,
         body: JSON.stringify(data),
-      }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<MarketplaceVehicle>;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
     },
@@ -66,18 +90,31 @@ export function useCreateVehicle() {
 
 export function useUpdateVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       data,
     }: {
       id: string;
       data: Partial<VehicleFormData>;
-    }) =>
-      apiFetch<MarketplaceVehicle>(`/api/marketplace/vehicles/${id}`, {
+    }) => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}`, {
         method: "PUT",
+        headers,
         body: JSON.stringify(data),
-      }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<MarketplaceVehicle>;
+    },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
       qc.invalidateQueries({ queryKey: ["marketplace-vehicle", id] });
@@ -87,9 +124,24 @@ export function useUpdateVehicle() {
 
 export function useDeleteVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch(`/api/marketplace/vehicles/${id}`, { method: "DELETE" }),
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
     },
@@ -98,9 +150,24 @@ export function useDeleteVehicle() {
 
 export function useSubmitVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch(`/api/marketplace/vehicles/${id}/submit`, { method: "POST" }),
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}/submit`, {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
     },
@@ -109,9 +176,24 @@ export function useSubmitVehicle() {
 
 export function useApproveVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch(`/api/marketplace/vehicles/${id}/approve`, { method: "POST" }),
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}/approve`, {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
     },
@@ -120,12 +202,25 @@ export function useApproveVehicle() {
 
 export function useRejectVehicle() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      apiFetch(`/api/marketplace/vehicles/${id}/reject`, {
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const res = await fetch(`/api/marketplace/vehicles/${id}/reject`, {
         method: "POST",
+        headers,
         body: JSON.stringify({ reason }),
-      }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
     },
@@ -133,32 +228,71 @@ export function useRejectVehicle() {
 }
 
 export function useVehicleRequests(scope?: "admin", status?: string) {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   const params = new URLSearchParams();
   if (scope) params.set("scope", scope);
   if (status) params.set("status", status);
 
   return useQuery<VehicleRequest[]>({
     queryKey: ["vehicle-requests", scope, status],
-    queryFn: () => apiFetch(`/api/marketplace/requests?${params}`),
+    queryFn: async () => {
+      const res = await fetch(`/api/marketplace/requests?${params}`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
   });
 }
 
 export function useVehicleRequest(id: string) {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useQuery<VehicleRequest>({
     queryKey: ["vehicle-request", id],
-    queryFn: () => apiFetch(`/api/marketplace/requests/${id}`),
+    queryFn: async () => {
+      const res = await fetch(`/api/marketplace/requests/${id}`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     enabled: !!id,
   });
 }
 
 export function useCreateRequest() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (data: { vehicle_id: string; notes?: string }) =>
-      apiFetch<VehicleRequest>("/api/marketplace/requests", {
+    mutationFn: async (data: { vehicle_id: string; notes?: string }) => {
+      const res = await fetch("/api/marketplace/requests", {
         method: "POST",
+        headers,
         body: JSON.stringify(data),
-      }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<VehicleRequest>;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
     },
@@ -167,8 +301,14 @@ export function useCreateRequest() {
 
 export function useVerifyRequest() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       action,
       reason,
@@ -176,11 +316,18 @@ export function useVerifyRequest() {
       id: string;
       action: "verify" | "cancel";
       reason?: string;
-    }) =>
-      apiFetch(`/api/marketplace/requests/${id}/verify`, {
+    }) => {
+      const res = await fetch(`/api/marketplace/requests/${id}/verify`, {
         method: "POST",
+        headers,
         body: JSON.stringify({ action, reason }),
-      }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicle-requests"] });
     },
@@ -188,39 +335,93 @@ export function useVerifyRequest() {
 }
 
 export function useCreatePaymentIntent() {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       request_id: string;
       payment_type: "DEPOSIT" | "FINAL";
-    }) =>
-      apiFetch<{ client_secret: string; payment_intent_id: string }>(
-        "/api/marketplace/payments/create-intent",
-        { method: "POST", body: JSON.stringify(data) },
-      ),
+    }) => {
+      const res = await fetch("/api/marketplace/payments/create-intent", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<{ client_secret: string; payment_intent_id: string }>;
+    },
   });
 }
 
 export function useNotifications() {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useQuery<Notification[]>({
     queryKey: ["notifications"],
-    queryFn: () => apiFetch("/api/marketplace/notifications"),
+    queryFn: async () => {
+      const res = await fetch("/api/marketplace/notifications", { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     refetchInterval: 30000,
   });
 }
 
 export function useUnreadNotifications() {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useQuery<Notification[]>({
     queryKey: ["notifications", "unread"],
-    queryFn: () => apiFetch("/api/marketplace/notifications?unread=true"),
+    queryFn: async () => {
+      const res = await fetch("/api/marketplace/notifications?unread=true", { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     refetchInterval: 15000,
   });
 }
 
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch(`/api/marketplace/notifications/${id}/read`, { method: "POST" }),
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/marketplace/notifications/${id}/read`, {
+        method: "POST",
+        headers,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications"] });
     },

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Plus,
   Edit,
@@ -51,11 +52,17 @@ function formatDate(dateStr: string): string {
 
 export function SellerDashboard() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const user = session?.user as any;
+  const isApprovedSeller = user?.role === 'SELLER' && user?.profile?.isSeller;
+  const isAdmin = user?.role === 'ADMIN';
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
-  const { data: vehicles, isLoading, isError, error, refetch } = useMarketplaceVehicles('seller');
+  const { data: vehicles, isLoading, isError, error, refetch } = useMarketplaceVehicles(
+    isApprovedSeller || isAdmin ? 'seller' : undefined,
+  );
   const submitVehicle = useSubmitVehicle();
   const deleteVehicle = useDeleteVehicle();
 
@@ -111,6 +118,34 @@ export function SellerDashboard() {
       return primary ? primary.url : vehicle.images[0].url;
     }
     return null;
+  }
+
+  // --- Access control ---
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500 text-sm">Loading seller dashboard...</div>
+      </div>
+    );
+  }
+
+  if (!isApprovedSeller && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md px-4 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Seller access required</h1>
+          <p className="text-gray-600 mb-6">
+            Your account is not yet approved as a seller. You can apply to become a verified seller.
+          </p>
+          <Link
+            href="/seller/landing"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors"
+          >
+            Learn about selling
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // --- Loading State ---
