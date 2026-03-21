@@ -1,11 +1,19 @@
-import { VerifyPaymentCallback } from '@/views/VerifyPayment';
-import { Suspense } from 'react';
+import { VerifyPaymentCallback } from "@/views/VerifyPayment";
+import { firstSearchParam } from "@/lib/nextSearchParams";
 
-export default function PaymentPage() {
+type PageProps = {
+  searchParams: Record<string, string | string[] | undefined>;
+};
+
+export const dynamic = "force-dynamic";
+
+export default function PaymentPage({ searchParams }: PageProps) {
   return (
-    <Suspense fallback={<div>Verify Payment...</div>}>
-      <VerifyPaymentCallback />
-    </Suspense>
-
+    <VerifyPaymentCallback
+      reference={firstSearchParam(searchParams, "reference")}
+      trxref={firstSearchParam(searchParams, "trxref")}
+      transactionId={firstSearchParam(searchParams, "transaction_id")}
+      cancelled={firstSearchParam(searchParams, "cancelled")}
+    />
   );
 }

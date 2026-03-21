@@ -25,11 +25,9 @@ const ROLE_ROUTES = {
   SUPER_ADMIN: ["/admin"],
 };
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-
-async function verifyToken(token: string) {
+async function verifyToken(token: string, secretKey: Uint8Array) {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secretKey);
     return payload as { role?: string; exp?: number };
   } catch {
     return null;
@@ -48,6 +46,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const jwtSecret = process.env.JWT_SECRET?.trim();
+  if (!jwtSecret) {
+    console.error(
+      "[middleware] JWT_SECRET is not set — cannot verify auth on Edge (avoids crash)",
+    );
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", "server_config");
+    return NextResponse.redirect(loginUrl);
+  }
+  const secretKey = new TextEncoder().encode(jwtSecret);
+
   // Get token from cookies or header
   const token =
     request.cookies.get("accessToken")?.value ||
@@ -62,7 +71,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verify token cryptographically
-  const decoded = await verifyToken(token);
+  const decoded = await verifyToken(token, secretKey);
 
   if (!decoded) {
     const loginUrl = new URL("/login", request.url);

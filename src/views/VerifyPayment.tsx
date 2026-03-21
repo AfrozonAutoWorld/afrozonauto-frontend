@@ -1,92 +1,116 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { useVerifyPayment } from '@/hooks/usePaymentMutation';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useVerifyPayment } from "@/hooks/usePaymentMutation";
 
-type PaymentStatus = 'verifying' | 'success' | 'failed' | 'cancelled';
+type PaymentStatus = "verifying" | "success" | "failed" | "cancelled";
 
-export function VerifyPaymentCallback() {
+export type VerifyPaymentCallbackProps = {
+  reference?: string;
+  trxref?: string;
+  transactionId?: string;
+  cancelled?: string;
+};
+
+export function VerifyPaymentCallback({
+  reference,
+  trxref,
+  transactionId,
+  cancelled,
+}: Readonly<VerifyPaymentCallbackProps>) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [status, setStatus] = useState<PaymentStatus>('verifying');
-  const [message, setMessage] = useState('Verifying your payment...');
+  const [status, setStatus] = useState<PaymentStatus>("verifying");
+  const [message, setMessage] = useState("Verifying your payment...");
 
   const { mutateAsync: verifyPayment } = useVerifyPayment();
 
   useEffect(() => {
     const handlePaymentVerification = async () => {
       try {
-        const reference = searchParams.get('reference');
-        const trxref = searchParams.get('trxref');
-        const transaction_id = searchParams.get('transaction_id');
-
-        const cancelled = searchParams.get('cancelled');
-        if (cancelled === 'true') {
-          setStatus('cancelled');
-          setMessage('Payment was cancelled. You will be redirected to your dashboard.');
-          setTimeout(() => router.push('/marketplace/buyer'), 3000);
+        if (cancelled === "true") {
+          setStatus("cancelled");
+          setMessage(
+            "Payment was cancelled. You will be redirected to your dashboard.",
+          );
+          setTimeout(() => router.push("/marketplace/buyer"), 3000);
           return;
         }
 
-        const paymentReference = reference || trxref || transaction_id;
+        const paymentReference = reference || trxref || transactionId;
 
         if (!paymentReference) {
-          setStatus('failed');
-          setMessage('No payment reference found. Please contact support if you were charged.');
-          setTimeout(() => router.push('/marketplace/buyer'), 5000);
+          setStatus("failed");
+          setMessage(
+            "No payment reference found. Please contact support if you were charged.",
+          );
+          setTimeout(() => router.push("/marketplace/buyer"), 5000);
           return;
         }
 
-        setMessage('Verifying your payment, please have patience...');
+        setMessage("Verifying your payment, please have patience...");
         await verifyPayment({
           reference: paymentReference,
         });
 
-        setStatus('success');
-        setMessage('Payment verification successful! Redirecting to your dashboard...');
+        setStatus("success");
+        setMessage(
+          "Payment verification successful! Redirecting to your dashboard...",
+        );
 
-        setTimeout(() => router.push('/marketplace/buyer'), 2000);
+        setTimeout(() => router.push("/marketplace/buyer"), 2000);
+      } catch (error: unknown) {
+        console.error("Payment verification failed:", error);
 
-      } catch (error: any) {
-        console.error('Payment verification failed:', error);
+        setStatus("failed");
 
-        setStatus('failed');
-
-        if (error?.response?.data?.message) {
-          setMessage(error.response.data.message);
-        } else if (error?.message) {
-          setMessage(error.message);
+        const err = error as {
+          response?: { data?: { message?: string } };
+          message?: string;
+        };
+        if (err?.response?.data?.message) {
+          setMessage(err.response.data.message);
+        } else if (err?.message) {
+          setMessage(err.message);
         } else {
-          setMessage('Payment verification failed. Please contact support if you were charged.');
+          setMessage(
+            "Payment verification failed. Please contact support if you were charged.",
+          );
         }
 
-        setTimeout(() => router.push('/marketplace/buyer'), 5000);
+        setTimeout(() => router.push("/marketplace/buyer"), 5000);
       }
     };
 
     handlePaymentVerification();
-  }, [searchParams, verifyPayment, router]);
+  }, [
+    cancelled,
+    reference,
+    trxref,
+    transactionId,
+    verifyPayment,
+    router,
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
         {/* Status Icon */}
         <div className="mb-6">
-          {status === 'verifying' && (
+          {status === "verifying" && (
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full">
               <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
             </div>
           )}
 
-          {status === 'success' && (
+          {status === "success" && (
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
           )}
 
-          {(status === 'failed' || status === 'cancelled') && (
+          {(status === "failed" || status === "cancelled") && (
             <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full">
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
@@ -95,33 +119,35 @@ export function VerifyPaymentCallback() {
 
         {/* Status Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-3">
-          {status === 'verifying' && 'Processing Payment'}
-          {status === 'success' && 'Payment Successful!'}
-          {status === 'failed' && 'Payment Failed'}
-          {status === 'cancelled' && 'Payment Cancelled'}
+          {status === "verifying" && "Processing Payment"}
+          {status === "success" && "Payment Successful!"}
+          {status === "failed" && "Payment Failed"}
+          {status === "cancelled" && "Payment Cancelled"}
         </h2>
 
         {/* Status Message */}
         <p className="text-gray-600 mb-6">{message}</p>
 
         {/* Progress indicator for verifying state */}
-        {status === 'verifying' && (
+        {status === "verifying" && (
           <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div className="bg-blue-600 h-2 rounded-full animate-pulse w-2/3" />
           </div>
         )}
 
         {/* Action buttons for failed/cancelled states */}
-        {(status === 'failed' || status === 'cancelled') && (
+        {(status === "failed" || status === "cancelled") && (
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/marketplace/buyer')}
+              type="button"
+              onClick={() => router.push("/marketplace/buyer")}
               className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
             >
               Go to Dashboard
             </button>
             <button
-              onClick={() => router.push('/contact')}
+              type="button"
+              onClick={() => router.push("/contact")}
               className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
             >
               Contact Support
@@ -130,20 +156,21 @@ export function VerifyPaymentCallback() {
         )}
 
         {/* Success state - show automatic redirect message */}
-        {status === 'success' && (
+        {status === "success" && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <p className="text-sm text-green-800">
-              You will be automatically redirected to your dashboard in a few seconds...
+              You will be automatically redirected to your dashboard in a few
+              seconds...
             </p>
           </div>
         )}
 
         {/* Verifying state - helpful info */}
-        {status === 'verifying' && (
+        {status === "verifying" && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              Please wait while we confirm your payment with the payment provider.
-              This usually takes just a few seconds.
+              Please wait while we confirm your payment with the payment
+              provider. This usually takes just a few seconds.
             </p>
           </div>
         )}
