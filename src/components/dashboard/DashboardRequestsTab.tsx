@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Car, ChevronRight, AlertCircle } from 'lucide-react';
+import { Car, ChevronRight, AlertCircle, MoreVertical } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/pricingCalculator';
 import { useOrders } from '@/hooks/useOrderQueries';
 import { Paginator, PAGE_SIZE } from './Paginator';
@@ -12,7 +12,7 @@ import { VehicleOrder } from '@/lib/api/orders';
 export function DashboardRequestsTab() {
   const [ordersPage, setOrdersPage] = useState(1);
   const { orders, isLoading: ordersLoading, isError: ordersError } = useOrders();
-
+console.log(orders);
   const sortedOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
     return [...orders].sort(
@@ -76,93 +76,95 @@ export function DashboardRequestsTab() {
 
   return (
     <div className="space-y-4">
-      {paginatedOrders.map((order: any) => {
-        const statusConfig = STATUS_CONFIG[order.status as string];
-        const StatusIcon = statusConfig?.icon || STATUS_CONFIG.pending_quote.icon;
-        const vehicleName = getOrderVehicleName(order);
-        const vehicleImage = getOrderPrimaryImage(order);
+      <div className="overflow-hidden bg-white rounded-xl border border-[#E5E7EB]">
+        <div className="overflow-x-auto">
+          <div className="min-w-[980px]">
+            <div className="grid grid-cols-[2.2fr_1.1fr_1fr_1fr_1fr_0.9fr] gap-6 border-b border-[#E5E7EB] bg-[#FAFAFA] px-4 py-4">
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Vehicle Details</span>
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Status</span>
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Date Listed</span>
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Total Cost</span>
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Shipping</span>
+              <span className="font-jakarta text-sm font-medium text-[#111827]">Action</span>
+            </div>
 
-        return (
-          <div
-            key={String(order.id)}
-            className="overflow-hidden bg-white rounded-xl shadow-sm"
-          >
-            <div className="p-6">
-              <div className="flex flex-col gap-6 md:flex-row">
-                <img
-                  src={vehicleImage}
-                  alt={vehicleName}
-                  className="object-cover w-full h-32 rounded-lg md:w-48"
-                />
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-4 justify-between items-start mb-3">
-                    <div>
-                      <p className="mb-1 text-sm text-gray-500">
-                        Order #{order.requestNumber || order.id}
+            {paginatedOrders.map((order: any) => {
+              const statusConfig = STATUS_CONFIG[order.status as string];
+              const StatusIcon = statusConfig?.icon || STATUS_CONFIG.pending_quote.icon;
+              const vehicleName = getOrderVehicleName(order);
+              const vehicleImage = getOrderPrimaryImage(order);
+
+              const totalCost = formatCurrency(
+                (order.paymentBreakdown as any)?.totalUsd ||
+                  (order.totalLandedCostUsd as number) ||
+                  (order.quotedPriceUsd as number) ||
+                  (order.vehicleSnapshot as Record<string, unknown>)?.priceUsd ||
+                  0
+              );
+
+              return (
+                <div
+                  key={String(order.id)}
+                  className="grid grid-cols-[2.2fr_1.1fr_1fr_1fr_1fr_0.9fr] gap-6 border-b border-[#E3EBF0] px-4 py-4"
+                >
+                  <div className="flex gap-3 items-center min-w-0">
+                    <img
+                      src={vehicleImage}
+                      alt={vehicleName}
+                      className="h-[60px] w-20 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-body text-xs font-semibold text-[#343A40]">
+                        {vehicleName}
                       </p>
-                      <h3 className="text-xl font-semibold text-gray-900">{vehicleName}</h3>
+                      <p className="mt-0.5 truncate font-body text-xs text-[#6B7280]">
+                        #{order.requestNumber || order.id}
+                      </p>
                     </div>
+                  </div>
+
+                  <div className="flex items-center">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
                         statusConfig?.color || 'bg-gray-100 text-gray-700'
                       }`}
                     >
-                      <StatusIcon className="w-4 h-4" />
+                      <StatusIcon className="h-3.5 w-3.5" />
                       {statusConfig?.label || String(order.status)}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-                    <div>
-                      <p className="text-gray-500">Total Cost</p>
-                      <p className="font-semibold text-gray-900">
-                        {formatCurrency(
-                          (order.paymentBreakdown as any)?.totalUsd ||
-                            (order.totalLandedCostUsd as number) ||
-                            (order.quotedPriceUsd as number) ||
-                            (order.vehicleSnapshot as Record<string, unknown>)?.priceUsd ||
-                            0
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Shipping</p>
-                      <p className="font-semibold text-gray-900">
-                        {String(order.shippingMethod || 'N/A')}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Destination</p>
-                      <p className="font-semibold text-gray-900">
-                        {String(order.destinationState || 'N/A')}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Est. Delivery</p>
-                      <p className="font-semibold text-gray-900">
-                        {order.estimatedDeliveryDate
-                          ? formatDate(order.estimatedDeliveryDate as string)
-                          : 'TBD'}
-                      </p>
-                    </div>
+
+                  <div className="flex items-center font-jakarta text-sm text-[#6B7280]">
+                    {formatDate(order.createdAt as string)}
+                  </div>
+
+                  <div className="flex items-center font-jakarta text-sm text-[#6B7280]">
+                    {totalCost}
+                  </div>
+
+                  <div className="flex items-center font-jakarta text-sm text-[#6B7280]">
+                    {String(order.shippingMethod || 'N/A')}
+                  </div>
+
+                  <div className="flex gap-1 items-center">
+                    <Link
+                      href={`/marketplace/buyer/order/${order.id}`}
+                      className="inline-flex items-center rounded-full p-1.5 text-[#6B7280] transition-colors hover:bg-gray-100 hover:text-[#111827]"
+                      aria-label={`View ${vehicleName}`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                    <span className="inline-flex items-center rounded-full p-1.5 text-[#6B7280]">
+                      <MoreVertical className="w-4 h-4" />
+                    </span>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex justify-between items-center px-6 py-3 bg-gray-50">
-              <p className="text-sm text-gray-500">
-                Submitted {formatDate(order.createdAt as string)}
-              </p>
-              <Link
-                href={`/marketplace/buyer/order/${order.id}`}
-                className="flex gap-1 items-center text-sm font-medium text-emerald-600 hover:text-emerald-700"
-              >
-                View Details
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      </div>
+
       <div className="overflow-hidden bg-white rounded-xl shadow-sm">
         <div className="flex justify-between items-center px-6 py-3 border-t border-gray-100">
           <p className="text-sm text-gray-500">

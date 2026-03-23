@@ -3,134 +3,295 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Store, Mail, AlertCircle, CheckCircle } from "lucide-react";
-import { sellerCheckEmailSchema, type SellerCheckEmailInput } from "@/lib/validation/seller.schema";
+import { AlertCircle, Check, X } from "lucide-react";
+import { sellerCheckEmailSchema } from "@/lib/validation/seller.schema";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
 
 export function SellerRegisterStart() {
   const router = useRouter();
-  const { checkEmail, SELLER_EMAIL_KEY } = useSellerMutations();
+  const { checkEmail, verifyToken, SELLER_SIGNUP_DRAFT_KEY } = useSellerMutations();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<keyof SellerCheckEmailInput, string>>>({});
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
-  const validateForm = () => {
+  const hasUpper = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  const hasLen = password.length >= 8;
+
+  function validateForm() {
+    const nextErrors: Record<string, string> = {};
+    if (firstName.trim().length < 2) nextErrors.firstName = "First name is required";
+    if (lastName.trim().length < 2) nextErrors.lastName = "Last name is required";
     try {
       sellerCheckEmailSchema.parse({ email });
-      setErrors({});
-      return true;
-    } catch (err: unknown) {
-      const e = err as { errors?: { path: (string | number)[]; message: string }[] };
-      const fieldErrors: Partial<Record<keyof SellerCheckEmailInput, string>> = {};
-      e.errors?.forEach((item) => {
-        const key = item.path[0] as keyof SellerCheckEmailInput;
-        if (key) fieldErrors[key] = item.message;
-      });
-      setErrors(fieldErrors);
-      return false;
+    } catch {
+      nextErrors.email = "Please enter a valid email";
     }
-  };
+    if (!hasLen || !hasUpper || !hasNumber || !hasSpecial) {
+      nextErrors.password =
+        "Password must be at least 8 chars and include uppercase, number, and special character";
+    }
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setLoading(true);
+    setIsSendingOtp(true);
+    setOtpError("");
+
     try {
-      await checkEmail.mutateAsync({ email });
-      if (typeof window !== "undefined") sessionStorage.setItem(SELLER_EMAIL_KEY, email);
-      setSuccess(true);
-      setTimeout(() => router.push("/seller/register/verify"), 1500);
+      await checkEmail.mutateAsync({ email: email.trim() });
+      setOtpCode("");
+      setOtpOpen(true);
     } catch {
-      // Error handled in hook
+      // toast handled in mutation hook
     } finally {
-      setLoading(false);
+      setIsSendingOtp(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Code sent</h2>
-          <p className="text-gray-600 mb-4">We&apos;ve sent a verification code to {email}</p>
-          <p className="text-sm text-gray-500">Redirecting to verification...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      setOtpError("Enter the 6-digit code sent to your email.");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    setOtpError("");
+    try {
+      await verifyToken.mutateAsync({ email: email.trim(), token: otpCode });
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          SELLER_SIGNUP_DRAFT_KEY,
+          JSON.stringify({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            password,
+          }),
+        );
+      }
+
+      setOtpOpen(false);
+      router.push("/seller/register/verify");
+    } catch {
+      setOtpError("Invalid or expired code. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsResendingOtp(true);
+    setOtpError("");
+    try {
+      await checkEmail.mutateAsync({ email: email.trim() });
+    } catch {
+      // toast handled in mutation hook
+    } finally {
+      setIsResendingOtp(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link href="/seller/landing" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
-              <Store className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-white">Afrozon</span>
-              <span className="text-2xl font-light text-emerald-400"> Seller</span>
-            </div>
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Become a seller</h1>
-          <p className="text-gray-400">Enter your email to receive a verification code</p>
+    <div className="mx-auto w-full max-w-[560px]">
+      <h1 className="font-sans text-[48px] font-bold leading-[60px] text-[#111827]">
+        Get Started!
+      </h1>
+      <p className="mt-1 font-body text-xl text-[#B8B8B8]">
+        Create your account to list your car and get paid securely.
+      </p>
+
+      <div className="my-6 h-px w-full bg-[#E5E7EB]" />
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+              First Name
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="e.g. Biobele"
+              className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
+                errors.firstName ? "border-red-300" : "border-[#E5E7EB]"
+              }`}
+            />
+            {errors.firstName && (
+              <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="e.g. Owen"
+              className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
+                errors.lastName ? "border-red-300" : "border-[#E5E7EB]"
+              }`}
+            />
+            {errors.lastName && (
+              <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
-                  }}
-                  placeholder="you@example.com"
-                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
-                    errors.email ? "border-red-300" : "border-gray-300"
-                  }`}
-                />
+        <div>
+          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+            Email Address
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="e.g. owenbiobele@gmail.com"
+            className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
+              errors.email ? "border-red-300" : "border-[#E5E7EB]"
+            }`}
+          />
+          {errors.email && (
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-red-600">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{errors.email}</span>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+            Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Create a strong password"
+            className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
+              errors.password ? "border-red-300" : "border-[#E5E7EB]"
+            }`}
+          />
+          <div className="mt-2 space-y-1">
+            <p className="font-body text-xs text-[#6B7280]">
+              Your password must contain at least:
+            </p>
+            {[
+              { ok: hasLen, label: "8 characters" },
+              { ok: hasUpper, label: "1 uppercase letter" },
+              { ok: hasNumber, label: "1 number" },
+              { ok: hasSpecial, label: "1 special character (e.g. @, #, $, !)" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5 text-xs">
+                {item.ok ? (
+                  <Check className="h-3.5 w-3.5 text-[#0D7A4A]" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-[#6B7280]" />
+                )}
+                <span className={item.ok ? "text-[#0D7A4A]" : "text-[#6B7280]"}>
+                  {item.label}
+                </span>
               </div>
-              {errors.email && (
-                <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{errors.email}</span>
+            ))}
+          </div>
+          {errors.password && (
+            <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSendingOtp}
+          className="mt-2 h-12 w-full rounded-lg bg-[#0D7A4A] font-body text-lg font-medium text-white transition-colors hover:bg-[#0a633e]"
+        >
+          {isSendingOtp ? "Sending OTP..." : "Create Account"}
+        </button>
+      </form>
+
+      <p className="mt-5 text-center font-body text-sm text-[#9CA3AF]">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-[#0D7A4A] hover:text-[#0a633e]">
+          Sign In
+        </Link>
+      </p>
+
+      {otpOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="font-sans text-3xl font-bold text-[#111827]">
+              Verify your email
+            </h2>
+            <p className="mt-2 font-body text-sm text-[#6B7280]">
+              Enter the 6-digit OTP sent to <span className="font-medium">{email}</span>.
+            </p>
+
+            <div className="mt-5">
+              <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+                OTP Code
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otpCode}
+                onChange={(e) => {
+                  setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  if (otpError) setOtpError("");
+                }}
+                placeholder="000000"
+                className="h-12 w-full rounded-lg border border-[#E5E7EB] px-3.5 text-center font-body text-2xl tracking-[0.2em] text-[#111827]"
+              />
+              {otpError && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>{otpError}</span>
                 </div>
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Sending code...
-                </>
-              ) : (
-                "Continue"
-              )}
-            </button>
-          </form>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={isVerifyingOtp}
+                className="h-11 flex-1 rounded-lg bg-[#0D7A4A] font-body text-base font-medium text-white hover:bg-[#0a633e] disabled:opacity-60"
+              >
+                {isVerifyingOtp ? "Verifying..." : "Verify OTP"}
+              </button>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isResendingOtp}
+                className="h-11 rounded-lg border border-[#E5E7EB] px-4 font-body text-sm font-medium text-[#111827] hover:bg-gray-50 disabled:opacity-60"
+              >
+                {isResendingOtp ? "Resending..." : "Resend OTP"}
+              </button>
+            </div>
 
-          <p className="text-center text-gray-600 mt-6">
-            Already have an account?{" "}
-            <Link href="/login" className="text-emerald-600 font-medium hover:text-emerald-700">
-              Sign in
-            </Link>
-          </p>
+            <button
+              type="button"
+              onClick={() => setOtpOpen(false)}
+              className="mt-3 h-10 w-full rounded-lg font-body text-sm text-[#6B7280] hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

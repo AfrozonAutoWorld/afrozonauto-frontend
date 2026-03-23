@@ -1,228 +1,372 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { Calculator, Ship, Truck, Info } from 'lucide-react';
+import {
+  Ship,
+  Container,
+  Clock,
+  Check,
+  ChevronDown,
+} from 'lucide-react';
 import type { VehicleType } from '../../types';
 import {
   formatCurrency,
-  getEstimatedDeliveryDate,
-  formatDate,
   NIGERIAN_STATES,
 } from '../../lib/pricingCalculator';
-import { CostBreakdown } from '../../lib/api/orders';
+import type { CostBreakdown } from '../../lib/api/orders';
+import { cn } from '@/lib/utils';
 
-interface PriceCalculatorProps {
+export interface PriceCalculatorProps {
   vehiclePrice: number;
   vehicleType: VehicleType;
   costBreakdown?: CostBreakdown | null;
   isLoading?: boolean;
-  onShippingMethodChange?: (method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS') => void;
+  /** True while refetching (e.g. after shipping method change). */
+  isFetching?: boolean;
+  onShippingMethodChange?: (
+    method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS',
+  ) => void;
+  /** When omitted, the request CTA is not shown (e.g. calculator-only views). */
+  onRequestVehicle?: () => void;
+  requestLoading?: boolean;
+  requestDisabled?: boolean;
 }
 
-export function PriceCalculator({ costBreakdown, isLoading, onShippingMethodChange }: PriceCalculatorProps) {
-  const [shippingMethod, setShippingMethod] = useState<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'>('RORO');
-  const [destinationState, setDestinationState] = useState('Lagos');
-  const [showBreakdown, setShowBreakdown] = useState(false);
+const usd = { preciseUsd: true as const };
 
-  // Sync shipping method with costBreakdown data when it changes
+function num(n: unknown): number {
+  const v = typeof n === 'number' ? n : Number(n);
+  return Number.isFinite(v) ? v : 0;
+}
+
+export function PriceCalculator({
+  costBreakdown,
+  isLoading,
+  isFetching = false,
+  onShippingMethodChange,
+  onRequestVehicle,
+  requestLoading,
+  requestDisabled,
+}: PriceCalculatorProps) {
+  const [shippingMethod, setShippingMethod] = useState<
+    'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'
+  >('RORO');
+  const [destinationState, setDestinationState] = useState('Port Harcourt');
+
   useEffect(() => {
     const apiMethod = costBreakdown?.paymentBreakdown?.shippingMethod;
     if (apiMethod) {
-      // Validate that the API value is one of our expected types
-      const validMethods: Array<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'> =
-        ['RORO', 'CONTAINER', 'AIR_FREIGHT', 'EXPRESS'];
-
-      if (validMethods.includes(apiMethod as any)) {
-        setShippingMethod(apiMethod as 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS');
+      const normalized = String(apiMethod).toUpperCase() as
+        | 'RORO'
+        | 'CONTAINER'
+        | 'AIR_FREIGHT'
+        | 'EXPRESS';
+      const valid: Array<'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS'> = [
+        'RORO',
+        'CONTAINER',
+        'AIR_FREIGHT',
+        'EXPRESS',
+      ];
+      if (valid.includes(normalized)) {
+        setShippingMethod(normalized);
       }
     }
   }, [costBreakdown?.paymentBreakdown?.shippingMethod]);
 
   const paymentData = costBreakdown?.paymentBreakdown;
-  const defaultPricing = costBreakdown?.defaultPricing;
+  const methodForEstimate = (
+    paymentData?.shippingMethod != null
+      ? String(paymentData.shippingMethod).toUpperCase()
+      : shippingMethod
+  ) as typeof shippingMethod;
+  const estimatedDeliveryDays =
+    methodForEstimate === 'RORO'
+      ? 45
+      : methodForEstimate === 'CONTAINER'
+        ? 60
+        : methodForEstimate === 'AIR_FREIGHT'
+          ? 15
+          : 7;
 
-
-  const estimatedDeliveryDays = shippingMethod === 'RORO' ? 45 :
-    shippingMethod === 'CONTAINER' ? 60 :
-      shippingMethod === 'AIR_FREIGHT' ? 15 : 7;
-
-  const handleShippingMethodChange = (method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS') => {
+  const handleShippingMethodChange = (
+    method: 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS',
+  ) => {
     setShippingMethod(method);
     onShippingMethodChange?.(method);
   };
 
-  const costItems = paymentData
+  const b = paymentData?.breakdown;
+  const costItems = b
     ? [
         {
           label: 'Vehicle Price',
-          value: paymentData.breakdown.vehiclePriceUsd ?? 0,
-          info: 'Base price of the vehicle in USD',
-        },
-        {
-          label: 'Afrozon Sourcing Fee',
-          value: paymentData.breakdown.sourcingFee ?? 0,
-          info: '5% of vehicle price (min $500)',
+          value: num(b.vehiclePriceUsd),
         },
         {
           label: 'Pre-Purchase Inspection',
-          value: paymentData.breakdown.prePurchaseInspectionUsd ?? 0,
-          info: 'Professional vehicle inspection',
+          value: num(b.prePurchaseInspectionUsd),
         },
         {
           label: 'US Handling Fee',
-          value: paymentData.breakdown.usHandlingFeeUsd ?? 0,
-          info: 'Documentation and export prep',
+          value: num(b.usHandlingFeeUsd),
+        },
+        {
+          label: 'Afrozon Sourcing Fee',
+          value: num(b.sourcingFee),
         },
         {
           label: 'Shipping Cost',
-          value: paymentData.breakdown.shippingCostUsd ?? 0,
-          info: `${shippingMethod} shipping method`,
+          value: num(b.shippingCostUsd),
         },
       ]
     : [];
 
-  const computedTotalUsd = costItems.reduce((sum, item) => sum + (item.value || 0), 0);
+  const computedTotalUsd = costItems.reduce((sum, item) => sum + item.value, 0);
 
-  // Calculate exchange rate from default pricing if available
-  const exchangeRate = defaultPricing ? 1550 : 1550; // Fallback to 1550 if not available
+  const exchangeRate = 1550;
+  const apiTotalUsd = paymentData != null ? num(paymentData.totalUsd) : 0;
+  const apiMatchesLines =
+    apiTotalUsd > 0 && Math.abs(apiTotalUsd - computedTotalUsd) < 0.02;
+  const displayTotalUsd =
+    apiTotalUsd > 0 ? (apiMatchesLines ? apiTotalUsd : computedTotalUsd) : computedTotalUsd;
+  const totalNgn = Math.round(displayTotalUsd * exchangeRate);
+
+  const pricingBusy =
+    isLoading || (isFetching && !paymentData);
+
+  const deliveryLabel = `${estimatedDeliveryDays} days after payment`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
-        <div className="flex items-center gap-2 text-white">
-          <Calculator className="w-5 h-5" />
-          <h3 className="text-lg font-semibold">Landed Cost Calculator</h3>
-        </div>
-        <p className="text-emerald-100 text-sm mt-1">
-          Calculate your total cost including shipping to Nigeria
-        </p>
-      </div>
+    <div className="flex w-full flex-col gap-8 rounded-2xl bg-white p-5 shadow-sm sm:p-6 md:gap-9">
+      <h2 className="font-sans text-xl font-bold leading-8 text-[#546881] sm:text-2xl sm:leading-[30px]">
+        Landing Cost Calculator
+      </h2>
 
-      <div className="p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1.5">
+          <span className="font-body text-sm font-medium leading-5 text-[#414651]">
             Shipping Method
-          </label>
-          <div className="grid grid-cols-2 gap-3">
+          </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <button
+              type="button"
               onClick={() => handleShippingMethodChange('RORO')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'RORO'
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                : 'border-gray-200 hover:border-gray-300'
-                }`}
+              className={cn(
+                'relative isolate flex flex-1 flex-col gap-4 rounded-2xl border p-5 text-left transition-colors',
+                shippingMethod === 'RORO'
+                  ? 'border-[#0D7A4A] bg-[#E6F6F4]'
+                  : 'border-[#969696] bg-white',
+              )}
             >
-              <Ship className="w-5 h-5" />
-              <div className="text-left">
-                <div className="font-medium">RoRo</div>
-                <div className="text-xs text-gray-500">Roll-on/Roll-off</div>
+              {shippingMethod === 'RORO' && (
+                <span className="absolute right-4 top-4 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#008000]">
+                  <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
+                </span>
+              )}
+              <div className="flex flex-col gap-1.5 pr-6">
+                <Ship
+                  className={cn(
+                    'h-4 w-4',
+                    shippingMethod === 'RORO' ? 'text-[#0D7A4A]' : 'text-neutral-900',
+                  )}
+                  strokeWidth={1.5}
+                />
+                <p
+                  className={cn(
+                    'font-body text-sm font-semibold leading-5',
+                    shippingMethod === 'RORO'
+                      ? 'text-[#0D7A4A]'
+                      : 'text-[#1A1A1A]',
+                  )}
+                >
+                  RoRo
+                </p>
+                <p className="font-jakarta text-xs font-normal leading-4 text-[#969696]">
+                  Roll-on/Roll-off. Most popular, lower cost.
+                </p>
               </div>
+              <span
+                className={cn(
+                  'inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 font-body text-xs leading-4',
+                  shippingMethod === 'RORO'
+                    ? 'bg-[#E6F6F4] text-[#0D7A4A]'
+                    : 'bg-[#E8E8E8] text-[#1A1A1A]',
+                )}
+              >
+                <Clock className="h-3 w-3" strokeWidth={1} />
+                ~45 days
+              </span>
             </button>
+
             <button
+              type="button"
               onClick={() => handleShippingMethodChange('CONTAINER')}
-              className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${shippingMethod === 'CONTAINER'
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                : 'border-gray-200 hover:border-gray-300'
-                }`}
+              className={cn(
+                'relative isolate flex flex-1 flex-col gap-4 rounded-2xl border p-5 text-left transition-colors',
+                shippingMethod === 'CONTAINER'
+                  ? 'border-[#0D7A4A] bg-[#E6F6F4]'
+                  : 'border-[#969696] bg-white',
+              )}
             >
-              <Truck className="w-5 h-5" />
-              <div className="text-left">
-                <div className="font-medium">Container</div>
-                <div className="text-xs text-gray-500">Full container</div>
+              {shippingMethod === 'CONTAINER' && (
+                <span className="absolute right-4 top-4 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#008000]">
+                  <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
+                </span>
+              )}
+              <div className="flex flex-col gap-1.5 pr-6">
+                <Container
+                  className={cn(
+                    'h-4 w-4',
+                    shippingMethod === 'CONTAINER'
+                      ? 'text-[#0D7A4A]'
+                      : 'text-neutral-900',
+                  )}
+                  strokeWidth={1.5}
+                />
+                <p
+                  className={cn(
+                    'font-body text-sm font-semibold leading-5',
+                    shippingMethod === 'CONTAINER'
+                      ? 'text-[#0D7A4A]'
+                      : 'text-[#1A1A1A]',
+                  )}
+                >
+                  Container
+                </p>
+                <p className="font-jakarta text-xs font-normal leading-4 text-[#969696]">
+                  Full container. More protection, higher cost.
+                </p>
               </div>
+              <span
+                className={cn(
+                  'inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 font-body text-xs leading-4',
+                  shippingMethod === 'CONTAINER'
+                    ? 'bg-[#E6F6F4] text-[#0D7A4A]'
+                    : 'bg-[#E8E8E8] text-[#1A1A1A]',
+                )}
+              >
+                <Clock className="h-3 w-3" strokeWidth={1} />
+                ~60 days
+              </span>
             </button>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="delivery-location"
+            className="font-body text-sm font-medium leading-5 text-[#414651]"
+          >
             Delivery Location
           </label>
-          <select
-            value={destinationState}
-            onChange={(e) => setDestinationState(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-          >
-            {NIGERIAN_STATES.map((state) => (
-              <option key={state} value={state}>{state}</option>
-            ))}
-          </select>
-        </div>
-
-        {isLoading ? (
-          <div className="bg-gray-50 rounded-xl p-5 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Calculating costs...</p>
-            </div>
-          </div>
-        ) : paymentData ? (
-          <>
-            <div className="bg-gray-50 rounded-xl p-5">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">Total Landed Cost</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(computedTotalUsd)}
-                  </p>
-                  <p className="text-lg text-emerald-600 font-medium">
-                    {formatCurrency(computedTotalUsd * exchangeRate, 'NGN')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Est. Delivery</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {estimatedDeliveryDays} days
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    ~{formatDate(getEstimatedDeliveryDate(estimatedDeliveryDays))}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowBreakdown(!showBreakdown)}
-              className="w-full text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center justify-center gap-1"
+          <div className="relative">
+            <select
+              id="delivery-location"
+              value={destinationState}
+              onChange={(e) => setDestinationState(e.target.value)}
+              className="font-body h-11 w-full appearance-none rounded-lg border border-[#D5D7DA] bg-white py-2.5 pl-3.5 pr-10 text-base leading-6 text-neutral-800 shadow-[0px_1px_2px_rgba(10,13,18,0.05)] focus:border-[#0D7A4A] focus:outline-none focus:ring-2 focus:ring-[#0D7A4A]/20"
             >
-              {showBreakdown ? 'Hide' : 'Show'} Cost Breakdown
-              <Info className="w-4 h-4" />
-            </button>
+              {NIGERIAN_STATES.map((state) => (
+                <option key={state} value={state}>
+                  {state === 'Port Harcourt'
+                    ? 'Port Harcourt, Rivers State'
+                    : state}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#717680]"
+              aria-hidden
+            />
+          </div>
+        </div>
+      </div>
 
-            {showBreakdown && (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {costItems.map((item, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                        <td className="px-4 py-2 text-gray-600">{item.label}</td>
-                        <td className="px-4 py-2 text-right font-medium text-gray-900">
-                          {formatCurrency(item.value)}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-emerald-50 font-semibold">
-                      <td className="px-4 py-3 text-emerald-800">Total</td>
-                      <td className="px-4 py-3 text-right text-emerald-800">
-                        {formatCurrency(computedTotalUsd)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+      {pricingBusy ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-gray-50 py-10">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0D7A4A] border-t-transparent" />
+          <p className="font-body text-sm text-gray-600">Calculating costs…</p>
+        </div>
+      ) : paymentData ? (
+        <>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-row items-center justify-between gap-4">
+              <span className="font-body text-base font-normal leading-6 text-black">
+                Estimated Delivery
+              </span>
+              <span className="font-body text-right text-base font-normal leading-6 text-[#546881]">
+                {deliveryLabel}
+              </span>
+            </div>
+            <div className="flex flex-row items-center justify-between gap-4">
+              <span className="font-body text-base font-normal leading-6 text-black">
+                Total landed cost
+              </span>
+              <span className="text-right font-body text-lg font-bold leading-7 text-[#0D7A4A]">
+                {formatCurrency(totalNgn, 'NGN')} (
+                {formatCurrency(displayTotalUsd, 'USD', usd)})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <h3 className="font-sans text-lg font-semibold leading-7 text-[#111827]">
+              Price Breakdown
+            </h3>
+            <div className="flex flex-col gap-4">
+              {costItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row items-center justify-between gap-8"
+                >
+                  <span className="font-body text-base font-normal leading-6 text-[#374151]">
+                    {item.label}
+                  </span>
+                  <span className="text-right font-body text-base font-semibold leading-6 text-[#374151]">
+                    {formatCurrency(item.value, 'USD', usd)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-[#E5E7EB] pt-4">
+              <div className="flex flex-row items-center justify-between gap-8">
+                <span className="font-body text-base font-normal leading-6 text-[#374151]">
+                  Total
+                </span>
+                <span className="text-right font-body text-lg font-bold leading-7 text-[#0D7A4A]">
+                  {formatCurrency(displayTotalUsd, 'USD', usd)}
+                </span>
               </div>
-            )}
-
-            <p className="text-xs text-gray-500 text-center">
-              Exchange rate: $1 = {formatCurrency(exchangeRate, 'NGN').replace('NGN', '').trim()} NGN
-              <br />
-              Prices are estimates and may vary based on market conditions.
-            </p>
-          </>
-        ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-sm text-amber-800 text-center">
-              Unable to load pricing information. Please try again later.
+            </div>
+            <p className="font-body text-sm italic leading-5 text-[#003B33]">
+              * Exchange rate: $1 = {exchangeRate.toLocaleString()} NGN; prices are
+              estimates and may vary based on market conditions.
             </p>
           </div>
-        )}
-      </div>
+
+          {onRequestVehicle != null && (
+            <div className="flex flex-col items-center gap-4">
+              <button
+                type="button"
+                onClick={onRequestVehicle}
+                disabled={requestDisabled || requestLoading}
+                className="font-body flex w-full items-center justify-center rounded-lg bg-[#0D7A4A] px-8 py-[18px] text-lg font-medium leading-7 text-white transition-colors hover:bg-[#0a633e] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {requestLoading ? 'Submitting…' : 'Request this vehicle'}
+              </button>
+              <p className="text-center font-body text-sm font-normal leading-5 text-[#1D242D]">
+                30% deposit required to secure this vehicle
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-center font-body text-sm text-amber-800">
+            Unable to load pricing information. Please try again later.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

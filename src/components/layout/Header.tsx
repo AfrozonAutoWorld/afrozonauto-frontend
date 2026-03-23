@@ -7,6 +7,7 @@ import { Menu, X, LogOut, LayoutDashboard, Store, ShieldCheck } from 'lucide-rea
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { signOut, useSession } from 'next-auth/react';
 import { Logo } from '../../lib/Logo';
+import { canUseSellerFeatures } from '@/lib/sellerAccess';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,9 +21,7 @@ export function Header() {
     router.push('/');
   };
 
-  const isApprovedSeller = user?.role === 'SELLER' && user?.profile?.isSeller;
-  const isAdmin = user?.role === 'ADMIN';
-  const isSeller = isApprovedSeller || isAdmin;
+  const isSeller = canUseSellerFeatures(user);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">

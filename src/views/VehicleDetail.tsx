@@ -1,21 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 import {
   MapPin,
-  Car,
-  Calendar,
+  CarFront,
+  Gauge,
   Fuel,
-  Settings,
-  Shield,
+  Calendar,
+  GitMerge,
+  ShipWheel,
+  DoorOpen,
+  Palette,
+  Zap,
+  KeyRound,
+  ScanBarcode,
   AlertCircle,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
+  Check,
+  Info,
   Heart,
 } from 'lucide-react';
-import { GradientPageBar } from '@/components/ui/GradientPageBar';
 import { PriceCalculator } from '../components/vehicles/PriceCalculator';
 import { formatCurrency } from '../lib/pricingCalculator';
 import { useVehicle } from '../hooks/useVehicles';
@@ -24,105 +30,49 @@ import { useCostBreakdown } from '@/hooks/useOrderQueries';
 import { useSavedVehiclesApi, useToggleSaved } from '@/hooks/useSavedVehiclesApi';
 import { useCreateOrder } from '@/hooks/useOrderMutation';
 import type { Vehicle } from '../types';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { VehicleImageGallery } from '@/components/vehicles/VehicleImageGallery';
 
 type ShippingMethod = 'RORO' | 'CONTAINER' | 'AIR_FREIGHT' | 'EXPRESS';
 
-interface VehicleSpec {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number | undefined;
+const VEHICLE_CONDITION_DEFAULTS = [
+  'Excellent overall condition',
+  'Clean title',
+  'No accident history',
+  'No known issues',
+] as const;
+
+function formatMileage(n: number | undefined): string {
+  if (n == null || Number.isNaN(n)) return '—';
+  return n.toLocaleString('en-US');
 }
 
-interface VehicleImageGalleryProps {
-  images: string[];
-  currentIndex: number;
-  onNext: () => void;
-  onPrev: () => void;
-  onSelectIndex: (index: number) => void;
-  alt: string;
-}
-
-function VehicleImageGallery({
-  images,
-  currentIndex,
-  onNext,
-  onPrev,
-  onSelectIndex,
-  alt,
-}: VehicleImageGalleryProps) {
-  const hasMultiple = images.length > 1;
-  const src =
-    images[currentIndex] ||
-    'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
-
+function buildVehicleDescription(vehicle: Vehicle): string {
+  const trim = vehicle.apiData?.listing?.vehicle?.trim;
+  const trimPart = trim ? ` ${trim}` : '';
   return (
-    <div className="overflow-hidden relative bg-white rounded-2xl shadow-sm">
-      <div className="relative aspect-[16/10]">
-        <img src={src} alt={alt} className="object-cover w-full h-full" />
-
-        {hasMultiple && (
-          <>
-            <button
-              type="button"
-              onClick={onPrev}
-              className="flex absolute left-4 top-1/2 justify-center items-center w-10 h-10 text-white rounded-full transition-colors -translate-y-1/2 bg-black/50 hover:bg-black/70"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
-              type="button"
-              onClick={onNext}
-              className="flex absolute right-4 top-1/2 justify-center items-center w-10 h-10 text-white rounded-full transition-colors -translate-y-1/2 bg-black/50 hover:bg-black/70"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </>
-        )}
-
-        {hasMultiple && (
-          <div className="flex absolute bottom-4 left-1/2 gap-2 -translate-x-1/2">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => onSelectIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    `The ${vehicle.year} ${vehicle.make} ${vehicle.model}${trimPart} combines verified US-market specification with Afrozon’s end-to-end import support. ` +
+    `Use the details below to confirm fit, then estimate your full landed cost with the calculator — including sourcing, inspection, shipping, and handling.`
   );
 }
 
 function VehicleDetailHeader({ vehicle }: { vehicle: Vehicle }) {
   return (
-    <div className="flex flex-wrap gap-4 justify-between items-start mb-6">
+    <div className="flex flex-wrap gap-4 justify-between items-start w-full">
       <div>
-        <div className="flex gap-2 items-center mb-2">
-          <span className="px-3 py-1 text-sm font-medium text-emerald-700 bg-emerald-100 rounded-full">
-            {vehicle.vehicleType}
-          </span>
-          <span className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">
-            {vehicle.status}
-          </span>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          {vehicle.year} {vehicle.make} {vehicle.model}
-        </h1>
-        <div className="flex gap-2 items-center mt-2 text-gray-500">
-          <MapPin className="w-4 h-4" />
-          <span>
+        <div className="flex gap-2 items-center mb-2 text-gray-500">
+          <MapPin className="w-4 h-4 shrink-0" />
+          <span className="text-sm leading-5 font-body">
             {vehicle.dealerName} - {vehicle.dealerCity}, {vehicle.dealerState}
           </span>
         </div>
+        <h2 className="font-sans text-2xl font-bold text-gray-900 sm:text-3xl">
+          {vehicle.year} {vehicle.make} {vehicle.model}
+        </h2>
       </div>
       <div className="text-right">
-        <p className="text-sm text-gray-500">US Price</p>
-        <p className="text-3xl font-bold text-gray-900">
+        <p className="text-sm text-gray-500 font-body">US Price</p>
+        <p className="font-sans text-2xl font-bold text-gray-900 sm:text-3xl">
           {formatCurrency(vehicle.priceUsd)}
         </p>
       </div>
@@ -130,82 +80,125 @@ function VehicleDetailHeader({ vehicle }: { vehicle: Vehicle }) {
   );
 }
 
-function VehicleSpecsGrid({ specs }: { specs: VehicleSpec[] }) {
+function VehicleDetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="pt-6 border-t border-gray-100">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        Vehicle Specifications
-      </h2>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {specs.map((spec, index) => (
-          <div key={index} className="p-3 bg-gray-50 rounded-lg">
-            <div className="flex gap-2 items-center mb-1 text-gray-500">
-              <spec.icon className="w-4 h-4" />
-              <span className="text-sm">{spec.label}</span>
-            </div>
-            <p className="font-semibold text-gray-900">
-              {spec.value ?? 'N/A'}
-            </p>
-          </div>
-        ))}
+    <div className="flex flex-row gap-4 justify-between items-center">
+      <div className="flex flex-row gap-4 items-center min-w-0">
+        <Icon
+          className="h-7 w-7 shrink-0 text-[#6B7280]"
+          strokeWidth={1.5}
+          aria-hidden
+        />
+        <span className="font-body text-lg font-medium leading-7 text-[#484848]">
+          {label}
+        </span>
       </div>
+      <span className="max-w-[55%] shrink-0 text-right font-sans text-lg font-semibold leading-7 text-[#484848]">
+        {value}
+      </span>
     </div>
   );
 }
 
-function VehicleVinSection({ vin }: { vin: string }) {
+function VehicleConditionRow({ text }: { text: string }) {
   return (
-    <div className="pt-6 mt-6 border-t border-gray-100">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        VIN Information
-      </h2>
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <p className="font-mono text-lg text-gray-900">{vin}</p>
-        <p className="mt-2 text-sm text-gray-500">
-          Full VIN history report will be provided after inspection
-        </p>
-      </div>
+    <div className="flex flex-row items-center gap-3.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008000]">
+        <Check className="w-4 h-4 text-white" strokeWidth={2.5} aria-hidden />
+      </span>
+      <span className="font-body text-lg font-medium leading-7 text-[#484848]">
+        {text}
+      </span>
     </div>
   );
 }
 
-function VehicleFeaturesSection({ features }: { features: string[] }) {
-  if (!features.length) return null;
-
+function CalculatorFooterNote() {
   return (
-    <div className="pt-6 mt-6 border-t border-gray-100">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Features</h2>
-      <div className="grid grid-cols-2 gap-3">
-        {features.map((feature, index) => (
-          <div key={index} className="flex gap-2 items-center">
-            <CheckCircle className="w-5 h-5 text-emerald-500" />
-            <span className="text-gray-700">{feature}</span>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-row gap-4 items-start p-5 rounded-2xl sm:p-6">
+      <Info
+        className="mt-0.5 h-6 w-6 shrink-0 text-[#666666]"
+        strokeWidth={2}
+        aria-hidden
+      />
+      <p className="font-body text-xs leading-4 text-[#666666]">
+        Afrozon purchases vehicles on your behalf from verified US sources and
+        handles export and delivery. All prices are estimates and subject to
+        market conditions. A professional inspection will be conducted before
+        final purchase approval. For more inquiries,{' '}
+        <Link
+          href="mailto:support@afrozonauto.com"
+          className="font-medium text-[#0D7A4A] underline underline-offset-2 hover:text-[#0a633e]"
+        >
+          Contact Us
+        </Link>
+        .
+      </p>
     </div>
   );
 }
 
-function VehicleDisclaimerCard() {
-  return (
-    <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-      <div className="flex gap-3 items-start">
-        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-amber-800">
-            Important Disclaimer
-          </p>
-          <p className="mt-1 text-sm text-amber-700">
-            Afrozon purchases vehicles on your behalf from verified US sources
-            and handles export and delivery. All prices are estimates and
-            subject to market conditions. A professional inspection will be
-            conducted before final purchase approval.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+function useVehicleDetailRows(vehicle: Vehicle | null | undefined) {
+  return useMemo(() => {
+    if (!vehicle) {
+      return [] as { icon: LucideIcon; label: string; value: string }[];
+    }
+    const v = vehicle.apiData?.listing?.vehicle;
+    const retail = vehicle.apiData?.listing?.retailListing;
+    const mileage = vehicle.mileage ?? retail?.miles;
+    const body =
+      v?.bodyStyle?.replace(/_/g, ' ') ??
+      vehicle.vehicleType.replace(/_/g, ' ');
+    const doors = v?.doors != null ? String(v.doors) : '—';
+    const keys = '—';
+
+    const rows: { icon: LucideIcon; label: string; value: string }[] = [
+      { icon: CarFront, label: 'Body', value: body },
+      {
+        icon: Gauge,
+        label: 'Mileage',
+        value: formatMileage(mileage),
+      },
+      { icon: Fuel, label: 'Fuel Type', value: String(vehicle.fuelType) },
+      { icon: Calendar, label: 'Year', value: String(vehicle.year) },
+      {
+        icon: GitMerge,
+        label: 'Transmission',
+        value: String(vehicle.transmission),
+      },
+      {
+        icon: ShipWheel,
+        label: 'Drivetrain',
+        value: String(vehicle.drivetrain),
+      },
+      { icon: DoorOpen, label: 'Door', value: doors },
+      {
+        icon: Palette,
+        label: 'Exterior color',
+        value: vehicle.exteriorColor ?? '—',
+      },
+      {
+        icon: Zap,
+        label: 'Engine',
+        value: vehicle.engineSize || v?.engine || '—',
+      },
+      { icon: KeyRound, label: 'Number of keys', value: keys },
+      {
+        icon: ScanBarcode,
+        label: 'Vehicle Identification Number (VIN)',
+        value: vehicle.vin,
+      },
+    ];
+    return rows;
+  }, [vehicle]);
 }
 
 export function VehicleDetail() {
@@ -213,17 +206,21 @@ export function VehicleDetail() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>('RORO');
 
   const { vehicle, isLoading, isError, error } = useVehicle(id || '');
-  const { costBreakdown, isLoading: isCostBreakdownLoading } = useCostBreakdown(id, shippingMethod);
+  const {
+    costBreakdown,
+    isLoading: isCostBreakdownLoading,
+    isFetching: isCostBreakdownFetching,
+  } = useCostBreakdown(id, shippingMethod);
   const { status } = useSession();
   const { isSaved } = useSavedVehiclesApi();
   const { toggle, isPending: isSavePending } = useToggleSaved();
 
   const createOrderMutation = useCreateOrder();
 
+  const detailRows = useVehicleDetailRows(vehicle);
 
   if (isLoading) {
     return (
@@ -241,8 +238,12 @@ export function VehicleDetail() {
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="px-4 mx-auto max-w-md text-center">
           <AlertCircle className="mx-auto mb-4 w-16 h-16 text-red-500" />
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Error Loading Vehicle</h2>
-          <p className="mb-6 text-gray-600">{error?.message || 'Failed to load vehicle details'}</p>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">
+            Error Loading Vehicle
+          </h2>
+          <p className="mb-6 text-gray-600">
+            {error?.message || 'Failed to load vehicle details'}
+          </p>
           <button
             onClick={() => router.push('/marketplace')}
             className="px-6 py-3 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
@@ -259,8 +260,13 @@ export function VehicleDetail() {
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="px-4 mx-auto max-w-md text-center">
           <AlertCircle className="mx-auto mb-4 w-16 h-16 text-gray-400" />
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Vehicle Not Found</h2>
-          <p className="mb-6 text-gray-600">The vehicle you're looking for doesn't exist or has been removed.</p>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">
+            Vehicle Not Found
+          </h2>
+          <p className="mb-6 text-gray-600">
+            The vehicle you&apos;re looking for doesn&apos;t exist or has been
+            removed.
+          </p>
           <button
             onClick={() => router.push('/marketplace')}
             className="px-6 py-3 text-white bg-emerald-600 rounded-lg transition-colors hover:bg-emerald-700"
@@ -278,7 +284,6 @@ export function VehicleDetail() {
       return;
     }
 
-    // Create the order request
     createOrderMutation.mutate({
       identifier: vehicle.id,
       type: vehicle.vin || vehicle.id,
@@ -290,119 +295,128 @@ export function VehicleDetail() {
     setShippingMethod(method);
   };
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + vehicle.images.length) % vehicle.images.length);
-  };
-
-  const specs: VehicleSpec[] = [
-    { icon: Calendar, label: 'Year', value: vehicle.year },
-    {
-      icon: Car,
-      label: 'Make',
-      value: vehicle.make
-    },
-    { icon: Settings, label: 'Transmission', value: vehicle.transmission },
-    { icon: Fuel, label: 'Fuel Type', value: vehicle.fuelType },
-    { icon: Settings, label: 'Engine', value: vehicle.engineSize },
-    { icon: MapPin, label: 'Location', value: `${vehicle.dealerCity || 'N/A'}, ${vehicle.dealerState || 'N/A'}` },
-  ];
-
   const images = vehicle.images ?? [];
+  const vehicleTitle = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+  const description = buildVehicleDescription(vehicle as Vehicle);
+
+  const conditionItems = [...VEHICLE_CONDITION_DEFAULTS];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <GradientPageBar
-        backLabel="Back to search"
-        rightContent={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+      <Breadcrumb
+        className="px-4 pt-8 mx-auto max-w-7xl font-body sm:px-6 lg:px-8"
+        items={[
+          {
+            label: 'HOME',
+            href: '/',
+            className: 'font-normal text-gray-600 hover:text-gray-900',
+          },
+          {
+            label: 'BROWSE CARS',
+            href: '/marketplace',
+            className: 'font-normal text-gray-600 hover:text-gray-900',
+          },
+          {
+            label: vehicleTitle,
+            className: 'font-semibold text-gray-900',
+          },
+        ]}
+        separatorClassName="h-4 w-4 shrink-0 text-gray-400"
       />
 
-      <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <VehicleImageGallery
-              images={images}
-              currentIndex={currentImageIndex}
-              onNext={nextImage}
-              onPrev={prevImage}
-              onSelectIndex={setCurrentImageIndex}
-              alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-            />
+      <div className="px-4 py-8 mx-auto space-y-6 max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex gap-3 justify-between items-center">
+          <div className="flex flex-wrap gap-2 items-center">
+            <h1 className="font-sans text-2xl font-bold text-gray-900">
+              {vehicleTitle}
+            </h1>
+            <span className="rounded-md bg-[#006557] px-3 py-1 text-sm font-medium text-white">
+              {vehicle.status}
+            </span>
+          </div>
+          {status === 'authenticated' && (
+            <button
+              type="button"
+              onClick={() => toggle(vehicle as Vehicle)}
+              disabled={isSavePending}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors ${
+                isSaved(vehicle.id)
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
+              }`}
+            >
+              <Heart
+                className={`h-5 w-5 ${isSaved(vehicle.id) ? 'fill-current' : ''}`}
+              />
+              {isSaved(vehicle.id) ? 'Saved' : 'Save vehicle'}
+            </button>
+          )}
+        </div>
 
-            <div className="p-6 bg-white rounded-2xl shadow-sm">
-              <div className="flex flex-wrap gap-4 justify-between items-start">
-                <VehicleDetailHeader vehicle={vehicle as Vehicle} />
-                {status === 'authenticated' && (
-                  <button
-                    type="button"
-                    onClick={() => toggle(vehicle as Vehicle)}
-                    disabled={isSavePending}
-                    className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isSaved(vehicle.id)
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${isSaved(vehicle.id) ? 'fill-current' : ''}`} />
-                    {isSaved(vehicle.id) ? 'Saved' : 'Save vehicle'}
-                  </button>
-                )}
+        <VehicleImageGallery
+          images={images}
+          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+        />
+
+        <VehicleDetailHeader vehicle={vehicle as Vehicle} />
+
+        <hr className="my-8 border-[#B8B8B8]" />
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="flex-1 space-y-10 min-w-0 xl:space-y-12">
+            <section className="flex flex-col gap-6">
+              <h2 className="font-sans text-xl font-bold leading-8 text-[#546881] sm:text-2xl sm:leading-[30px]">
+                Vehicle Description
+              </h2>
+              <p className="font-jakarta max-w-none text-base font-normal leading-6 text-[#6B7280]">
+                {description}
+              </p>
+            </section>
+
+            <section className="flex flex-col gap-6">
+              <h2 className="font-sans text-xl font-bold leading-8 text-[#546881] sm:text-2xl sm:leading-[30px]">
+                Vehicle Details
+              </h2>
+              <div className="flex flex-col gap-4">
+                {detailRows.map((row) => (
+                  <VehicleDetailRow
+                    key={row.label}
+                    icon={row.icon}
+                    label={row.label}
+                    value={row.value}
+                  />
+                ))}
               </div>
-              <VehicleSpecsGrid specs={specs} />
-              <VehicleVinSection vin={vehicle.vin} />
-              {vehicle.features && vehicle.features.length > 0 && (
-                <VehicleFeaturesSection features={vehicle.features} />
-              )}
-            </div>
+              <p className="font-body text-sm italic leading-5 text-[#003B33]">
+                * Full VIN history report will be provided after inspection
+              </p>
+            </section>
 
-            <VehicleDisclaimerCard />
+            <section className="flex flex-col gap-6">
+              <h2 className="font-sans text-xl font-bold leading-8 text-[#546881] sm:text-2xl sm:leading-[30px]">
+                Vehicle Condition
+              </h2>
+              <div className="flex flex-col gap-4">
+                {conditionItems.map((line) => (
+                  <VehicleConditionRow key={line} text={line} />
+                ))}
+              </div>
+            </section>
           </div>
 
-          <div className="space-y-6">
+          <aside className="space-y-4 w-full shrink-0 xl:max-w-md 2xl:max-w-lg">
             <PriceCalculator
               vehiclePrice={vehicle.priceUsd}
               vehicleType={vehicle.vehicleType}
               costBreakdown={costBreakdown}
               isLoading={isCostBreakdownLoading}
+              isFetching={isCostBreakdownFetching}
               onShippingMethodChange={handleShippingMethodChange}
+              onRequestVehicle={handleRequestVehicle}
+              requestLoading={createOrderMutation.isPending}
             />
-
-            <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-              <button
-                onClick={handleRequestVehicle}
-                disabled={createOrderMutation.isPending}
-                className="flex gap-2 justify-center items-center py-4 w-full text-lg font-semibold text-white bg-emerald-600 rounded-xl transition-colors hover:bg-emerald-700"
-              >
-                <Shield className="w-5 h-5" />
-                Request This Vehicle
-              </button>
-              <p className="mt-3 text-sm text-center text-gray-500">
-                30% deposit required to secure this vehicle
-              </p>
-            </div>
-
-            <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-              <h3 className="mb-4 font-semibold text-gray-900">Why Choose Afrozon?</h3>
-              <div className="space-y-3">
-                {[
-                  'Professional pre-purchase inspection',
-                  'Full VIN history report',
-                  'Secure escrow payment',
-                  'Door-to-door delivery',
-                  'Real-time tracking',
-                  'Customer support throughout',
-                ].map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                    <span className="text-sm text-gray-600">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            <CalculatorFooterNote />
+          </aside>
         </div>
       </div>
     </div>

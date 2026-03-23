@@ -1,166 +1,247 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Store, AlertCircle, CheckCircle } from "lucide-react";
-import { sellerVerifyTokenSchema, type SellerVerifyTokenInput } from "@/lib/validation/seller.schema";
+import { AlertCircle, ChevronDown, UploadCloud } from "lucide-react";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
+import type { SellerRegisterInput } from "@/lib/api/seller";
+
+type IdentityType = "DRIVERS_LICENSE" | "INTERNATIONAL_PASSPORT" | "NATIONAL_ID";
+
+type IdentityDocRule = {
+  value: IdentityType;
+  label: string;
+  frontLabel: string;
+  backLabel?: string;
+};
+
+const ID_RULES: IdentityDocRule[] = [
+  {
+    value: "DRIVERS_LICENSE",
+    label: "Drivers License",
+    frontLabel: "Upload Front of License",
+    backLabel: "Upload Back of License",
+  },
+  {
+    value: "INTERNATIONAL_PASSPORT",
+    label: "International Passport",
+    frontLabel: "Upload Bio-data Page",
+  },
+  {
+    value: "NATIONAL_ID",
+    label: "National ID",
+    frontLabel: "Upload Front of ID",
+    backLabel: "Upload Back of ID",
+  },
+];
 
 export function SellerRegisterVerify() {
   const router = useRouter();
-  const { verifyToken, checkEmail, SELLER_EMAIL_KEY } = useSellerMutations();
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<keyof SellerVerifyTokenInput, string>>>({});
+  const { register, SELLER_SIGNUP_DRAFT_KEY } = useSellerMutations();
+  const [draft, setDraft] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  } | null>(null);
+  const [identificationType, setIdentificationType] =
+    useState<IdentityType>("DRIVERS_LICENSE");
+  const [frontFile, setFrontFile] = useState<File | null>(null);
+  const [backFile, setBackFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [success, setSuccess] = useState(false);
+
+  const selectedRule = useMemo(
+    () => ID_RULES.find((rule) => rule.value === identificationType) ?? ID_RULES[0],
+    [identificationType],
+  );
+  const requiresBack = selectedRule.backLabel != null;
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? sessionStorage.getItem(SELLER_EMAIL_KEY) : null;
+    const stored =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(SELLER_SIGNUP_DRAFT_KEY)
+        : null;
     if (!stored) {
       router.push("/seller/register");
       return;
     }
-    setEmail(stored);
-  }, [router, SELLER_EMAIL_KEY]);
-
-  const validateForm = () => {
     try {
-      sellerVerifyTokenSchema.parse({ email, token });
-      setErrors({});
-      return true;
-    } catch (err: unknown) {
-      const e = err as { errors?: { path: (string | number)[]; message: string }[] };
-      const fieldErrors: Partial<Record<keyof SellerVerifyTokenInput, string>> = {};
-      e.errors?.forEach((item) => {
-        const key = item.path[0] as keyof SellerVerifyTokenInput;
-        if (key) fieldErrors[key] = item.message;
-      });
-      setErrors(fieldErrors);
-      return false;
+      const parsed = JSON.parse(stored) as {
+        firstName: string;
+        lastName: string;
+        email: string;
+        password: string;
+      };
+      setDraft(parsed);
+    } catch {
+      router.push("/seller/register");
     }
+  }, [router, SELLER_SIGNUP_DRAFT_KEY]);
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (!frontFile) next.front = "Please upload the required document";
+    if (requiresBack && !backFile) next.back = "Please upload the back document";
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!draft || !validate()) return;
+
+    const docs: { file: File; documentName: string }[] = [
+      { file: frontFile!, documentName: `${identificationType.toLowerCase()}_front` },
+    ];
+    if (requiresBack && backFile) {
+      docs.push({
+        file: backFile,
+        documentName: `${identificationType.toLowerCase()}_back`,
+      });
+    }
+
+    const payload: SellerRegisterInput = {
+      email: draft.email,
+      password: draft.password,
+      firstName: draft.firstName,
+      lastName: draft.lastName,
+      identificationType,
+      documents: docs,
+    };
+
     setLoading(true);
     try {
-      await verifyToken.mutateAsync({ email, token });
-      setSuccess(true);
-      setTimeout(() => router.push("/seller/register/complete"), 1500);
+      await register.mutateAsync(payload);
+      router.push("/seller/register/complete");
     } catch {
-      // Error in hook
+      // handled via mutation toast
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResend = async () => {
-    setResending(true);
-    try {
-      await checkEmail.mutateAsync({ email });
-    } catch {
-      // Error in hook
-    } finally {
-      setResending(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Email verified</h2>
-          <p className="text-gray-600 mb-4">Redirecting to complete your seller profile...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link href="/seller/landing" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
-              <Store className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-white">Afrozon</span>
-              <span className="text-2xl font-light text-emerald-400"> Seller</span>
-            </div>
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Verify your email</h1>
-          <p className="text-gray-400">Enter the 6-digit code sent to {email || "your email"}</p>
+    <div className="mx-auto w-full max-w-[560px]">
+      <h1 className="font-sans text-[48px] font-bold leading-[60px] text-[#111827]">
+        Verify your Identity
+      </h1>
+      <p className="mt-1 font-body text-xl text-[#B8B8B8]">
+        To keep our marketplace safe and ensure smooth payouts, please select
+        and upload a valid government-issued ID.
+      </p>
+
+      <div className="my-6 h-px w-full bg-[#E5E7EB]" />
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+            ID Type
+          </label>
+          <div className="relative">
+            <select
+              value={identificationType}
+              onChange={(e) =>
+                setIdentificationType(e.target.value as IdentityType)
+              }
+              className="h-11 w-full appearance-none rounded-lg border border-[#E5E7EB] px-3.5 pr-10 font-body text-base text-[#111827]"
+            >
+              {ID_RULES.map((rule) => (
+                <option key={rule.value} value={rule.value}>
+                  {rule.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
+          </div>
+          <p className="mt-2 font-body text-xs text-[#6B7280]">
+            File size must not exceed 10MB in JPG, PNG, or PDF formats
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Verification code</label>
+        <div className={`grid gap-4 ${requiresBack ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+          <div>
+            <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+              {selectedRule.frontLabel}
+            </label>
+            <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#9CA3AF] bg-[#F9FAFB] p-4 text-center">
+              <UploadCloud className="h-8 w-8 text-[#6B7280]" />
+              <span className="font-body text-sm text-[#4B5563]">
+                Click to upload or drag and drop
+              </span>
               <input
-                type="text"
-                inputMode="numeric"
-                value={token}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                  setToken(value);
-                  if (errors.token) setErrors((p) => ({ ...p, token: undefined }));
-                }}
-                placeholder="000000"
-                maxLength={6}
-                className={`w-full px-4 py-3 border rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
-                  errors.token ? "border-red-300" : "border-gray-300"
-                }`}
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf"
+                className="hidden"
+                onChange={(e) => setFrontFile(e.target.files?.[0] ?? null)}
               />
-              {errors.token && (
-                <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{errors.token}</span>
+            </label>
+            {frontFile && (
+              <p className="mt-1 truncate font-body text-xs text-[#0D7A4A]">
+                {frontFile.name}
+              </p>
+            )}
+            {errors.front && (
+              <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span>{errors.front}</span>
+              </div>
+            )}
+          </div>
+
+          {requiresBack && (
+            <div>
+              <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+                {selectedRule.backLabel}
+              </label>
+              <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#9CA3AF] bg-[#F9FAFB] p-4 text-center">
+                <UploadCloud className="h-8 w-8 text-[#6B7280]" />
+                <span className="font-body text-sm text-[#4B5563]">
+                  Click to upload or drag and drop
+                </span>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  className="hidden"
+                  onChange={(e) => setBackFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {backFile && (
+                <p className="mt-1 truncate font-body text-xs text-[#0D7A4A]">
+                  {backFile.name}
+                </p>
+              )}
+              {errors.back && (
+                <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>{errors.back}</span>
                 </div>
               )}
             </div>
-
-            <button
-              type="submit"
-              disabled={loading || token.length !== 6}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resending}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium disabled:opacity-50"
-            >
-              {resending ? "Sending..." : "Resend code"}
-            </button>
-          </div>
-
-          <p className="text-center text-gray-600 mt-6">
-            <Link href="/seller/register" className="text-emerald-600 font-medium hover:text-emerald-700">
-              Use a different email
-            </Link>
-          </p>
+          )}
         </div>
-      </div>
+
+        <button
+          type="submit"
+          disabled={loading || !draft}
+          className="h-12 w-full rounded-lg bg-[#0D7A4A] font-body text-xl font-medium text-white transition-colors hover:bg-[#0a633e] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? "Submitting..." : "Submit Document for Verification"}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center font-body text-sm text-[#B8B8B8]">
+        Your information is securely encrypted and used strictly for
+        verification purposes.
+      </p>
+
+      <p className="mt-3 text-center font-body text-xs text-[#6B7280]">
+        Need to edit account details?{" "}
+        <Link href="/seller/register" className="text-[#0D7A4A] hover:text-[#0a633e]">
+          Go back
+        </Link>
+      </p>
     </div>
   );
 }

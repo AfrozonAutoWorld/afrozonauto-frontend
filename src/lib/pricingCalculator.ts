@@ -126,9 +126,15 @@ export function calculateLandedCost(
   };
 }
 
+export type FormatCurrencyOptions = {
+  /** When true, USD shows up to 2 decimal places (e.g. $649.95) while whole amounts stay without .00 */
+  preciseUsd?: boolean;
+};
+
 export function formatCurrency(
   amount: number,
   currency: "USD" | "NGN" = "USD",
+  options?: FormatCurrencyOptions,
 ): string {
   if (currency === "NGN") {
     return new Intl.NumberFormat("en-NG", {
@@ -142,7 +148,7 @@ export function formatCurrency(
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: options?.preciseUsd ? 2 : 0,
   }).format(amount);
 }
 

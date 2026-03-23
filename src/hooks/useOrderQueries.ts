@@ -72,6 +72,7 @@ export function useCostBreakdown(
   return {
     costBreakdown: queryResult.data,
     isLoading: queryResult.isLoading,
+    isFetching: queryResult.isFetching,
     isError: queryResult.isError,
     error: queryResult.error,
   };

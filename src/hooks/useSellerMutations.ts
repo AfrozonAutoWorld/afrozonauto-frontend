@@ -1,17 +1,15 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { sellersApi, type SellerRegisterInput } from "@/lib/api/seller";
 import { showToast } from "@/lib/showNotification";
 import type { SellerCheckEmailInput, SellerVerifyTokenInput } from "@/lib/validation/seller.schema";
 
 const SELLER_EMAIL_KEY = "seller_register_email";
 const SELLER_VERIFIED_KEY = "seller_verified_email";
+const SELLER_SIGNUP_DRAFT_KEY = "seller_signup_draft";
 
 export function useSellerMutations() {
-  const router = useRouter();
-
   const checkEmail = useMutation({
     mutationFn: (data: SellerCheckEmailInput) => sellersApi.checkEmail(data),
     onSuccess: (_, variables) => {
@@ -45,12 +43,12 @@ export function useSellerMutations() {
     onSuccess: () => {
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(SELLER_VERIFIED_KEY);
+        sessionStorage.removeItem(SELLER_SIGNUP_DRAFT_KEY);
       }
       showToast({
         type: "success",
-        message: "Seller account created! Your account is pending verification. You can log in now.",
+        message: "Seller account created! Your account is pending verification.",
       });
-      router.push("/login?as=seller");
     },
     onError: (err: Error) => {
       showToast({ type: "error", message: err.message || "Registration failed" });
@@ -63,5 +61,6 @@ export function useSellerMutations() {
     register,
     SELLER_EMAIL_KEY,
     SELLER_VERIFIED_KEY,
+    SELLER_SIGNUP_DRAFT_KEY,
   };
 }
