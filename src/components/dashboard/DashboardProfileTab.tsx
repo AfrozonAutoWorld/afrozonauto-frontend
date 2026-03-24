@@ -242,6 +242,7 @@ export function DashboardProfileTab() {
       )}
       {showResetPasswordModal && (
         <ResetPasswordModal
+          defaultEmail={user?.email}
           onClose={() => setShowResetPasswordModal(false)}
           onSuccess={() => setShowResetPasswordModal(false)}
         />

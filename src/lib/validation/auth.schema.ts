@@ -40,11 +40,28 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
+const strongPassword = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+/** Plain object for `useForm` (no `.refine` — confirm match is checked on submit). */
 export const resetPasswordSchema = z.object({
-  email: z.string().email("Invalid email"),
-  token: z.string().min(6, "Token is required"),
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  token: z
+    .string()
+    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
+  newPassword: strongPassword,
   confirmPassword: z.string().min(1, "Please confirm your password"),
+});
+
+export const validateResetTokenSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  token: z
+    .string()
+    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
 });
 
 export const addressSchema = z.object({
@@ -70,3 +87,4 @@ export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ValidateResetTokenInput = z.infer<typeof validateResetTokenSchema>;

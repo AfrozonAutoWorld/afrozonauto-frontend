@@ -9,6 +9,10 @@ export type SellerAuthStep = 'signup' | 'verify_identity' | 'list_vehicle';
 type SellerAuthLayoutProps = {
   activeStep: SellerAuthStep;
   children: ReactNode;
+  /** Password recovery uses a shorter two-step story on the left panel */
+  variant?: 'register' | 'password_recovery';
+  /** Active step when variant is password_recovery (1 = request code, 2 = new password) */
+  passwordRecoveryStep?: 1 | 2;
 };
 
 type StepItem = {
@@ -20,6 +24,11 @@ const STEPS: StepItem[] = [
   { id: 'signup', label: 'Sign up your account' },
   { id: 'verify_identity', label: 'Verify identity' },
   { id: 'list_vehicle', label: 'List your vehicle' },
+];
+
+const RECOVERY_STEPS = [
+  { label: 'Get reset code' },
+  { label: 'Choose new password' },
 ];
 
 function StepPill({
@@ -67,8 +76,12 @@ function StepPill({
 export function SellerAuthLayout({
   activeStep,
   children,
+  variant = 'register',
+  passwordRecoveryStep = 1,
 }: SellerAuthLayoutProps) {
   const activeIndex = STEPS.findIndex((step) => step.id === activeStep);
+
+  const recoveryActiveIndex = passwordRecoveryStep - 1;
 
   return (
     <div className="min-h-screen bg-white">
@@ -90,25 +103,49 @@ export function SellerAuthLayout({
               <span className="flex h-[54px] w-[53px] items-center justify-center rounded-xl bg-[#0D7A4A]/50">
                 <Car className="h-6 w-6 text-[#E6F6F4]" />
               </span>
-              <h2 className="font-sans text-[32px] font-bold leading-10 text-white">
-                Start selling today
-              </h2>
-              <p className="font-body text-sm leading-5 text-[#E8E8E8]">
-                Complete these quick steps to get your vehicle in front of
-                verified buyers
-              </p>
+              {variant === 'password_recovery' ? (
+                <>
+                  <h2 className="font-sans text-[32px] font-bold leading-10 text-white">
+                    Reset your password
+                  </h2>
+                  <p className="font-body text-sm leading-5 text-[#E8E8E8]">
+                    Same secure account as buyers — we&apos;ll email a 6-digit
+                    code, then you pick a new password.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-sans text-[32px] font-bold leading-10 text-white">
+                    Start selling today
+                  </h2>
+                  <p className="font-body text-sm leading-5 text-[#E8E8E8]">
+                    Complete these quick steps to get your vehicle in front of
+                    verified buyers
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="flex w-full flex-col gap-4">
-              {STEPS.map((step, index) => (
-                <StepPill
-                  key={step.id}
-                  number={index + 1}
-                  label={step.label}
-                  active={index === activeIndex}
-                  done={index < activeIndex}
-                />
-              ))}
+              {variant === 'password_recovery'
+                ? RECOVERY_STEPS.map((step, index) => (
+                    <StepPill
+                      key={step.label}
+                      number={index + 1}
+                      label={step.label}
+                      active={index === recoveryActiveIndex}
+                      done={index < recoveryActiveIndex}
+                    />
+                  ))
+                : STEPS.map((step, index) => (
+                    <StepPill
+                      key={step.id}
+                      number={index + 1}
+                      label={step.label}
+                      active={index === activeIndex}
+                      done={index < activeIndex}
+                    />
+                  ))}
             </div>
           </div>
         </aside>

@@ -126,7 +126,7 @@ export function useAuthMutations() {
       sessionStorage.setItem("reset_email", variables.email);
       showToast({
         type: "success",
-        message: "Password reset code sent to your email!",
+        message: "We sent a 6-digit reset code to your email.",
       });
     },
     onError: (error: ApiError) => {
@@ -145,11 +145,17 @@ export function useAuthMutations() {
       sessionStorage.removeItem("reset_email");
       showToast({
         type: "success",
-        message: "Password changed successfully. Please login again.",
+        message: "Password changed successfully. Please sign in again.",
       });
-      // Sign out and redirect to login
+      const loginHref =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("post_reset_login_href") || "/login"
+          : "/login";
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("post_reset_login_href");
+      }
       nextAuthSignOut({ redirect: false }).then(() => {
-        router.push("/login");
+        router.push(loginHref);
       });
     },
     onError: (error: ApiError) => {

@@ -3,6 +3,7 @@ import type { User } from "../../types";
 import {
   ForgotPasswordInput,
   ResetPasswordInput,
+  ValidateResetTokenInput,
 } from "../validation/auth.schema";
 
 export interface OnboardingInput {
@@ -68,6 +69,11 @@ type ApiEnvelope<T = unknown> = {
   message?: string;
   errors?: string[];
   data?: T;
+};
+
+/** Backend wraps payload as `{ data: { data: T } }` on many responses */
+type NestedDataEnvelope<T> = ApiEnvelope<unknown> & {
+  data?: { data?: T };
 };
 
 export const authApi = {
@@ -139,8 +145,30 @@ export const authApi = {
     return res.data;
   },
 
+  /** POST /auth/token-validation-reset — checks code before submitting new password */
+  validateResetToken: async (data: ValidateResetTokenInput) => {
+    const res = await apiClient.post<NestedDataEnvelope<{ tokenValid: boolean }>>(
+      "/auth/token-validation-reset",
+      {
+        email: data.email,
+        token: data.token,
+      },
+    );
+    if (res.data?.success === false) {
+      throw new Error(
+        res.data?.message || res.data?.errors?.[0] || "Invalid or expired code",
+      );
+    }
+    const tokenValid = res.data?.data?.data?.tokenValid ?? false;
+    return { tokenValid };
+  },
+
   resetPassword: async (data: Omit<ResetPasswordInput, "confirmPassword">) => {
-    const res = await apiClient.post<ApiEnvelope>("/auth/reset-password", data);
+    const res = await apiClient.post<ApiEnvelope>("/auth/reset-password", {
+      email: data.email,
+      token: data.token,
+      newPassword: data.newPassword,
+    });
     if (res.data?.success === false) {
       throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to reset password");
     }

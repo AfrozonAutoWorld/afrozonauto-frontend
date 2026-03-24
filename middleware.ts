@@ -16,6 +16,8 @@ const PUBLIC_ROUTES = [
   "/how-it-works",
   "/seller/landing",
   "/seller/register", // Seller registration flow (start, verify, complete) is public
+  "/seller/forgot-password",
+  "/seller/reset-password",
 ];
 
 const ROLE_ROUTES = {

@@ -21,6 +21,10 @@ export function Login() {
 
   // Get callback URL from query params
   const callbackUrl = searchParams.get('callbackUrl') || '/marketplace/buyer';
+  const isSellerLogin = searchParams.get('as') === 'seller';
+  const forgotPasswordHref = isSellerLogin
+    ? '/seller/forgot-password'
+    : '/forgot-password';
 
   // Redirect if already logged in
   useEffect(() => {
@@ -206,7 +210,7 @@ export function Login() {
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
               <Link
-                href="/forgot-password"
+                href={forgotPasswordHref}
                 className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
               >
                 Forgot password?
