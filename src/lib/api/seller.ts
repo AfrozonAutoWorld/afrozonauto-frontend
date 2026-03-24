@@ -2,6 +2,12 @@ import { apiClient } from "./client";
 
 const SELLERS_BASE = "/sellers";
 
+type SellerApiResponse = {
+  success?: boolean;
+  message?: string;
+  errors?: string[];
+};
+
 export interface SellerCheckEmailInput {
   email: string;
 }
@@ -28,7 +34,10 @@ export interface SellerRegisterInput {
 export const sellersApi = {
   /** Step 1: Check email and send verification code (guest) */
   checkEmail: async (data: SellerCheckEmailInput) => {
-    await apiClient.post(`${SELLERS_BASE}/check-email`, data);
+    const res = await apiClient.post<SellerApiResponse>(`${SELLERS_BASE}/check-email`, data);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to send verification code");
+    }
   },
 
   /** Step 2: Verify email with code (guest) */
@@ -37,7 +46,10 @@ export const sellersApi = {
       email: data.email,
       token: typeof data.token === "string" ? Number.parseInt(data.token, 10) : data.token,
     };
-    await apiClient.post(`${SELLERS_BASE}/verify-token`, payload);
+    const res = await apiClient.post<SellerApiResponse>(`${SELLERS_BASE}/verify-token`, payload);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || "Invalid or expired verification code");
+    }
   },
 
   /** Step 3: Register with profile + document upload (guest) */

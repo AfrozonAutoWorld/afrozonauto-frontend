@@ -59,6 +59,11 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          if (resData?.success === false) {
+            console.error("❌ Auth rejected by API:", resData?.message);
+            return null;
+          }
+
           const userData = resData?.data?.data?.user;
           const accessToken = resData?.data?.data?.accessToken;
           const refreshToken = resData?.data?.data?.refreshToken;

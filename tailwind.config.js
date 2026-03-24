@@ -19,6 +19,11 @@ module.exports = {
   				'var(--font-dm-sans)',
   				'system-ui',
   				'sans-serif'
+  			],
+  			jakarta: [
+  				'var(--font-plus-jakarta)',
+  				'system-ui',
+  				'sans-serif'
   			]
   		},
   		borderRadius: {

@@ -63,46 +63,87 @@ export interface SignInResponse {
   timestamp: string;
 }
 
+type ApiEnvelope<T = unknown> = {
+  success?: boolean;
+  message?: string;
+  errors?: string[];
+  data?: T;
+};
+
 export const authApi = {
   startRegistration: async (data: OnboardingInput) => {
-    apiClient.post<OnboardingResponse>("/auth/register-start", data);
+    const res = await apiClient.post<ApiEnvelope<OnboardingResponse>>(
+      "/auth/register-start",
+      data,
+    );
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to send verification code");
+    }
+    return res.data;
   },
 
   verifyCode: async (data: VerifyCodeInput) => {
-    apiClient.post<VerifyCodeResponse>("/auth/verify", data);
+    const res = await apiClient.post<ApiEnvelope<VerifyCodeResponse>>(
+      "/auth/verify",
+      data,
+    );
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Invalid or expired verification code");
+    }
+    return res.data;
   },
 
   signUp: async (data: CompleteReg) => {
-    apiClient.post<CompleteRegRes>("/auth/register", data);
+    const res = await apiClient.post<ApiEnvelope<CompleteRegRes>>("/auth/register", data);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Registration failed");
+    }
+    return res.data;
   },
 
   signIn: async (data: SignInData) => {
-    apiClient.post<SignInResponse>("/auth/login", data);
+    const res = await apiClient.post<SignInResponse>("/auth/login", data);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || "Invalid email or password");
+    }
+    return res.data;
   },
 
   getUserById: async (id: string) => {
-    apiClient.get<User>(`/auth/users/user-id/${id}`);
+    const res = await apiClient.get<User>(`/auth/users/user-id/${id}`);
+    return res.data;
   },
 
   getUserByEmail: async (email: string) => {
-    apiClient.get<User>(`/auth/users/user-email/${email}`);
+    const res = await apiClient.get<User>(`/auth/users/user-email/${email}`);
+    return res.data;
   },
 
   // Update profile
   updateProfile: async (updates: Partial<User>) => {
-    apiClient.patch<User>("/auth/profile", updates);
+    const res = await apiClient.patch<User>("/auth/profile", updates);
+    return res.data;
   },
 
   // Refresh token
   refreshToken: async () => {
-    apiClient.post("/auth/refresh-token");
+    const res = await apiClient.post("/auth/refresh-token");
+    return res.data;
   },
 
   forgotPassword: async (data: ForgotPasswordInput) => {
-    apiClient.post("/auth/forgot-password", data);
+    const res = await apiClient.post<ApiEnvelope>("/auth/forgot-password", data);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to send reset code");
+    }
+    return res.data;
   },
 
   resetPassword: async (data: Omit<ResetPasswordInput, "confirmPassword">) => {
-    apiClient.post("/auth/reset-password", data);
+    const res = await apiClient.post<ApiEnvelope>("/auth/reset-password", data);
+    if (res.data?.success === false) {
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to reset password");
+    }
+    return res.data;
   },
 };
