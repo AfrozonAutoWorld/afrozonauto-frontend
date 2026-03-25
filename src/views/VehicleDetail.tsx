@@ -404,7 +404,7 @@ export function VehicleDetail() {
             </section>
           </div>
 
-          <aside className="space-y-4 w-full shrink-0 xl:max-w-md 2xl:max-w-lg">
+          <aside className="space-y-4 w-full shrink-0">
             <PriceCalculator
               vehiclePrice={vehicle.priceUsd}
               vehicleType={vehicle.vehicleType}
