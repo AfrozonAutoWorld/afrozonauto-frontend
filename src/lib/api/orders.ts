@@ -289,6 +289,29 @@ export interface CostBreakdown {
   paymentBreakdown: PaymentPricing;
 }
 
+export interface PlatformBankAccount {
+  id: string;
+  label: string;
+  bankName: string;
+  bankCode?: string | null;
+  accountName: string;
+  accountNumber: string;
+  currency: string;
+  country: string;
+  swiftCode?: string | null;
+  iban?: string | null;
+  sortCode?: string | null;
+  routingNumber?: string | null;
+  bankAddress?: string | null;
+  isActive: boolean;
+  isPrimary: boolean;
+  displayOrder: number;
+  instructions?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiSuccessResponse<T> {
   success: boolean;
   message: string;
@@ -311,4 +334,12 @@ export const ordersApi = {
     apiClient.get<ApiSuccessResponse<CostBreakdown>>(
       `/orders/order-summary/${id}/?shippingMethod=${shippingMethod}`,
     ),
+
+  getPlatformBankAccounts: async (currency?: string) =>
+    apiClient.get<ApiSuccessResponse<PlatformBankAccount[]>>(
+      currency
+        ? `/platform-bank-accounts/by-currency/${currency}`
+        : "/platform-bank-accounts",
+    ),
+
 };

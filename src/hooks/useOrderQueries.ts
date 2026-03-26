@@ -4,6 +4,7 @@ import {
   type PaginatedOrders,
   type Order,
   type CostBreakdown,
+  type PlatformBankAccount,
 } from "@/lib/api/orders";
 
 export function useOrders() {
@@ -75,5 +76,25 @@ export function useCostBreakdown(
     isFetching: queryResult.isFetching,
     isError: queryResult.isError,
     error: queryResult.error,
+  };
+}
+
+export function usePlatformBankAccounts(currency?: string) {
+  const queryResult = useQuery<PlatformBankAccount[], Error>({
+    queryKey: ["platformBankAccounts", currency ?? "all"],
+    queryFn: async () => {
+      const res = await ordersApi.getPlatformBankAccounts(currency);
+      return res.data.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  return {
+    bankAccounts: queryResult.data ?? [],
+    isLoading: queryResult.isLoading,
+    isError: queryResult.isError,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
   };
 }

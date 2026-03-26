@@ -1,10 +1,9 @@
-import { RequestDetail } from '@/views/RequestDetails'
-import React from 'react'
+import { PayoutSummary } from '@/views/PayoutSummary'
 
 const page = () => {
   return (
     <div>
-      <RequestDetail />
+      <PayoutSummary />
     </div>
   )
 }
