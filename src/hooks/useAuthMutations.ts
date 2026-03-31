@@ -13,6 +13,7 @@ import type {
   ResetPasswordInput,
 } from "../lib/validation/auth.schema";
 import type { User } from "../types";
+import { normalizePhoneNumber } from "../lib/validation/phone";
 
 export function useAuthMutations() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export function useAuthMutations() {
         firstName: data.firstName,
         lastName: data.lastName,
         fullName,
-        phone: data.phone,
+        phone: normalizePhoneNumber(data.phone),
         role: data.role ?? "BUYER",
         isActive: true,
       });

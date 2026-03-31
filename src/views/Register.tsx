@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Car, User, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { completeProfileSchema, type CompleteProfileInput } from '../lib/validation/auth.schema';
 import { useAuthMutations } from '@/hooks/useAuthMutations';
+import { normalizePhoneNumber } from '@/lib/validation/phone';
 
 
 export function CompleteProfile() {
@@ -55,7 +56,11 @@ export function CompleteProfile() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const nextValue =
+      name === 'phone'
+        ? normalizePhoneNumber(value)
+        : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
     if (errors[name as keyof CompleteProfileInput]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -163,7 +168,7 @@ export function CompleteProfile() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                Phone Number (include country code)
               </label>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -172,11 +177,14 @@ export function CompleteProfile() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+234 800 000 0000"
+                  placeholder="+234 90883293"
                   className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.phone ? 'border-red-300' : 'border-gray-300'
                     }`}
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Example format: +234 90883293
+              </p>
               {errors.phone && (
                 <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
               )}
@@ -231,21 +239,6 @@ export function CompleteProfile() {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                I am a
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="BUYER">Buyer</option>
-                <option value="SELLER">Seller</option>
-              </select>
-            </div>
-
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -278,6 +271,13 @@ export function CompleteProfile() {
                 'Complete Registration'
               )}
             </button>
+
+            <p className="text-center text-sm text-gray-600">
+              Want to sell your car instead?{" "}
+              <Link href="/seller/register" className="font-semibold text-emerald-600 hover:underline">
+                Register as seller
+              </Link>
+            </p>
           </form>
         </div>
       </div>

@@ -43,6 +43,7 @@ export function SellerRegisterVerify() {
     firstName: string;
     lastName: string;
     email: string;
+    phone: string;
     password: string;
   } | null>(null);
   const [identificationType, setIdentificationType] =
@@ -72,6 +73,7 @@ export function SellerRegisterVerify() {
         firstName: string;
         lastName: string;
         email: string;
+        phone: string;
         password: string;
       };
       setDraft(parsed);
@@ -107,6 +109,7 @@ export function SellerRegisterVerify() {
       password: draft.password,
       firstName: draft.firstName,
       lastName: draft.lastName,
+      phone: draft.phone,
       identificationType,
       documents: docs,
     };

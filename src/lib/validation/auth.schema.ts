@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  isValidInternationalPhone,
+  normalizePhoneNumber,
+} from "./phone";
 
 export const onboardingSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -21,9 +25,15 @@ export const completeProfileSchema = z
     confirmPassword: z.string(),
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    phone: z
-      .string()
-      .regex(/^\+?[1-9]\d{1,14}$/, "Please enter a valid phone number"),
+    phone: z.preprocess(
+      (value) => normalizePhoneNumber(String(value ?? "")),
+      z
+        .string()
+        .refine(
+          (value) => isValidInternationalPhone(value),
+          "Enter a valid phone number with country code (e.g. +234 90883293)",
+        ),
+    ),
     role: z.enum(["BUYER", "SELLER"]).optional().default("BUYER"),
   })
   .refine((data) => data.password === data.confirmPassword, {

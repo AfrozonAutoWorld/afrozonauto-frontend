@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Check, X } from "lucide-react";
 import { sellerCheckEmailSchema } from "@/lib/validation/seller.schema";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
+import {
+  isValidInternationalPhone,
+  normalizePhoneNumber,
+} from "@/lib/validation/phone";
 
 export function SellerRegisterStart() {
   const router = useRouter();
@@ -13,6 +17,7 @@ export function SellerRegisterStart() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [otpOpen, setOtpOpen] = useState(false);
@@ -35,6 +40,9 @@ export function SellerRegisterStart() {
       sellerCheckEmailSchema.parse({ email });
     } catch {
       nextErrors.email = "Please enter a valid email";
+    }
+    if (!isValidInternationalPhone(normalizePhoneNumber(phone))) {
+      nextErrors.phone = "Enter a valid phone number with country code (e.g. +234 90883293)";
     }
     if (!hasLen || !hasUpper || !hasNumber || !hasSpecial) {
       nextErrors.password =
@@ -78,6 +86,7 @@ export function SellerRegisterStart() {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim(),
+            phone: normalizePhoneNumber(phone),
             password,
           }),
         );
@@ -171,6 +180,27 @@ export function SellerRegisterStart() {
               <AlertCircle className="h-3.5 w-3.5" />
               <span>{errors.email}</span>
             </div>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+            Phone Number (include country code)
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(normalizePhoneNumber(e.target.value))}
+            placeholder="+234 90883293"
+            className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
+              errors.phone ? "border-red-300" : "border-[#E5E7EB]"
+            }`}
+          />
+          <p className="mt-1 font-body text-xs text-[#6B7280]">
+            Example format: +234 90883293
+          </p>
+          {errors.phone && (
+            <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
           )}
         </div>
 
