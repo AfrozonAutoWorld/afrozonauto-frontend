@@ -114,6 +114,7 @@ export interface UploadPaymentEvidencePayload {
   orderId: string;
   evidence: File;
   paymentType?: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+  amountUsd?: number;
 }
 
 export const paymentsApi = {
@@ -139,10 +140,14 @@ export const paymentsApi = {
     orderId,
     evidence,
     paymentType = "DEPOSIT",
+    amountUsd,
   }: UploadPaymentEvidencePayload) => {
     const formData = new FormData();
     formData.append("evidence", evidence);
     formData.append("paymentType", paymentType);
+    if (typeof amountUsd === "number" && amountUsd > 0) {
+      formData.append("amountUsd", String(amountUsd));
+    }
 
     return apiClient.post<ApiSuccessResponse<Payment>>(
       `/payments/orders/${orderId}/evidence`,

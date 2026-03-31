@@ -7,7 +7,7 @@ import {
   ChevronDown,
   Calendar,
   Info,
-  CircleCheck,
+  CheckCircle,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/pricingCalculator';
 import { Order } from '@/lib/api/orders';
@@ -237,7 +237,7 @@ export function PaymentConfirmationModal({
         ) : (
           <div className="mx-auto flex min-h-[460px] max-w-[422px] flex-col items-center justify-center gap-6 py-12 text-center">
             <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-[#E6F6F4]">
-              <CircleCheck className="h-20 w-20 text-[#0D7A4A]" strokeWidth={1.8} />
+              <CheckCircle className="h-20 w-20 text-[#0D7A4A]" strokeWidth={1.8} />
             </div>
             <div className="space-y-2">
               <h3 className="font-sans text-3xl font-bold text-[#1A1A1A]">Transfer Submitted!</h3>

@@ -11,17 +11,25 @@ import { paymentsApi } from '@/lib/api/payment';
 import { showToast } from '@/lib/showNotification';
 import { PayoutSummary } from './PayoutSummary';
 
+function parseNgnToUsd(amountTransferred: string, exchangeRate = 1550) {
+  const numeric = Number(amountTransferred.replace(/[^\d.]/g, ''));
+  if (!numeric || Number.isNaN(numeric)) return undefined;
+  return numeric / exchangeRate;
+}
+
 export function OrderStatusView() {
   const { id } = useParams<{ id: string }>();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { order, isLoading, isError, refetch } = useOrder(id ?? '');
   const uploadEvidenceMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, amountTransferred }: { file: File; amountTransferred: string }) => {
       if (!order) return;
+      const amountUsd = parseNgnToUsd(amountTransferred);
       await paymentsApi.uploadOrderPaymentEvidence({
         orderId: order.id,
         evidence: file,
         paymentType: "DEPOSIT",
+        amountUsd,
       });
     },
     onSuccess: () => {
@@ -73,7 +81,7 @@ export function OrderStatusView() {
     );
   }
 
-  if (order.status === 'DEPOSIT_PENDING') {
+  if (order.status === 'DEPOSIT_PENDING' || order.status === 'HALF_DEPOSIT_PAID') {
     return (
       <div className="min-h-screen bg-[#f8fafc] px-4 py-6 sm:px-6 lg:px-8">
         <DepositPendingOrderView
@@ -87,8 +95,11 @@ export function OrderStatusView() {
           order={order}
           onClose={() => setShowPaymentModal(false)}
           isSubmitting={uploadEvidenceMutation.isPending}
-          onSubmitConfirmation={async ({ proofFile }) => {
-            await uploadEvidenceMutation.mutateAsync(proofFile);
+          onSubmitConfirmation={async ({ proofFile, amountTransferred }) => {
+            await uploadEvidenceMutation.mutateAsync({
+              file: proofFile,
+              amountTransferred,
+            });
           }}
         />
       </div>
