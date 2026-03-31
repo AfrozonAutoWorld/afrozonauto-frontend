@@ -283,6 +283,11 @@ export interface PaymentPricing {
   };
 }
 
+export type OrderStatusUpdateValue =
+  | "QUOTE_SENT"
+  | "QUOTE_ACCEPTED"
+  | "DEPOSIT_PENDING";
+
 // This is what the hook returns after extracting from the API response
 export interface CostBreakdown {
   defaultPricing: DefualtPrices;
@@ -341,5 +346,8 @@ export const ordersApi = {
         ? `/platform-bank-accounts/by-currency/${currency}`
         : "/platform-bank-accounts",
     ),
+
+  updateOrderStatus: async (id: string, status: OrderStatusUpdateValue) =>
+    apiClient.patch<ApiSuccessResponse<Order>>(`/orders/${id}/status`, { status }),
 
 };

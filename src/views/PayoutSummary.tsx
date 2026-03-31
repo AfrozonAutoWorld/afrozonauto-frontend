@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -17,6 +18,11 @@ import {
 } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatCurrency } from "../lib/pricingCalculator";
+import { showToast } from "@/lib/showNotification";
+import {
+  ordersApi,
+  type OrderStatusUpdateValue,
+} from "@/lib/api/orders";
 import {
   useOrder,
   usePlatformBankAccounts,
@@ -466,6 +472,8 @@ export function PayoutSummary() {
 
       {showManualPaymentModal && (
         <ManualPaymentModal
+          orderId={order.id}
+          currentStatus={order.status}
           amountNgn={
             selectedPaymentOption === "full"
               ? totalCostNgn
@@ -482,6 +490,7 @@ export function PayoutSummary() {
           }
           onClose={() => setShowManualPaymentModal(false)}
           orderRef={order.requestNumber || order.id}
+          onStatusUpdated={() => router.push("/marketplace/buyer")}
         />
       )}
     </div>
@@ -517,15 +526,21 @@ function SafetyLine({ text }: { text: string }) {
 }
 
 function ManualPaymentModal({
+  orderId,
+  currentStatus,
   amountNgn,
   amountUsd,
   orderRef,
   onClose,
+  onStatusUpdated,
 }: {
+  orderId: string;
+  currentStatus: string;
   amountNgn: number;
   amountUsd: number;
   orderRef: string;
   onClose: () => void;
+  onStatusUpdated?: () => void;
 }) {
   const { bankAccounts, isLoading: isBankAccountsLoading } = usePlatformBankAccounts();
   const [selectedBankId, setSelectedBankId] = useState("");
@@ -540,6 +555,49 @@ function ManualPaymentModal({
 
   const selectedBank =
     bankAccounts.find((account) => account.id === selectedBankId) ?? null;
+  const updateStatusMutation = useMutation({
+    mutationFn: async () => {
+      const sequence: OrderStatusUpdateValue[] = [];
+
+      if (currentStatus === "PENDING_QUOTE") {
+        sequence.push("QUOTE_SENT");
+      }
+
+      if (currentStatus === "PENDING_QUOTE" || currentStatus === "QUOTE_SENT") {
+        sequence.push("QUOTE_ACCEPTED");
+      }
+
+      if (
+        currentStatus === "PENDING_QUOTE" ||
+        currentStatus === "QUOTE_SENT" ||
+        currentStatus === "QUOTE_ACCEPTED"
+      ) {
+        sequence.push("DEPOSIT_PENDING");
+      }
+
+      for (const status of sequence) {
+        await ordersApi.updateOrderStatus(orderId, status);
+      }
+    },
+    onSuccess: () => {
+      setBankSelected(true);
+      setTimeout(() => setBankSelected(false), 1800);
+      showToast({
+        type: "success",
+        message: "Bank account selected. Order status updated to deposit pending.",
+      });
+      onStatusUpdated?.();
+    },
+    onError: (error: any) => {
+      showToast({
+        type: "error",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Unable to update order status. Please try again.",
+      });
+    },
+  });
 
   const handleCopyAccountNumber = async () => {
     if (!selectedBank?.accountNumber) return;
@@ -554,8 +612,8 @@ function ManualPaymentModal({
   };
 
   const handleUseBankAccount = () => {
-    setBankSelected(true);
-    setTimeout(() => setBankSelected(false), 1800);
+    if (!selectedBank || updateStatusMutation.isPending) return;
+    updateStatusMutation.mutate();
   };
 
   return (
@@ -633,11 +691,21 @@ function ManualPaymentModal({
           <button
             type="button"
             onClick={handleUseBankAccount}
-            disabled={!selectedBank}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#0b6840]"
+            disabled={!selectedBank || updateStatusMutation.isPending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#0b6840] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {bankSelected ? <Check className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-            {bankSelected ? "Bank account selected" : "Use bank account"}
+            {updateStatusMutation.isPending ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : bankSelected ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <CreditCard className="h-4 w-4" />
+            )}
+            {updateStatusMutation.isPending
+              ? "Updating status..."
+              : bankSelected
+              ? "Bank account selected"
+              : "Use bank account"}
           </button>
         </div>
 

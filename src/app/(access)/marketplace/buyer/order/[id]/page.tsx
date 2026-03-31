@@ -1,9 +1,9 @@
-import { PayoutSummary } from '@/views/PayoutSummary'
+import { OrderStatusView } from '@/views/OrderStatusView'
 
 const page = () => {
   return (
     <div>
-      <PayoutSummary />
+      <OrderStatusView />
     </div>
   )
 }

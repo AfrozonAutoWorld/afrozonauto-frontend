@@ -7,4 +7,5 @@ export { DashboardProfileTab } from './DashboardProfileTab';
 export { AddressCard } from './AddressCard';
 export { ConfirmPasswordModal } from './ConfirmPasswordModal';
 export { DelAddressModal } from './DelAddressModal';
+export { PaymentConfirmationModal } from './PaymentConfirmationModal';
 export { getOrderPrimaryImage, getOrderVehicleName, STATUS_CONFIG } from './orderHelpers';

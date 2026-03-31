@@ -154,9 +154,9 @@ console.log(orders);
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Link>
-                    <span className="inline-flex items-center rounded-full p-1.5 text-[#6B7280]">
+                    {/* <span className="inline-flex items-center rounded-full p-1.5 text-[#6B7280]">
                       <MoreVertical className="w-4 h-4" />
-                    </span>
+                    </span> */}
                   </div>
                 </div>
               );

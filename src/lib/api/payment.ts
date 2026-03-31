@@ -110,6 +110,12 @@ export interface PaymentVerifyResponse {
   timestamp: string;
 }
 
+export interface UploadPaymentEvidencePayload {
+  orderId: string;
+  evidence: File;
+  paymentType?: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+}
+
 export const paymentsApi = {
   getAllPayments: () =>
     apiClient.get<ApiSuccessResponse<Payment[]>>("/payments/all"),
@@ -128,4 +134,24 @@ export const paymentsApi = {
       `/payments/verify/${reference}?provider=paystack`,
       {},
     ),
+
+  uploadOrderPaymentEvidence: ({
+    orderId,
+    evidence,
+    paymentType = "DEPOSIT",
+  }: UploadPaymentEvidencePayload) => {
+    const formData = new FormData();
+    formData.append("evidence", evidence);
+    formData.append("paymentType", paymentType);
+
+    return apiClient.post<ApiSuccessResponse<Payment>>(
+      `/payments/orders/${orderId}/evidence`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+  },
 };
