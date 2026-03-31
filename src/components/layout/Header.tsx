@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, LogOut, LayoutDashboard, Store, ShieldCheck } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Store, ChevronDown } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { signOut, useSession } from 'next-auth/react';
 import { Logo } from '../../lib/Logo';
@@ -11,6 +11,7 @@ import { canUseSellerFeatures } from '@/lib/sellerAccess';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -37,25 +38,71 @@ export function Header() {
             </Link>
           </div>
 
-          <div className="hidden gap-6 items-center md:flex">
-            <Link href="/marketplace" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
+          <div className="hidden gap-5 items-center md:flex">
+            <Link href="/marketplace" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap">
               Browse Vehicles
             </Link>
-            {!isSeller && (
-              <Link
-                href="/seller/landing"
-                className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
-              >
-                Sell Your Vehicle
-              </Link>
-            )}
-            <Link href="/marketplace/calculator" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
-              Price Calculator
+
+            <Link href="/marketplace/service-repair" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap">
+              Service & Repair
             </Link>
 
-            <Link href="/marketplace/how-it-works" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600">
-              How It Works
-            </Link>
+            {user ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreMenuOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-1 font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
+                >
+                  More
+                  <ChevronDown className={`h-4 w-4 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {moreMenuOpen && (
+                  <div className="absolute left-0 top-full mt-2 w-52 rounded-xl border border-[#E5E7EB] bg-white p-2 shadow-lg">
+                    {!isSeller && (
+                      <Link
+                        href="/seller/landing"
+                        className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                        onClick={() => setMoreMenuOpen(false)}
+                      >
+                        Sell Your Vehicle
+                      </Link>
+                    )}
+                    <Link
+                      href="/marketplace/calculator"
+                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                      onClick={() => setMoreMenuOpen(false)}
+                    >
+                      Price Calculator
+                    </Link>
+                    <Link
+                      href="/marketplace/how-it-works"
+                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                      onClick={() => setMoreMenuOpen(false)}
+                    >
+                      How It Works
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {!isSeller && (
+                  <Link
+                    href="/seller/landing"
+                    className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap"
+                  >
+                    Sell Your Vehicle
+                  </Link>
+                )}
+                <Link href="/marketplace/calculator" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap">
+                  Price Calculator
+                </Link>
+                <Link href="/marketplace/how-it-works" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap">
+                  How It Works
+                </Link>
+              </>
+            )}
 
             {user ? (
               <div className="flex gap-3 items-center">
@@ -141,6 +188,13 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 How It Works
+              </Link>
+              <Link
+                href="/marketplace/service-repair"
+                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Service & Repair
               </Link>
               {!isSeller && (
                 <Link
