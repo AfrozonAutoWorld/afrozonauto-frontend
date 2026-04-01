@@ -28,7 +28,6 @@ export function WaitlistForm({ inputId }: Readonly<WaitlistFormProps>) {
     setIsSubmitting(true);
 
     try {
-      // Frontend-only waitlist persistence for now (no API endpoint yet).
       const waitlistKey = "service_waitlist_emails";
       const existing = globalThis.localStorage.getItem(waitlistKey);
       const parsed = existing ? (JSON.parse(existing) as string[]) : [];
@@ -64,8 +63,8 @@ export function WaitlistForm({ inputId }: Readonly<WaitlistFormProps>) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-xl">
-      <div className="flex w-full items-center gap-2 rounded-2xl border border-white/30 bg-white p-2">
-        <div className="flex flex-1 items-center gap-2 px-2">
+      <div className="flex gap-2 items-center p-2 w-full bg-white rounded-2xl border border-white/30">
+        <div className="flex flex-1 gap-2 items-center px-2">
           <Search className="h-4 w-4 text-[#9CA3AF]" />
           <input
             id={inputId}
@@ -86,7 +85,7 @@ export function WaitlistForm({ inputId }: Readonly<WaitlistFormProps>) {
           className="inline-flex h-10 items-center gap-1 rounded-lg bg-[#0D7A4A] px-4 text-sm font-medium text-white transition hover:bg-[#0b6840] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Joining..." : "Join the Waitlist"}
-          {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+          {!isSubmitting && <ArrowRight className="w-4 h-4" />}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-red-100">{error}</p>}

@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, UploadCloud } from "lucide-react";
+import { AlertCircle, ChevronDown, FileText, UploadCloud } from "lucide-react";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
 import type { SellerRegisterInput } from "@/lib/api/seller";
 
@@ -35,6 +35,90 @@ const ID_RULES: IdentityDocRule[] = [
     backLabel: "Upload Back of ID",
   },
 ];
+
+function useImageObjectUrl(file: File | null) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file || !file.type.startsWith("image/")) {
+      setUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  return url;
+}
+
+type DocUploadSlotProps = {
+  id: string;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+  inputAccept?: string;
+};
+
+function DocumentUploadSlot({
+  id,
+  file,
+  onFileChange,
+  inputAccept = ".jpg,.jpeg,.png,.pdf",
+}: Readonly<DocUploadSlotProps>) {
+  const imageUrl = useImageObjectUrl(file);
+  const isPdf = file?.type === "application/pdf";
+
+  return (
+    <label
+      htmlFor={id}
+      className="flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-[#9CA3AF] bg-[#F9FAFB] p-3 text-center transition-colors hover:border-[#0D7A4A]/40 hover:bg-[#F3F4F6]"
+    >
+      {file ? (
+        <div className="flex w-full flex-col items-center gap-2">
+          {imageUrl ? (
+            <div className="relative w-full max-h-[200px] min-h-[100px]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- user-selected local preview */}
+              <img
+                src={imageUrl}
+                alt={`Preview of ${file.name}`}
+                className="mx-auto max-h-[200px] w-full rounded-lg object-contain"
+              />
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-center gap-2 py-2">
+              <FileText className="h-10 w-10 shrink-0 text-[#0D7A4A]" aria-hidden />
+              <p className="max-w-full truncate px-1 font-body text-sm font-medium text-[#111827]">
+                {file.name}
+              </p>
+              <p className="font-body text-xs text-[#6B7280]">
+                {isPdf ? "PDF" : file.type || "File"} · Click to replace
+              </p>
+            </div>
+          )}
+          <span className="font-body text-xs font-medium text-[#0D7A4A]">
+            Click to replace file
+          </span>
+        </div>
+      ) : (
+        <>
+          <UploadCloud className="h-8 w-8 text-[#6B7280]" aria-hidden />
+          <span className="font-body text-sm text-[#4B5563]">
+            Click to upload or drag and drop
+          </span>
+        </>
+      )}
+      <input
+        id={id}
+        type="file"
+        accept={inputAccept}
+        className="sr-only"
+        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+      />
+    </label>
+  );
+}
 
 export function SellerRegisterVerify() {
   const router = useRouter();
@@ -139,11 +223,15 @@ export function SellerRegisterVerify() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+          <label
+            htmlFor="seller-kyc-id-type"
+            className="mb-2 block font-body text-sm font-medium text-[#111827]"
+          >
             ID Type
           </label>
           <div className="relative">
             <select
+              id="seller-kyc-id-type"
               value={identificationType}
               onChange={(e) =>
                 setIdentificationType(e.target.value as IdentityType)
@@ -165,26 +253,14 @@ export function SellerRegisterVerify() {
 
         <div className={`grid gap-4 ${requiresBack ? "sm:grid-cols-2" : "grid-cols-1"}`}>
           <div>
-            <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+            <span className="mb-2 block font-body text-sm font-medium text-[#111827]">
               {selectedRule.frontLabel}
-            </label>
-            <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#9CA3AF] bg-[#F9FAFB] p-4 text-center">
-              <UploadCloud className="h-8 w-8 text-[#6B7280]" />
-              <span className="font-body text-sm text-[#4B5563]">
-                Click to upload or drag and drop
-              </span>
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf"
-                className="hidden"
-                onChange={(e) => setFrontFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            {frontFile && (
-              <p className="mt-1 truncate font-body text-xs text-[#0D7A4A]">
-                {frontFile.name}
-              </p>
-            )}
+            </span>
+            <DocumentUploadSlot
+              id="seller-kyc-front"
+              file={frontFile}
+              onFileChange={setFrontFile}
+            />
             {errors.front && (
               <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle className="h-3.5 w-3.5" />
@@ -195,26 +271,14 @@ export function SellerRegisterVerify() {
 
           {requiresBack && (
             <div>
-              <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+              <span className="mb-2 block font-body text-sm font-medium text-[#111827]">
                 {selectedRule.backLabel}
-              </label>
-              <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#9CA3AF] bg-[#F9FAFB] p-4 text-center">
-                <UploadCloud className="h-8 w-8 text-[#6B7280]" />
-                <span className="font-body text-sm text-[#4B5563]">
-                  Click to upload or drag and drop
-                </span>
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  className="hidden"
-                  onChange={(e) => setBackFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
-              {backFile && (
-                <p className="mt-1 truncate font-body text-xs text-[#0D7A4A]">
-                  {backFile.name}
-                </p>
-              )}
+              </span>
+              <DocumentUploadSlot
+                id="seller-kyc-back"
+                file={backFile}
+                onFileChange={setBackFile}
+              />
               {errors.back && (
                 <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
                   <AlertCircle className="h-3.5 w-3.5" />
