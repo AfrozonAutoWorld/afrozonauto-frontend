@@ -262,9 +262,14 @@ export function SellVehicle() {
       }
 
       const data = await submitSellerVehicle.mutateAsync(formData);
-      const created = data?.data;
+      const inner = data?.data as { id?: string; data?: { id?: string } } | undefined;
+      const created = inner?.data ?? inner;
+      const listingId =
+        created && typeof created === 'object' && 'id' in created && created.id
+          ? String(created.id)
+          : undefined;
 
-      setReferenceId(created?.id ?? generateReferenceId());
+      setReferenceId(listingId ?? generateReferenceId());
       setSubmitted(true);
       } catch (err) {
         console.error(err);

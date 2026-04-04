@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Check, X } from "lucide-react";
+import { AlertCircle, Check, Eye, EyeOff, Lock, X } from "lucide-react";
 import { sellerCheckEmailSchema } from "@/lib/validation/seller.schema";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
 import {
@@ -19,6 +19,7 @@ export function SellerRegisterStart() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [otpOpen, setOtpOpen] = useState(false);
   const [otpCode, setOtpCode] = useState("");
@@ -205,18 +206,34 @@ export function SellerRegisterStart() {
         </div>
 
         <div>
-          <label className="mb-2 block font-body text-sm font-medium text-[#111827]">
+          <label
+            htmlFor="seller-register-password"
+            className="mb-2 block font-body text-sm font-medium text-[#111827]"
+          >
             Password
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a strong password"
-            className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
-              errors.password ? "border-red-300" : "border-[#E5E7EB]"
-            }`}
-          />
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9CA3AF]" aria-hidden />
+            <input
+              id="seller-register-password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a strong password"
+              autoComplete="new-password"
+              className={`h-11 w-full rounded-lg border pl-11 pr-12 font-body text-base outline-none focus:border-[#0D7A4A] focus:ring-1 focus:ring-[#0D7A4A] ${
+                errors.password ? "border-red-300" : "border-[#E5E7EB]"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-[#6B7280] transition-colors hover:bg-[#F3F4F6] hover:text-[#111827]"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
           <div className="mt-2 space-y-1">
             <p className="font-body text-xs text-[#6B7280]">
               Your password must contain at least:

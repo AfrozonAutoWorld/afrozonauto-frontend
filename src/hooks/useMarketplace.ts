@@ -6,6 +6,11 @@ import type {
   VehicleFormData,
 } from "@/lib/marketplace/types";
 import { useSession } from "next-auth/react";
+import { getPublicApiBaseUrl } from "@/lib/api/publicApiUrl";
+import {
+  mapSellerApiVehicleToMarketplace,
+  type SellerListingVehicle,
+} from "@/lib/marketplace/mapSellerVehicle";
 
 export function useMarketplaceVehicles(
   scope?: "seller" | "admin",
@@ -24,9 +29,30 @@ export function useMarketplaceVehicles(
 
   return useQuery<MarketplaceVehicle[]>({
     queryKey: ["marketplace-vehicles", scope, status],
+    enabled: scope !== "seller" || !!session?.accessToken,
     queryFn: async () => {
-      if (scope === "seller" || scope === "admin") {
+      if (scope === "admin") {
         return [];
+      }
+
+      if (scope === "seller") {
+        const base = getPublicApiBaseUrl();
+        const res = await fetch(`${base}/seller-vehicles/me/listings`, {
+          headers,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(
+            (err && typeof err === "object" && "message" in err && typeof err.message === "string"
+              ? err.message
+              : null) || `HTTP ${res.status}`,
+          );
+        }
+        const json = (await res.json()) as {
+          data?: { data?: { listings?: unknown[] } };
+        };
+        const raw = json?.data?.data?.listings ?? [];
+        return raw.map((row) => mapSellerApiVehicleToMarketplace(row as SellerListingVehicle));
       }
 
       const res = await fetch(`/api/marketplace/vehicles?${params}`, { headers });
@@ -132,13 +158,18 @@ export function useDeleteVehicle() {
   };
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/marketplace/vehicles/${id}`, {
+      const base = getPublicApiBaseUrl();
+      const res = await fetch(`${base}/seller-vehicles/${id}`, {
         method: "DELETE",
         headers,
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => null);
+        throw new Error(
+          (err && typeof err === "object" && "message" in err && typeof err.message === "string"
+            ? err.message
+            : null) || `HTTP ${res.status}`,
+        );
       }
       return res.json();
     },
@@ -158,13 +189,18 @@ export function useSubmitVehicle() {
   };
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/marketplace/vehicles/${id}/submit`, {
+      const base = getPublicApiBaseUrl();
+      const res = await fetch(`${base}/seller-vehicles/${id}/resubmit`, {
         method: "POST",
         headers,
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => null);
+        throw new Error(
+          (err && typeof err === "object" && "message" in err && typeof err.message === "string"
+            ? err.message
+            : null) || `HTTP ${res.status}`,
+        );
       }
       return res.json();
     },

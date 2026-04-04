@@ -179,7 +179,7 @@ export function SellerDashboardListingsTable({
 
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/marketplace/${vehicle.id}`}
+                      href={`/seller/listings/${vehicle.id}`}
                       className="inline-flex items-center rounded-full p-1.5 text-[#6B7280] transition-colors hover:bg-gray-100 hover:text-[#111827]"
                       aria-label={`View ${vehicle.title}`}
                     >

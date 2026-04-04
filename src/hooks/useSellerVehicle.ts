@@ -1,24 +1,31 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+import { getPublicApiBaseUrl } from '@/lib/api/publicApiUrl';
 
 interface SubmitResponse {
-  data?: { id?: string } | null;
-  [key: string]: any;
+  data?: { id?: string; data?: { id?: string } } | null;
+  [key: string]: unknown;
 }
 
 export function useSubmitSellerVehicle() {
+  const { data: session } = useSession();
+
   return useMutation({
     mutationFn: async (formData: FormData): Promise<SubmitResponse> => {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-      if (!baseUrl) {
-        throw new Error('API base URL is not configured.');
-      }
+      const baseUrl = getPublicApiBaseUrl();
+
+      const token = session?.accessToken;
+      const headers: HeadersInit = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
       const res = await fetch(`${baseUrl}/seller-vehicles/submit`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers,
       });
 
       if (!res.ok) {
