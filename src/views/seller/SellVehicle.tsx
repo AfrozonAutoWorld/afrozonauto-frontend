@@ -109,6 +109,11 @@ export function SellVehicle() {
   const [submitting, setSubmitting] = useState(false);
   const submitSellerVehicle = useSubmitSellerVehicle();
 
+  // Keep users at the top of the flow when changing steps or landing on success (avoid stale scroll).
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [step, submitted]);
+
   const currentStepIndex = STEP_ORDER.indexOf(step);
   const totalSteps = STEP_ORDER.length;
 
