@@ -617,11 +617,19 @@ function ManualPaymentModal({
   };
 
   return (
-    <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
-      <div className="p-6 w-full max-w-lg bg-white rounded-2xl shadow-2xl">
-        <div className="flex justify-between items-start mb-5">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="manual-payment-title"
+    >
+      <div className="flex min-h-full items-center justify-center px-4 py-8 sm:px-6">
+        <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 className="font-sans text-2xl font-bold text-[#1A1A1A]">Manual Payment</h3>
+            <h3 id="manual-payment-title" className="font-sans text-2xl font-bold text-[#1A1A1A]">
+              Manual Payment
+            </h3>
             <p className="mt-1 text-sm text-[#64748B]">
               Online Paystack checkout is currently disabled for this flow.
             </p>
@@ -633,9 +641,9 @@ function ManualPaymentModal({
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+          </div>
 
-        <div className="mb-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+          <div className="mb-5 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
           <p className="text-sm text-[#64748B]">Amount to transfer</p>
           <p className="mt-1 font-sans text-3xl font-bold text-[#0D7A4A]">
             {formatCurrency(amountNgn, "NGN")}
@@ -644,9 +652,9 @@ function ManualPaymentModal({
           <p className="mt-2 text-xs text-[#64748B]">
             Use order ref <span className="font-semibold text-[#1A1A1A]">{orderRef}</span> as your transfer narration.
           </p>
-        </div>
+          </div>
 
-        <div className="space-y-4 rounded-xl border border-[#E5E7EB] p-4 text-sm text-[#374151]">
+          <div className="space-y-4 rounded-xl border border-[#E5E7EB] p-4 text-sm text-[#374151]">
           <div>
             <p className="font-semibold text-[#1A1A1A]">Bank details</p>
             <label htmlFor="bank-account-select" className="mt-3 mb-1 block text-xs font-medium text-[#64748B]">
@@ -707,13 +715,13 @@ function ManualPaymentModal({
               ? "Bank account selected"
               : "Use bank account"}
           </button>
-        </div>
+          </div>
 
-        <div className="p-3 mt-5 text-xs text-amber-800 bg-amber-50 rounded-lg">
+          <div className="mt-5 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
           After transfer, our team will manually review and approve your payment. Status will update on this order page.
-        </div>
+          </div>
 
-        <div className="flex gap-3 justify-end items-center mt-6">
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -728,6 +736,7 @@ function ManualPaymentModal({
             <Shield className="w-4 h-4" />
             Contact support
           </Link>
+          </div>
         </div>
       </div>
     </div>

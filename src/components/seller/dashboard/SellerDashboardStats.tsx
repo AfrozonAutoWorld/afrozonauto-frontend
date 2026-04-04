@@ -68,14 +68,6 @@ export function SellerDashboardStats({
               <p className="font-sans text-3xl font-bold leading-10 text-[#111827]">
                 {card.value}
               </p>
-              <div className="flex items-center gap-2">
-                <span className="font-jakarta text-[10px] leading-3 text-[#218838]">
-                  +500,000 vs last month
-                </span>
-                <span className="inline-flex items-center rounded-full border border-[#218838] bg-[#D4EDDA] px-1.5 py-0.5 font-jakarta text-[10px] leading-3 text-[#218838]">
-                  20%
-                </span>
-              </div>
             </div>
             <span className="flex h-10 w-10 items-center justify-center rounded border border-[#E5E7EB]">
               <card.icon className="h-5 w-5 text-[#374151]" />

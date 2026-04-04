@@ -32,6 +32,21 @@ export type SellerListingVehicle = {
   images?: string[];
   createdAt: string;
   updatedAt: string;
+  /** Present on full listing GET — used to prefill sell form */
+  condition?: string | null;
+  titleStatus?: string[] | null;
+  accidentHistory?: string | null;
+  knownIssues?: string[] | null;
+  modifications?: string | null;
+  keys?: number | null;
+  contactFirstName?: string | null;
+  contactLastName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  zipCode?: string | null;
+  preferredContact?: string | null;
+  bestTimeToReach?: string | null;
+  showAskingPrice?: boolean | null;
 };
 
 /**

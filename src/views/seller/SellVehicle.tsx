@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { HeroSellBreadcrumb } from '@/components/seller/sell-vehicle/HeroSellBreadcrumb';
 import { HeroSellSection } from '@/components/seller/sell-vehicle/HeroSellSection';
 import { SellStepper, type SellStepKey } from '@/components/seller/sell-vehicle/SellStepper';
@@ -11,8 +14,12 @@ import { SellVehicleStep2 } from '@/components/seller/sell-vehicle/SellVehicleSt
 import { SellVehicleStep3 } from '@/components/seller/sell-vehicle/SellVehicleStep3';
 import { SellVehicleStep4 } from '@/components/seller/sell-vehicle/SellVehicleStep4';
 import { SellVehicleSuccess } from '@/components/seller/sell-vehicle/SellVehicleSuccess';
-import { useSubmitSellerVehicle } from '@/hooks/useSellerVehicle';
+import type { PhotoSlotValue } from '@/components/seller/sell-vehicle/SellVehicleStep3';
+import { useSubmitSellerVehicle, useUpdateSellerVehicle } from '@/hooks/useSellerVehicle';
+import { useSellerListingDetail } from '@/hooks/useSellerListingDetail';
 import { showToast } from '@/lib/showNotification';
+import { buildSellVehicleFormData } from '@/lib/seller/buildSellVehicleFormData';
+import { prefillSellFormFromListing } from '@/lib/seller/prefillSellFormFromListing';
 
 const STEP_ORDER: SellStepKey[] = ['vehicle', 'condition', 'photos-price', 'contact'];
 
@@ -44,7 +51,7 @@ type ConditionDetails = {
 };
 
 type PhotosPriceDetails = {
-  photos: (File | null)[];
+  photos: PhotoSlotValue[];
   askingPrice: string;
   additionalNotes: string;
   hasAskingPrice?: boolean;
@@ -107,9 +114,35 @@ export function SellVehicle() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const { status: sessionStatus } = useSession();
   const submitSellerVehicle = useSubmitSellerVehicle();
+  const updateSellerVehicle = useUpdateSellerVehicle();
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const vehicleId = searchParams.get('vehicleId');
+  const {
+    data: listingDetail,
+    isLoading: listingLoading,
+    isError: listingError,
+  } = useSellerListingDetail(vehicleId ?? '');
+  const editModeLoading =
+    !!vehicleId && (sessionStatus === 'loading' || (sessionStatus === 'authenticated' && listingLoading));
+  const prefillApplied = useRef(false);
 
-  // Keep users at the top of the flow when changing steps or landing on success (avoid stale scroll).
+  useEffect(() => {
+    prefillApplied.current = false;
+  }, [vehicleId]);
+
+  useEffect(() => {
+    if (!vehicleId || !listingDetail?.raw || prefillApplied.current) return;
+    prefillApplied.current = true;
+    const p = prefillSellFormFromListing(listingDetail.raw);
+    setVehicleDetails(p.vehicle);
+    setConditionDetails(p.condition);
+    setPhotosPrice(p.photosPrice);
+    setContactDetails(p.contact);
+  }, [vehicleId, listingDetail]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [step, submitted]);
@@ -144,7 +177,7 @@ export function SellVehicle() {
   };
 
   const goNextFromPhotos = () => {
-    const photoCount = photosPrice.photos.filter(Boolean).length;
+    const photoCount = photosPrice.photos.filter((p) => p != null).length;
     if (photoCount < 4) {
       showToast({ type: 'error', message: 'Please add at least 4 photos of your vehicle.' });
       return;
@@ -168,121 +201,104 @@ export function SellVehicle() {
     try {
       setSubmitting(true);
 
-      const formData = new FormData();
-
-      // Step 1: Vehicle details
-      formData.append('year', vehicleDetails.year);
-      formData.append('make', vehicleDetails.make);
-      formData.append('model', vehicleDetails.model);
-      if (vehicleDetails.trim) formData.append('trim', vehicleDetails.trim);
-      if (vehicleDetails.bodyStyle) formData.append('bodyStyle', vehicleDetails.bodyStyle);
-      formData.append('mileage', vehicleDetails.mileage);
-      if (vehicleDetails.drivetrain) formData.append('drivetrain', vehicleDetails.drivetrain);
-      if (vehicleDetails.transmission) formData.append('transmission', vehicleDetails.transmission);
-      if (vehicleDetails.fuelType) formData.append('fuelType', vehicleDetails.fuelType);
-      if (vehicleDetails.exteriorColor) formData.append('exteriorColor', vehicleDetails.exteriorColor);
-      if (vehicleDetails.keysCount) {
-        const parsedKeys =
-          vehicleDetails.keysCount === '1 key'
-            ? 1
-            : vehicleDetails.keysCount === '2 keys'
-              ? 2
-              : vehicleDetails.keysCount === '3+ keys'
-                ? 3
-                : undefined;
-        if (parsedKeys != null) {
-          formData.append('keys', String(parsedKeys));
-        }
-      }
-
-      // Step 2: Condition details
-      if (conditionDetails.condition) {
-        formData.append('condition', conditionDetails.condition.toUpperCase());
-      }
-      if (conditionDetails.titleStatus) {
-        // Backend expects an array; use bracket notation so body parser creates an array.
-        formData.append('titleStatus[0]', conditionDetails.titleStatus);
-      }
-      if (conditionDetails.accidentHistory) {
-        const mappedAccident =
-          conditionDetails.accidentHistory === 'Minor accident'
-            ? 'Minor'
-            : conditionDetails.accidentHistory === 'Major accident'
-              ? 'Major'
-              : conditionDetails.accidentHistory;
-        formData.append('accidentHistory', mappedAccident);
-      }
-      Array.from(conditionDetails.knownIssues).forEach((issue, index) => {
-        formData.append(`knownIssues[${index}]`, issue);
-      });
-      if (conditionDetails.modifications) {
-        formData.append('modifications', conditionDetails.modifications);
-      }
-
-      // Step 3: Photos & price
-      const imageFiles = photosPrice.photos.filter(
-        (file): file is File => file != null,
+      const formData = buildSellVehicleFormData(
+        vehicleDetails,
+        conditionDetails,
+        photosPrice,
+        contactDetails,
       );
-      imageFiles.forEach((file) => {
-        formData.append('files', file);
-      });
 
-      if (photosPrice.hasAskingPrice !== false) {
-        if (!photosPrice.askingPrice) {
-          throw new Error('Please enter your asking price.');
-        }
-        formData.append('askingPrice', photosPrice.askingPrice);
+      if (vehicleId) {
+        await updateSellerVehicle.mutateAsync({ id: vehicleId, formData });
+        await queryClient.invalidateQueries({ queryKey: ['marketplace-vehicles'] });
+        await queryClient.invalidateQueries({ queryKey: ['seller-listing-detail', vehicleId] });
+        setReferenceId(vehicleId);
+        setSubmitted(true);
+        showToast({ type: 'success', message: 'Listing updated successfully.' });
       } else {
-        // Backend currently requires askingPrice; send 0 as placeholder when user requests valuation
-        formData.append('askingPrice', '0');
-      }
-      formData.append('showAskingPrice', 'true');
-      formData.append('allowOffers', 'true');
-      if (photosPrice.additionalNotes) {
-        formData.append('additionalNotes', photosPrice.additionalNotes);
-      }
+        const data = await submitSellerVehicle.mutateAsync(formData);
+        const inner = data?.data as { id?: string; data?: { id?: string } } | undefined;
+        const created = inner?.data ?? inner;
+        const listingId =
+          created && typeof created === 'object' && 'id' in created && created.id
+            ? String(created.id)
+            : undefined;
 
-      // Step 4: Contact details
-      formData.append('contactFirstName', contactDetails.firstName);
-      formData.append('contactLastName', contactDetails.lastName);
-      formData.append('contactEmail', contactDetails.email);
-      formData.append('contactPhone', contactDetails.phone);
-      formData.append('city', contactDetails.cityState);
-      formData.append('zipCode', contactDetails.zipCode);
-
-      // Map preferred contact to backend enum
-      let preferred: string | null = null;
-      if (contactDetails.contactMethods.has('Email')) {
-        preferred = 'Email';
-      } else if (contactDetails.contactMethods.has('Text Message')) {
-        preferred = 'SMS';
-      } else if (contactDetails.contactMethods.has('WhatsApp')) {
-        preferred = 'SMS';
+        setReferenceId(listingId ?? generateReferenceId());
+        setSubmitted(true);
       }
-      if (preferred) {
-        formData.append('preferredContact', preferred);
-      }
-      if (contactDetails.bestTime) {
-        formData.append('bestTimeToReach', contactDetails.bestTime);
-      }
-
-      const data = await submitSellerVehicle.mutateAsync(formData);
-      const inner = data?.data as { id?: string; data?: { id?: string } } | undefined;
-      const created = inner?.data ?? inner;
-      const listingId =
-        created && typeof created === 'object' && 'id' in created && created.id
-          ? String(created.id)
-          : undefined;
-
-      setReferenceId(listingId ?? generateReferenceId());
-      setSubmitted(true);
-      } catch (err) {
-        console.error(err);
-      showToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to submit vehicle.' });
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save vehicle.',
+      });
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (vehicleId && sessionStatus === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB]">
+        <HeroSellSection
+          breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
+          headerText="List your vehicle. Get the best offer."
+          descriptionText="Sign in to edit your listing."
+        />
+        <div className="mx-auto max-w-lg px-4 pb-16 text-center sm:px-6 lg:px-8">
+          <Link
+            href="/login"
+            className="inline-block rounded-lg bg-[#0D7A4A] px-4 py-2 font-body text-sm font-medium text-white hover:opacity-90"
+          >
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (vehicleId && editModeLoading) {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB]">
+        <HeroSellSection
+          breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
+          headerText="List your vehicle. Get the best offer."
+          descriptionText="Loading your listing…"
+        />
+        <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="animate-pulse space-y-4 rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
+            <div className="h-8 w-48 rounded bg-gray-200" />
+            <div className="h-4 w-full max-w-md rounded bg-gray-100" />
+            <div className="h-32 rounded-lg bg-gray-100" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (vehicleId && listingError) {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB]">
+        <HeroSellSection
+          breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
+          headerText="List your vehicle. Get the best offer."
+          descriptionText="We could not load this listing."
+        />
+        <div className="mx-auto max-w-lg px-4 pb-16 text-center sm:px-6 lg:px-8">
+          <p className="font-body text-[#4B5563]">
+            Check that you are signed in and the link is correct, then try again.
+          </p>
+          <Link
+            href="/seller"
+            className="mt-6 inline-block font-body text-sm font-medium text-[#0D7A4A] hover:underline"
+          >
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (submitted && referenceId) {
     return (
@@ -309,6 +325,11 @@ export function SellVehicle() {
 
       <div className="px-4 pb-16 mx-auto w-full max-w-7xl sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8">
+          {vehicleId && (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-body text-sm text-emerald-900">
+              You are editing an existing listing. Changes are saved when you submit the final step.
+            </p>
+          )}
           <SellStepper currentStep={step} />
 
           {step === 'vehicle' && (
@@ -356,7 +377,15 @@ export function SellVehicle() {
               title="Your Details"
               description="How should we reach you when we have an offer?"
               stepLabel={`Step ${currentStepIndex + 1} of ${totalSteps}`}
-              nextLabel={submitting ? 'Submitting...' : 'Submit request'}
+              nextLabel={
+                submitting
+                  ? vehicleId
+                    ? 'Saving...'
+                    : 'Submitting...'
+                  : vehicleId
+                    ? 'Save changes'
+                    : 'Submit request'
+              }
               onNext={handleSubmit}
               backLabel="Back"
               onBack={goBack}
@@ -374,7 +403,7 @@ export function SellVehicle() {
                     : 'Not specified',
                   condition: conditionDetails.condition || 'Not specified',
                   title: conditionDetails.titleStatus || 'Not specified',
-                  photosCount: photosPrice.photos.filter(Boolean).length,
+                  photosCount: photosPrice.photos.filter((p) => p != null).length,
                   priceDisplay:
                     photosPrice.hasAskingPrice === false
                       ? 'Requesting Afrozon valuation'

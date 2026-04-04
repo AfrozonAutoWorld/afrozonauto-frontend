@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   ChevronDown,
-  MoreVertical,
   Car,
   Eye,
   Edit,
@@ -219,10 +218,6 @@ export function SellerDashboardListingsTable({
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
-
-                    <span className="inline-flex items-center rounded-full p-1.5 text-[#6B7280]">
-                      <MoreVertical className="h-4 w-4" />
-                    </span>
                   </div>
                 </div>
               );

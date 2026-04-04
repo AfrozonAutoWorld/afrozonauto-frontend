@@ -112,8 +112,11 @@ function Field({
   );
 }
 
+/** File = new upload; `{ existingUrl }` = kept server image when editing a listing */
+export type PhotoSlotValue = File | { existingUrl: string } | null;
+
 export interface SellVehicleStep3Value {
-  photos: (File | null)[];
+  photos: PhotoSlotValue[];
   askingPrice: string;
   additionalNotes: string;
   hasAskingPrice?: boolean;
@@ -136,14 +139,15 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
   const photoCount = value.photos.filter(Boolean).length;
   const hasAskingPrice = value.hasAskingPrice !== false;
 
-  // Object URL previews and cleanup
+  // Object URL previews for new files; existing listings use `existingUrl` (no revoke)
   const previewUrls = (() => {
-    // Generate preview URLs from current photos
     previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-    const urls: (string | null)[] = value.photos.map((file) =>
-      file ? URL.createObjectURL(file) : null,
-    );
-    previewUrlsRef.current = urls.filter((u): u is string => u != null);
+    const urls: (string | null)[] = value.photos.map((slot) => {
+      if (!slot) return null;
+      if (slot instanceof File) return URL.createObjectURL(slot);
+      return slot.existingUrl;
+    });
+    previewUrlsRef.current = urls.filter((u): u is string => u != null && u.startsWith('blob:'));
     return urls;
   })();
 
@@ -173,7 +177,7 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
     const file = e.target.files?.[0];
     if (file != null && activeSlotIndex != null) {
       const next = [...value.photos];
-      next[activeSlotIndex] = file;
+      next[activeSlotIndex] = file as PhotoSlotValue;
       onChange({
         ...value,
         photos: next,
@@ -229,7 +233,7 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
                 key={slot.key}
                 slot={slot}
                 hasPhoto={value.photos[index] != null}
-                previewUrl={previewUrls[index]}
+                previewUrl={previewUrls[index] ?? null}
                 onPick={() => openFilePicker(index)}
                 className="shrink-0 w-[min(180px,40vw)] min-h-[120px]"
               />
@@ -261,7 +265,7 @@ export function SellVehicleStep3({ value, onChange }: Readonly<SellVehicleStep3P
               key={slot.key}
               slot={slot}
               hasPhoto={value.photos[index] != null}
-              previewUrl={previewUrls[index]}
+              previewUrl={previewUrls[index] ?? null}
               onPick={() => openFilePicker(index)}
               className="min-h-[158px]"
             />

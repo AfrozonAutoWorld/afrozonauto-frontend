@@ -1,12 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Calendar, Car, Eye, Heart, SquarePen } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Calendar, Car, Eye, Heart, Send, SquarePen } from 'lucide-react';
 import { SellerListingImageCarousel } from '@/components/seller/listing/SellerListingImageCarousel';
 import { useSellerListingDetail } from '@/hooks/useSellerListingDetail';
+import { useSubmitVehicle } from '@/hooks/useMarketplace';
+import { useMarkSellerListingSold } from '@/hooks/useSellerVehicle';
 import { formatListingReferenceId } from '@/lib/seller/listingReference';
 import { getSellerListingStatusPresentation } from '@/lib/seller/listingStatusPresentation';
+import { showToast } from '@/lib/showNotification';
 import type { SellerListingVehicle } from '@/lib/marketplace/mapSellerVehicle';
 
 function formatLongDate(iso: string): string {
@@ -66,7 +71,12 @@ type SellerListingDetailProps = {
 
 export function SellerListingDetail({ listingId }: SellerListingDetailProps) {
   const { data: session, status: sessionStatus } = useSession();
+  const queryClient = useQueryClient();
   const { data, isLoading, isError, error, refetch, isFetching } = useSellerListingDetail(listingId);
+  const markSold = useMarkSellerListingSold();
+  const resubmit = useSubmitVehicle();
+  const [markingSold, setMarkingSold] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   if (sessionStatus === 'loading') {
     return (
@@ -152,9 +162,49 @@ export function SellerListingDetail({ listingId }: SellerListingDetailProps) {
   }
 
   const { marketplace: v, raw } = data;
+  const adminFeedback = raw.adminNotes?.trim() || v.rejection_reason?.trim() || '';
   const presentation = getSellerListingStatusPresentation(v.status, {
-    adminNotes: raw.adminNotes ?? v.rejection_reason,
+    // Avoid duplicating long feedback in the banner when the dedicated card below shows it.
+    adminNotes:
+      v.status === 'REJECTED' && adminFeedback ? null : raw.adminNotes ?? v.rejection_reason,
   });
+
+  const handleMarkSold = async () => {
+    if (markingSold) return;
+    try {
+      setMarkingSold(true);
+      await markSold.mutateAsync(v.id);
+      await queryClient.invalidateQueries({ queryKey: ['marketplace-vehicles'] });
+      await queryClient.invalidateQueries({ queryKey: ['seller-listing-detail', listingId] });
+      showToast({ type: 'success', message: 'Listing marked as sold.' });
+      await refetch();
+    } catch (e) {
+      showToast({
+        type: 'error',
+        message: e instanceof Error ? e.message : 'Could not mark as sold.',
+      });
+    } finally {
+      setMarkingSold(false);
+    }
+  };
+
+  const handleResubmit = async () => {
+    if (resubmitting) return;
+    try {
+      setResubmitting(true);
+      await resubmit.mutateAsync(v.id);
+      await queryClient.invalidateQueries({ queryKey: ['seller-listing-detail', listingId] });
+      showToast({ type: 'success', message: 'Listing resubmitted for review.' });
+      await refetch();
+    } catch (e) {
+      showToast({
+        type: 'error',
+        message: e instanceof Error ? e.message : 'Could not resubmit.',
+      });
+    } finally {
+      setResubmitting(false);
+    }
+  };
   const imageUrls = Array.isArray(raw.images) ? raw.images : [];
   const headlineTitle = [raw.year, raw.make, raw.model].filter(Boolean).join(' ');
   const trimPart = raw.trim?.trim();
@@ -176,6 +226,19 @@ export function SellerListingDetail({ listingId }: SellerListingDetailProps) {
           <p className="font-body text-lg font-medium leading-7 text-[#484848]">
             Reservation ID: {formatListingReferenceId(v.id)}
           </p>
+
+          {v.status === 'REJECTED' && adminFeedback && (
+            <div
+              className="rounded-xl border border-red-200 bg-red-50/80 p-5 shadow-sm"
+              role="region"
+              aria-label="Review feedback"
+            >
+              <p className="font-sans text-sm font-semibold text-red-900">Feedback from review</p>
+              <p className="mt-2 whitespace-pre-wrap font-body text-sm leading-6 text-red-950/90">
+                {adminFeedback}
+              </p>
+            </div>
+          )}
 
           <div
             className={`flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100 sm:flex-row sm:items-center sm:justify-between ${presentation.borderClass}`}
@@ -270,13 +333,44 @@ export function SellerListingDetail({ listingId }: SellerListingDetailProps) {
                 </div>
               </div>
 
-              <Link
-                href={`/seller/sell-your-car?vehicleId=${v.id}`}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] py-[18px] pl-6 pr-8 font-body text-lg font-medium leading-7 text-white transition hover:opacity-95"
-              >
-                <SquarePen className="h-6 w-6 shrink-0" strokeWidth={1.5} aria-hidden />
-                Edit Listing
-              </Link>
+              {v.status === 'SOLD' ? (
+                <p className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-center font-body text-sm text-[#6B7280]">
+                  This listing is sold. Buyers can no longer purchase it here.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href={`/seller/sell-your-car?vehicleId=${v.id}`}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] py-[18px] pl-6 pr-8 font-body text-lg font-medium leading-7 text-white transition hover:opacity-95"
+                  >
+                    <SquarePen className="h-6 w-6 shrink-0" strokeWidth={1.5} aria-hidden />
+                    Edit listing
+                  </Link>
+
+                  {v.status === 'APPROVED' && (
+                    <button
+                      type="button"
+                      onClick={handleMarkSold}
+                      disabled={markingSold}
+                      className="w-full rounded-lg border-2 border-[#0D7A4A] bg-white py-3 font-body text-base font-medium text-[#0D7A4A] transition hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      {markingSold ? 'Updating…' : 'Mark as sold'}
+                    </button>
+                  )}
+
+                  {v.status === 'REJECTED' && (
+                    <button
+                      type="button"
+                      onClick={handleResubmit}
+                      disabled={resubmitting}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E5E7EB] bg-white py-3 font-body text-base font-medium text-[#111827] transition hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      <Send className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
+                      {resubmitting ? 'Submitting…' : 'Resubmit for review'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </aside>
         </div>

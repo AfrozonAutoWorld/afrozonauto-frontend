@@ -206,6 +206,7 @@ export function useSubmitVehicle() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marketplace-vehicles"] });
+      qc.invalidateQueries({ queryKey: ["seller-listing-detail"] });
     },
   });
 }
