@@ -37,6 +37,9 @@ export function buildActiveFilterChips(
         : baseFilters.condition[0].toUpperCase() + baseFilters.condition.slice(1);
     add('condition', label, () => onFilterChange({ condition: undefined }));
   }
+  if (baseFilters.vehicleType) {
+    add('vehicleType', baseFilters.vehicleType, () => onFilterChange({ vehicleType: undefined }));
+  }
   if (baseFilters.bodyStyle) {
     add('bodyStyle', baseFilters.bodyStyle, () => onFilterChange({ bodyStyle: undefined }));
   }

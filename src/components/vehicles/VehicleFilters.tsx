@@ -18,7 +18,18 @@ interface VehicleFiltersProps {
   resultCount?: number;
 }
 
-const vehicleTypes: VehicleType[] = ['CAR', 'SUV', 'TRUCK', 'VAN', 'SEDAN', 'COUPE', 'HATCHBACK', 'WAGON', 'CONVERTIBLE', 'MOTORCYCLE'];
+const vehicleTypes: Array<{ value: VehicleType; label: string }> = [
+  { value: 'CAR', label: 'Car' },
+  { value: 'SUV', label: 'SUV' },
+  { value: 'TRUCK', label: 'Truck' },
+  { value: 'VAN', label: 'Van' },
+  { value: 'SEDAN', label: 'Sedan' },
+  { value: 'COUPE', label: 'Coupe' },
+  { value: 'HATCHBACK', label: 'Hatchback' },
+  { value: 'WAGON', label: 'Wagon' },
+  { value: 'CONVERTIBLE', label: 'Convertible' },
+  { value: 'MOTORCYCLE', label: 'Motorcycle' },
+];
 
 const conditionOptions = [
   { value: '', label: 'All conditions' },
@@ -27,7 +38,7 @@ const conditionOptions = [
   { value: 'cpo', label: 'CPO (Certified Pre-Owned)' },
 ];
 
-const bodyStyleOptions = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Wagon', 'Van', 'Pickup Truck', 'Truck'];
+const bodyStyleOptions = ['Car', 'SUV', 'Truck', 'Van', 'Minivan'];
 
 const fuelOptions = ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-In Hybrid', 'Flex Fuel'];
 
@@ -130,6 +141,12 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     onFilterChange({ ...filters, bodyStyle: v || undefined });
   };
 
+  const handleVehicleTypeChange = (v: string) => {
+    const allowed = new Set<VehicleType>(vehicleTypes.map((t) => t.value));
+    const next = allowed.has(v as VehicleType) ? (v as VehicleType) : undefined;
+    onFilterChange({ ...filters, vehicleType: next });
+  };
+
   const handleFuelChange = (v: string) => {
     onFilterChange({ ...filters, fuelType: v || undefined });
   };
@@ -209,6 +226,7 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
 
   const categories = useMemo((): FilterCategoryConfig[] => {
     const conditionOpts = conditionOptions.map((o) => ({ value: o.value, label: o.label }));
+    const vehicleTypeOpts = vehicleTypes.map((t) => ({ value: t.value, label: t.label }));
     const makeOpts = makeOptions.map((m) => ({ value: m, label: m }));
     const modelOpts = availableModels.map((m) => ({ value: m, label: m }));
     const mileageOpts = mileagePresets.map((p) => ({ value: p.value, label: p.label }));
@@ -255,6 +273,15 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
             options: conditionOpts,
             value: filters.condition ?? '',
             onChange: handleConditionChange,
+          },
+          {
+            id: 'vehicleType',
+            type: 'radio',
+            title: 'Vehicle type',
+            hasActiveFilters: !!filters.vehicleType,
+            options: vehicleTypeOpts,
+            value: filters.vehicleType ?? undefined,
+            onChange: handleVehicleTypeChange,
           },
           {
             id: 'make',
