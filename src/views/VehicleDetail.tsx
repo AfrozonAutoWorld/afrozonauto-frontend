@@ -357,7 +357,7 @@ export function VehicleDetail() {
           images={images}
           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
         />
-
+      <div className='h-60 md:h-60 lg:h-0'/>
         <VehicleDetailHeader vehicle={vehicle as Vehicle} />
 
         <hr className="my-8 border-[#B8B8B8]" />

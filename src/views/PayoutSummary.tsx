@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -75,13 +75,14 @@ function toNgn(usd: number, rate = 1550) {
 
 function compactVin(vin?: string) {
   if (!vin) return "VIN unavailable";
-  if (vin.length < 6) return `VIN: ${vin}`;
-  return `VIN: ...${vin.slice(-6)}`;
+  if (vin.length <= 4) return "VIN: ****";
+  return `VIN: *************${vin.slice(-4)}`;
 }
 
 export function PayoutSummary() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showManualPaymentModal, setShowManualPaymentModal] = useState(false);
   const [vinCopied, setVinCopied] = useState(false);
   const [selectedPaymentOption, setSelectedPaymentOption] = useState<
@@ -274,7 +275,7 @@ export function PayoutSummary() {
                 <span className="inline-flex rounded-lg bg-[#F0F2F5] px-3 py-1.5 text-sm text-[#546881]">
                   {compactVin(order.vehicleSnapshot?.vin)}
                 </span>
-                <button
+                {/* <button
                   type="button"
                   onClick={handleCopyVin}
                   disabled={!order.vehicleSnapshot?.vin}
@@ -287,7 +288,7 @@ export function PayoutSummary() {
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -490,7 +491,11 @@ export function PayoutSummary() {
           }
           onClose={() => setShowManualPaymentModal(false)}
           orderRef={order.requestNumber || order.id}
-          onStatusUpdated={() => router.push("/marketplace/buyer")}
+          onStatusUpdated={async () => {
+            await queryClient.invalidateQueries({ queryKey: ["orders"] });
+            setShowManualPaymentModal(false);
+            router.push("/marketplace/buyer");
+          }}
         />
       )}
     </div>
@@ -540,7 +545,7 @@ function ManualPaymentModal({
   amountUsd: number;
   orderRef: string;
   onClose: () => void;
-  onStatusUpdated?: () => void;
+  onStatusUpdated?: () => void | Promise<void>;
 }) {
   const { bankAccounts, isLoading: isBankAccountsLoading } = usePlatformBankAccounts();
   const [selectedBankId, setSelectedBankId] = useState("");
@@ -579,14 +584,14 @@ function ManualPaymentModal({
         await ordersApi.updateOrderStatus(orderId, status);
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setBankSelected(true);
       setTimeout(() => setBankSelected(false), 1800);
       showToast({
         type: "success",
         message: "Bank account selected. Order status updated to deposit pending.",
       });
-      onStatusUpdated?.();
+      await onStatusUpdated?.();
     },
     onError: (error: any) => {
       showToast({
@@ -618,13 +623,13 @@ function ManualPaymentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50"
+      className="overflow-y-auto fixed inset-0 z-50 bg-black/50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="manual-payment-title"
     >
-      <div className="flex min-h-full items-center justify-center px-4 py-8 sm:px-6">
-        <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="flex justify-center items-center px-4 py-8 min-h-full sm:px-6">
+        <div className="relative p-6 w-full max-w-lg bg-white rounded-2xl shadow-2xl">
           <div className="flex justify-between items-start mb-5">
           <div>
             <h3 id="manual-payment-title" className="font-sans text-2xl font-bold text-[#1A1A1A]">
@@ -681,7 +686,7 @@ function ManualPaymentModal({
           <div className="space-y-2 rounded-lg bg-[#F8FAFC] p-3">
             <p>Bank: {selectedBank?.bankName || "N/A"}</p>
             <p>Account Name: {selectedBank?.accountName || "N/A"}</p>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex gap-3 justify-between items-center">
               <p>Account Number: {selectedBank?.accountNumber || "N/A"}</p>
               <button
                 type="button"
@@ -691,7 +696,7 @@ function ManualPaymentModal({
                 aria-label={accountCopied ? "Account number copied" : "Copy account number"}
                 title={accountCopied ? "Account number copied" : "Copy account number"}
               >
-                {accountCopied ? <Check className="h-4 w-4 text-[#0D7A4A]" /> : <Copy className="h-4 w-4" />}
+                {accountCopied ? <Check className="h-4 w-4 text-[#0D7A4A]" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -703,11 +708,11 @@ function ManualPaymentModal({
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#0b6840] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {updateStatusMutation.isPending ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <div className="w-4 h-4 rounded-full border-2 border-white animate-spin border-t-transparent" />
             ) : bankSelected ? (
-              <Check className="h-4 w-4" />
+              <Check className="w-4 h-4" />
             ) : (
-              <CreditCard className="h-4 w-4" />
+              <CreditCard className="w-4 h-4" />
             )}
             {updateStatusMutation.isPending
               ? "Updating status..."
@@ -717,11 +722,11 @@ function ManualPaymentModal({
           </button>
           </div>
 
-          <div className="mt-5 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+          <div className="p-3 mt-5 text-xs text-amber-800 bg-amber-50 rounded-lg">
           After transfer, our team will manually review and approve your payment. Status will update on this order page.
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-wrap gap-3 justify-end items-center mt-6">
           <button
             type="button"
             onClick={onClose}

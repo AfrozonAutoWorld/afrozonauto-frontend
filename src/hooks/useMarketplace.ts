@@ -23,13 +23,14 @@ export function useMarketplaceVehicles(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const params = new URLSearchParams();
-  if (scope) params.set("scope", scope);
-  if (status) params.set("status", status);
-
   return useQuery<MarketplaceVehicle[]>({
     queryKey: ["marketplace-vehicles", scope, status],
-    enabled: scope !== "seller" || !!session?.accessToken,
+    // Seller: need session. Admin: stub (real admin list TBD). Public browse: no scope — do not call
+    // /api/marketplace/* (those Next.js routes were never added; listing grid uses apiClient → /vehicles).
+    enabled:
+      scope === "seller"
+        ? !!session?.accessToken
+        : scope === "admin",
     queryFn: async () => {
       if (scope === "admin") {
         return [];
@@ -55,12 +56,7 @@ export function useMarketplaceVehicles(
         return raw.map((row) => mapSellerApiVehicleToMarketplace(row as SellerListingVehicle));
       }
 
-      const res = await fetch(`/api/marketplace/vehicles?${params}`, { headers });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      return res.json();
+      return [];
     },
   });
 }

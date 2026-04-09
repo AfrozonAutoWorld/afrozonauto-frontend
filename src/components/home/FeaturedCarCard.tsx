@@ -176,10 +176,15 @@ export function FeaturedCarCard({
           <h3 className="font-sans font-bold text-[20px] leading-7 text-[#0F172A] w-full">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h3>
-          <div className="flex flex-row gap-6 items-center pb-3 w-full">
-            <div className="flex flex-row gap-1 items-center shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-[#546881]" aria-hidden />
-              <span className="font-body font-normal text-xs leading-4 text-[#546881]">{location}</span>
+          <div className="flex flex-row flex-wrap gap-x-6 gap-y-1 items-center pb-3 w-full min-w-0">
+            <div className="flex flex-row gap-1 items-center min-w-0 flex-1 basis-0">
+              <MapPin className="w-3.5 h-3.5 shrink-0 text-[#546881]" aria-hidden />
+              <span
+                className="font-body font-normal text-xs leading-4 text-[#546881] truncate"
+                title={location}
+              >
+                {location}
+              </span>
             </div>
             <div className="flex flex-row gap-1 items-center shrink-0">
               <Calendar className="w-3.5 h-3.5 text-[#64748B]" aria-hidden />
@@ -187,7 +192,7 @@ export function FeaturedCarCard({
             </div>
             <div className="flex flex-row gap-1 items-center shrink-0">
               <Settings2 className="w-3.5 h-3.5 text-[#64748B]" aria-hidden />
-              <span className="font-body font-normal text-xs leading-4 text-[#546881]">
+              <span className="font-body font-normal text-xs leading-4 text-[#546881] whitespace-nowrap">
                 {vehicle.transmission ?? '—'}
               </span>
             </div>
