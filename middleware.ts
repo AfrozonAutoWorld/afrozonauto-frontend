@@ -91,16 +91,25 @@ export async function middleware(request: NextRequest) {
 
   const role = decoded.role?.toUpperCase() || "BUYER";
 
+  /** `/admin` — backend roles that may use the admin app (legacy `ADMIN` + ops + super). */
+  const canAccessAdminRoutes =
+    role === "ADMIN" ||
+    role === "OPERATIONS_ADMIN" ||
+    role === "SUPER_ADMIN";
+
+  /** `/seller` — staff roles that see “Seller Dashboard” in the main nav (preview / support). */
+  const canAccessSellerRoutesAsStaff =
+    role === "ADMIN" || role === "OPERATIONS_ADMIN" || role === "SUPER_ADMIN";
+
   // Role-based protection
   for (const [allowedRole, routes] of Object.entries(ROLE_ROUTES)) {
     for (const route of routes) {
-      if (
-        pathname.startsWith(route) &&
-        role !== allowedRole &&
-        role !== "SUPER_ADMIN"
-      ) {
-        return NextResponse.redirect(new URL("/unauthorized", request.url));
-      }
+      if (!pathname.startsWith(route)) continue;
+      if (role === allowedRole) continue;
+      if (role === "SUPER_ADMIN") continue;
+      if (route === "/admin" && canAccessAdminRoutes) continue;
+      if (route === "/seller" && canAccessSellerRoutesAsStaff) continue;
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }
 

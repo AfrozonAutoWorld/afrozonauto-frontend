@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ChevronDown, FileText, UploadCloud } from "lucide-react";
 import { useSellerMutations } from "@/hooks/useSellerMutations";
-import type { SellerRegisterInput } from "@/lib/api/seller";
+import { SELLER_REGISTER_AS, type SellerRegisterInput } from "@/lib/api/seller";
 
 type IdentityType = "DRIVERS_LICENSE" | "INTERNATIONAL_PASSPORT" | "NATIONAL_ID";
 
@@ -129,6 +129,7 @@ export function SellerRegisterVerify() {
     email: string;
     phone: string;
     password: string;
+    existingAccount?: boolean;
   } | null>(null);
   const [identificationType, setIdentificationType] =
     useState<IdentityType>("DRIVERS_LICENSE");
@@ -159,6 +160,7 @@ export function SellerRegisterVerify() {
         email: string;
         phone: string;
         password: string;
+        existingAccount?: boolean;
       };
       setDraft(parsed);
     } catch {
@@ -194,6 +196,7 @@ export function SellerRegisterVerify() {
       firstName: draft.firstName,
       lastName: draft.lastName,
       phone: draft.phone,
+      registerAs: SELLER_REGISTER_AS,
       identificationType,
       documents: docs,
     };

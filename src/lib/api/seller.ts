@@ -1,15 +1,26 @@
 import { apiClient } from "./client";
+import { UserRole } from "@/types";
 
 const SELLERS_BASE = "/sellers";
+
+/** Role stored when applying as seller (guest multipart register). */
+export const SELLER_REGISTER_AS = UserRole.SELLER;
 
 type SellerApiResponse = {
   success?: boolean;
   message?: string;
   errors?: string[];
+  data?: { data?: unknown };
 };
 
 export interface SellerCheckEmailInput {
   email: string;
+}
+
+export interface SellerCheckEmailResult {
+  email: string;
+  skipOtp: boolean;
+  emailAlreadyVerified?: boolean;
 }
 
 export interface SellerVerifyTokenInput {
@@ -27,20 +38,34 @@ export interface SellerRegisterInput {
   taxId?: string;
   identificationNumber?: string;
   identificationType?: string;
-  /** For multipart: array of { file: File, documentName: string } */
+  /** Defaults to SELLER for this flow */
+  registerAs?: UserRole;
   documents?: { file: File; documentName: string }[];
 }
 
+function unwrapData<T>(res: { data?: SellerApiResponse }): T | undefined {
+  const root = res.data;
+  const inner = root?.data?.data ?? root?.data;
+  return inner as T | undefined;
+}
+
 export const sellersApi = {
-  /** Step 1: Check email and send verification code (guest) */
-  checkEmail: async (data: SellerCheckEmailInput) => {
+  checkEmail: async (data: SellerCheckEmailInput): Promise<SellerCheckEmailResult> => {
     const res = await apiClient.post<SellerApiResponse>(`${SELLERS_BASE}/check-email`, data);
     if (res.data?.success === false) {
-      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to send verification code");
+      throw new Error(res.data?.message || res.data?.errors?.[0] || "Failed to check email");
     }
+    const payload = unwrapData<SellerCheckEmailResult>(res);
+    if (!payload?.email) {
+      throw new Error("Invalid response from server");
+    }
+    return {
+      email: payload.email,
+      skipOtp: Boolean(payload.skipOtp),
+      emailAlreadyVerified: payload.emailAlreadyVerified,
+    };
   },
 
-  /** Step 2: Verify email with code (guest) */
   verifyToken: async (data: SellerVerifyTokenInput) => {
     const payload = {
       email: data.email,
@@ -52,13 +77,13 @@ export const sellersApi = {
     }
   },
 
-  /** Step 3: Register with profile + document upload (guest) */
   registerWithDocs: async (data: SellerRegisterInput) => {
     const formData = new FormData();
     formData.append("email", data.email);
     formData.append("password", data.password);
     formData.append("firstName", data.firstName);
     formData.append("lastName", data.lastName);
+    formData.append("registerAs", data.registerAs ?? SELLER_REGISTER_AS);
     if (data.phone) formData.append("phone", data.phone);
     if (data.businessName) formData.append("businessName", data.businessName);
     if (data.taxId) formData.append("taxId", data.taxId);

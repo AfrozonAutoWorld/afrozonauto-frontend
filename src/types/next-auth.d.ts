@@ -79,7 +79,13 @@ declare module "next-auth/jwt" {
     emailVerified?: boolean;
     fullName?: string;
     phone?: string;
-    role?: "SUPER_ADMIN" | "ADMIN" | "OPERATION" | "BUYER" | "SELLER";
+    role?:
+      | "BUYER"
+      | "SELLER"
+      | "ADMIN"
+      | "OPERATIONS_ADMIN"
+      | "SUPER_ADMIN"
+      | "AGENT";
     isActive?: boolean;
     isSuspended?: boolean;
     googleId?: string;

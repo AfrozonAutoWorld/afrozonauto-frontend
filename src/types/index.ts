@@ -1,7 +1,10 @@
 export enum UserRole {
   BUYER = "BUYER",
-  ADMIN = "ADMIN",
   SELLER = "SELLER",
+  /** Legacy / alternate JWT value */
+  ADMIN = "ADMIN",
+  OPERATIONS_ADMIN = "OPERATIONS_ADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN",
   AGENT = "AGENT",
 }
 export interface NotificationPreferences {

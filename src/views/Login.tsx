@@ -46,7 +46,8 @@ export function Login() {
           redirect: false,
           email: values.email,
           password: values.password,
-          callbackUrl, // Pass the callback URL to NextAuth
+          callbackUrl,
+          ...(isSellerLogin ? { loginAs: "SELLER" } : {}),
         });
 
 
@@ -128,7 +129,9 @@ export function Login() {
             </div>
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to your account</p>
+          <p className="text-gray-400">
+            {isSellerLogin ? "Sign in as a seller (uses your existing password)" : "Sign in to your account"}
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">

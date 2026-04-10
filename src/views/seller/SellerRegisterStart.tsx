@@ -10,6 +10,10 @@ import {
   isValidInternationalPhone,
   normalizePhoneNumber,
 } from "@/lib/validation/phone";
+import { showToast } from "@/lib/showNotification";
+
+/** After check-email: new account needs OTP + strong password; existing verified email needs password confirmation only. */
+type SellerRegisterPhase = "initial" | "confirm_existing";
 
 export function SellerRegisterStart() {
   const router = useRouter();
@@ -21,6 +25,7 @@ export function SellerRegisterStart() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [phase, setPhase] = useState<SellerRegisterPhase>("initial");
   const [otpOpen, setOtpOpen] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -33,7 +38,7 @@ export function SellerRegisterStart() {
   const hasSpecial = /[^A-Za-z0-9]/.test(password);
   const hasLen = password.length >= 8;
 
-  function validateForm() {
+  function validateBasicFields() {
     const nextErrors: Record<string, string> = {};
     if (firstName.trim().length < 2) nextErrors.firstName = "First name is required";
     if (lastName.trim().length < 2) nextErrors.lastName = "Last name is required";
@@ -45,26 +50,89 @@ export function SellerRegisterStart() {
     if (!isValidInternationalPhone(normalizePhoneNumber(phone))) {
       nextErrors.phone = "Enter a valid phone number with country code (e.g. +234 90883293)";
     }
-    if (!hasLen || !hasUpper || !hasNumber || !hasSpecial) {
-      nextErrors.password =
-        "Password must be at least 8 chars and include uppercase, number, and special character";
-    }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
 
+  /** Strong password for brand-new accounts (OTP path). */
+  function validateNewAccountPassword() {
+    const nextErrors: Record<string, string> = {};
+    if (!hasLen || !hasUpper || !hasNumber || !hasSpecial) {
+      nextErrors.password =
+        "Password must be at least 8 chars and include uppercase, number, and special character";
+    }
+    setErrors((prev) => ({ ...prev, ...nextErrors }));
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  function resetPhaseIfEmailChanged() {
+    if (phase === "confirm_existing") {
+      setPhase("initial");
+      setPassword("");
+      setErrors((e) => {
+        const { password: _, ...rest } = e;
+        return rest;
+      });
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateBasicFields()) return;
+
+    if (phase === "confirm_existing") {
+      if (!password.trim()) {
+        setErrors((prev) => ({
+          ...prev,
+          password: "Enter the password you use to sign in with this email.",
+        }));
+        return;
+      }
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          SELLER_SIGNUP_DRAFT_KEY,
+          JSON.stringify({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            phone: normalizePhoneNumber(phone),
+            password: password.trim(),
+            existingAccount: true,
+          }),
+        );
+      }
+      router.push("/seller/register/verify");
+      return;
+    }
+
     setIsSendingOtp(true);
     setOtpError("");
-
     try {
-      await checkEmail.mutateAsync({ email: email.trim() });
+      const result = await checkEmail.mutateAsync({ email: email.trim() });
+
+      if (result.skipOtp) {
+        setPhase("confirm_existing");
+        setPassword("");
+        setErrors((e) => {
+          const { password: _, ...rest } = e;
+          return rest;
+        });
+        showToast({
+          type: "success",
+          message: "This email is already verified. Enter your account password below to continue.",
+        });
+        return;
+      }
+
+      if (!validateNewAccountPassword()) {
+        return;
+      }
+
+      showToast({ type: "success", message: "Verification code sent to your email!" });
       setOtpCode("");
       setOtpOpen(true);
     } catch {
-      // toast handled in mutation hook
+      // toast from mutation on error
     } finally {
       setIsSendingOtp(false);
     }
@@ -89,6 +157,7 @@ export function SellerRegisterStart() {
             email: email.trim(),
             phone: normalizePhoneNumber(phone),
             password,
+            existingAccount: false,
           }),
         );
       }
@@ -107,12 +176,17 @@ export function SellerRegisterStart() {
     setOtpError("");
     try {
       await checkEmail.mutateAsync({ email: email.trim() });
+      showToast({ type: "success", message: "Verification code sent to your email!" });
     } catch {
-      // toast handled in mutation hook
+      // toast from mutation
     } finally {
       setIsResendingOtp(false);
     }
   };
+
+  const isConfirmExisting = phase === "confirm_existing";
+  const primaryCta =
+    isConfirmExisting ? "Continue to upload documents" : "Create Account";
 
   return (
     <div className="mx-auto w-full max-w-[560px]">
@@ -124,6 +198,14 @@ export function SellerRegisterStart() {
       </p>
 
       <div className="my-6 h-px w-full bg-[#E5E7EB]" />
+
+      {isConfirmExisting && (
+        <div className="mb-5 rounded-xl border border-[#0D7A4A]/30 bg-[#E6F6F4] px-4 py-3 font-body text-sm text-[#0a633e]">
+          This email already has an Afrozon account. Enter the{" "}
+          <span className="font-semibold">same password you use to sign in</span> — we will not
+          change or replace it. Then continue to upload your seller documents.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -170,7 +252,10 @@ export function SellerRegisterStart() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              resetPhaseIfEmailChanged();
+            }}
             placeholder="e.g. owenbiobele@gmail.com"
             className={`h-11 w-full rounded-lg border px-3.5 font-body text-base ${
               errors.email ? "border-red-300" : "border-[#E5E7EB]"
@@ -210,7 +295,7 @@ export function SellerRegisterStart() {
             htmlFor="seller-register-password"
             className="mb-2 block font-body text-sm font-medium text-[#111827]"
           >
-            Password
+            {isConfirmExisting ? "Confirm your password" : "Create a password"}
           </label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9CA3AF]" aria-hidden />
@@ -219,8 +304,10 @@ export function SellerRegisterStart() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a strong password"
-              autoComplete="new-password"
+              placeholder={
+                isConfirmExisting ? "Your existing account password" : "Create a strong password"
+              }
+              autoComplete={isConfirmExisting ? "current-password" : "new-password"}
               className={`h-11 w-full rounded-lg border pl-11 pr-12 font-body text-base outline-none focus:border-[#0D7A4A] focus:ring-1 focus:ring-[#0D7A4A] ${
                 errors.password ? "border-red-300" : "border-[#E5E7EB]"
               }`}
@@ -234,28 +321,30 @@ export function SellerRegisterStart() {
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <div className="mt-2 space-y-1">
-            <p className="font-body text-xs text-[#6B7280]">
-              Your password must contain at least:
-            </p>
-            {[
-              { ok: hasLen, label: "8 characters" },
-              { ok: hasUpper, label: "1 uppercase letter" },
-              { ok: hasNumber, label: "1 number" },
-              { ok: hasSpecial, label: "1 special character (e.g. @, #, $, !)" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-1.5 text-xs">
-                {item.ok ? (
-                  <Check className="h-3.5 w-3.5 text-[#0D7A4A]" />
-                ) : (
-                  <X className="h-3.5 w-3.5 text-[#6B7280]" />
-                )}
-                <span className={item.ok ? "text-[#0D7A4A]" : "text-[#6B7280]"}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          {!isConfirmExisting && (
+            <div className="mt-2 space-y-1">
+              <p className="font-body text-xs text-[#6B7280]">
+                Your password must contain at least:
+              </p>
+              {[
+                { ok: hasLen, label: "8 characters" },
+                { ok: hasUpper, label: "1 uppercase letter" },
+                { ok: hasNumber, label: "1 number" },
+                { ok: hasSpecial, label: "1 special character (e.g. @, #, $, !)" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-1.5 text-xs">
+                  {item.ok ? (
+                    <Check className="h-3.5 w-3.5 text-[#0D7A4A]" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-[#6B7280]" />
+                  )}
+                  <span className={item.ok ? "text-[#0D7A4A]" : "text-[#6B7280]"}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {errors.password && (
             <p className="mt-1 text-xs text-red-600">{errors.password}</p>
           )}
@@ -266,13 +355,13 @@ export function SellerRegisterStart() {
           disabled={isSendingOtp}
           className="mt-2 h-12 w-full rounded-lg bg-[#0D7A4A] font-body text-lg font-medium text-white transition-colors hover:bg-[#0a633e]"
         >
-          {isSendingOtp ? "Sending OTP..." : "Create Account"}
+          {isSendingOtp ? "Checking email..." : primaryCta}
         </button>
       </form>
 
       <p className="mt-5 text-center font-body text-sm text-[#9CA3AF]">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-[#0D7A4A] hover:text-[#0a633e]">
+        <Link href="/login?as=seller" className="font-medium text-[#0D7A4A] hover:text-[#0a633e]">
           Sign In
         </Link>
       </p>

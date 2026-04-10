@@ -16,7 +16,7 @@ export function useSellerMutations() {
       if (typeof window !== "undefined") {
         sessionStorage.setItem(SELLER_EMAIL_KEY, variables.email);
       }
-      showToast({ type: "success", message: "Verification code sent to your email!" });
+      // Success toasts are shown in SellerRegisterStart (OTP vs existing-account flows differ).
     },
     onError: (err: Error) => {
       showToast({ type: "error", message: err.message || "Failed to send verification code" });

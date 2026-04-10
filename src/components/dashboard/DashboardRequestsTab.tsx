@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Car, ChevronRight, AlertCircle, MoreVertical } from 'lucide-react';
+import { Car, ChevronRight, AlertCircle } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/pricingCalculator';
 import { useOrders } from '@/hooks/useOrderQueries';
 import { Paginator, PAGE_SIZE } from './Paginator';
@@ -12,7 +12,7 @@ import { VehicleOrder } from '@/lib/api/orders';
 export function DashboardRequestsTab() {
   const [ordersPage, setOrdersPage] = useState(1);
   const { orders, isLoading: ordersLoading, isError: ordersError } = useOrders();
-console.log(orders);
+
   const sortedOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
     return [...orders].sort(
@@ -107,11 +107,15 @@ console.log(orders);
                   key={String(order.id)}
                   className="grid grid-cols-[2.2fr_1.1fr_1fr_1fr_1fr_0.9fr] gap-6 border-b border-[#E3EBF0] px-4 py-4"
                 >
-                  <div className="flex gap-3 items-center min-w-0">
+                  <Link
+                    href={`/marketplace/buyer/order/${order.id}`}
+                    className="flex gap-3 items-center min-w-0 rounded-lg -m-1 p-1 text-left transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                    aria-label={`View order: ${vehicleName}, ${order.requestNumber || order.id}`}
+                  >
                     <img
                       src={vehicleImage}
-                      alt={vehicleName}
-                      className="h-[60px] w-20 rounded-lg object-cover"
+                      alt=""
+                      className="h-[60px] w-20 shrink-0 rounded-lg object-cover"
                     />
                     <div className="min-w-0">
                       <p className="truncate font-body text-xs font-semibold text-[#343A40]">
@@ -121,7 +125,7 @@ console.log(orders);
                         #{order.requestNumber || order.id}
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="flex items-center">
                     <span

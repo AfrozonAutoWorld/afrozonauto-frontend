@@ -20,13 +20,21 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
+        loginAs: { label: "Login as role", type: "text" },
       },
       async authorize(credentials) {
         try {
-          const payload = {
+          const payload: {
+            email?: string;
+            password?: string;
+            loginAs?: string;
+          } = {
             email: credentials?.email,
             password: credentials?.password,
           };
+          if (credentials?.loginAs?.trim()) {
+            payload.loginAs = credentials.loginAs.trim();
+          }
 
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`,
