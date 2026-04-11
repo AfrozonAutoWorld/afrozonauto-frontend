@@ -100,6 +100,11 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
         baseFilters?.mileageMax ?? '',
         baseFilters?.state ?? '',
         baseFilters?.section ?? '',
+        baseFilters?.featured ?? '',
+        baseFilters?.recommended ?? '',
+        baseFilters?.specialty ?? '',
+        baseFilters?.source ?? '',
+        baseFilters?.includeApi ?? '',
       ].join('|'),
     [
       searchParamsString,
@@ -123,6 +128,11 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
       baseFilters?.mileageMax,
       baseFilters?.state,
       baseFilters?.section,
+      baseFilters?.featured,
+      baseFilters?.recommended,
+      baseFilters?.specialty,
+      baseFilters?.source,
+      baseFilters?.includeApi,
     ]
   );
 

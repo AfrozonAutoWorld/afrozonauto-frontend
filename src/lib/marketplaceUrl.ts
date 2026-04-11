@@ -39,6 +39,9 @@ export function buildMarketplaceQueryString(
   if (filters.priceMin != null) p.set('priceMin', String(filters.priceMin));
   if (filters.priceMax != null) p.set('priceMax', String(filters.priceMax));
   if (filters.mileageMax != null) p.set('mileageMax', String(filters.mileageMax));
+  if (filters.featured === true) p.set('featured', 'true');
+  if (filters.source) p.set('source', filters.source);
+  if (filters.includeApi === false) p.set('includeApi', 'false');
   p.set('sort', sortBy);
   return p.toString();
 }
@@ -80,6 +83,9 @@ export function parseMarketplaceSearchParams(
   const yearMax = searchParams.get('yearMax');
   const mileageMax = searchParams.get('mileageMax');
   const sortParam = searchParams.get('sort');
+  const featured = searchParams.get('featured');
+  const source = searchParams.get('source');
+  const includeApi = searchParams.get('includeApi');
 
   const filters: Partial<FiltersForUrl> = {
     ...(q && { search: q }),
@@ -101,6 +107,9 @@ export function parseMarketplaceSearchParams(
     ...(yearMin != null && { yearMin: Number(yearMin) }),
     ...(yearMax != null && { yearMax: Number(yearMax) }),
     ...(mileageMax != null && { mileageMax: Number(mileageMax) }),
+    ...(featured === 'true' && { featured: true }),
+    ...(source && { source: source as FiltersForUrl['source'] }),
+    ...(includeApi === 'false' && { includeApi: false }),
   };
 
   const sort: SortOption =

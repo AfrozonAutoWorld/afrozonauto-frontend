@@ -118,6 +118,11 @@ function vehiclesQueryKey(filters?: VehicleFilters): unknown[] {
     filters.priceMin ?? "",
     filters.priceMax ?? "",
     filters.state ?? "",
+    filters.featured ?? "",
+    filters.recommended ?? "",
+    filters.specialty ?? "",
+    filters.source ?? "",
+    filters.includeApi ?? "",
   ];
 }
 
