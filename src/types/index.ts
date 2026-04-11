@@ -105,7 +105,7 @@ type FuelType = "Hybrid" | "Regular Unleaded" | "Diesel" | "Electric";
 type DrivetrainType = "FWD" | "RWD" | "AWD" | "4WD";
 type VehicleStatus = "AVAILABLE" | "SOLD" | "PENDING" | "RESERVED";
 type ApiSyncStatus = "PENDING" | "SYNCED" | "FAILED";
-type VehicleSource = "API" | "MANUAL";
+type VehicleSource = "API" | "MANUAL" | "SELLER" | "IMPORTED";
 interface VehicleDetails {
   confidence?: number;
   cylinders?: number;
@@ -199,6 +199,7 @@ export interface Vehicle {
   year: number;
   priceUsd: number;
   vehicleType: VehicleType;
+  bodyStyle?: string;
   exteriorColor?: string;
   interiorColor?: string;
   transmission: TransmissionType;
@@ -210,6 +211,8 @@ export interface Vehicle {
   dealerCity: string;
   dealerZipCode: string;
   images: string[];
+  /** Primary image; mirrors DB / normalized from Auto.dev retail primary when missing */
+  thumbnail?: string;
   features: string[];
   source: VehicleSource;
   apiProvider: string;
@@ -225,6 +228,12 @@ export interface Vehicle {
   torque?: number;
   createdAt: string;
   updatedAt: string;
+  /** Admin / marketing flags from API */
+  featured?: boolean;
+  specialty?: boolean;
+  recommended?: boolean;
+  /** True when row is an Auto.dev-only temp listing (not persisted as full DB doc) */
+  isTemporaryListing?: boolean;
 }
 
 export interface VehicleCategory {

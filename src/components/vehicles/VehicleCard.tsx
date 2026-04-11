@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Calendar, Heart, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Heart, ArrowRight, ImageOff } from 'lucide-react';
 import { Vehicle } from '../../types';
 import { formatCurrency } from '../../lib/pricingCalculator';
 import { useState } from 'react';
@@ -23,18 +23,28 @@ interface VehicleCardProps {
 export function VehicleCard({ vehicle, onSave, isSaved }: VehicleCardProps) {
   const primaryImage = getPrimaryImage(vehicle);
   const [imageFailed, setImageFailed] = useState(false);
-
-  if (!primaryImage || imageFailed) return null;
+  const showPhoto = Boolean(primaryImage) && !imageFailed;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+        {showPhoto && primaryImage ? (
         <img
           src={primaryImage}
           alt={`${vehicle?.year ?? ''} ${vehicle?.make ?? ''} ${vehicle?.model ?? 'Vehicle'}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={() => setImageFailed(true)}
         />
+        ) : (
+          <div
+            className="flex absolute inset-0 flex-col gap-2 justify-center items-center bg-gradient-to-b from-[#E8ECF0] to-[#D8DEE6] text-[#64748B]"
+            role="img"
+            aria-label="No vehicle photo available"
+          >
+            <ImageOff className="w-10 h-10 opacity-70" strokeWidth={1.25} aria-hidden />
+            <span className="font-body text-xs font-medium">Photo unavailable</span>
+          </div>
+        )}
         <div className="absolute top-3 left-3">
           <span className="bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded">
             {vehicle?.vehicleType ?? 'Vehicle'}

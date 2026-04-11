@@ -62,7 +62,11 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
             : sortBy === 'year_desc'
               ? 'year'
               : 'mileage',
-      sortOrder: sortBy === 'price_desc' || sortBy === 'year_desc' ? 'desc' : 'asc',
+      // Newest = createdAt desc. Price/year use desc only for *_desc options; otherwise asc.
+      sortOrder:
+        sortBy === 'newest' || sortBy === 'price_desc' || sortBy === 'year_desc'
+          ? 'desc'
+          : 'asc',
     }));
   }, [sortBy]);
 

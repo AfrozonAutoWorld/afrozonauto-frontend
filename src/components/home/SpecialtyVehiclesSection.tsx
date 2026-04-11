@@ -30,10 +30,10 @@ export function SpecialtyVehiclesSection({
   const x = useMotionValue(0);
   const [maxScroll, setMaxScroll] = useState(0);
 
-  const normalized = vehicles.map((v) =>
-    'vehicle' in v ? v.vehicle : v
+  const rows: RecommendedVehicle[] = vehicles.map((v) =>
+    'vehicle' in v ? v : { vehicle: v },
   );
-  const displayList = normalized.slice(0, 12);
+  const displayList = rows.slice(0, 12);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -101,7 +101,7 @@ export function SpecialtyVehiclesSection({
                 dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
                 whileTap={{ cursor: 'grabbing' }}
               >
-                {displayList.map((vehicle) => {
+                {displayList.map(({ vehicle, reason }) => {
                   const landed = showLandedPrice
                     ? calculateLandedCost(
                         vehicle.priceUsd ?? 0,
@@ -118,6 +118,7 @@ export function SpecialtyVehiclesSection({
                         vehicle={vehicle}
                         landedPriceNgn={landed}
                         badge="specialty"
+                        recommendationReason={reason}
                       />
                     </div>
                   );

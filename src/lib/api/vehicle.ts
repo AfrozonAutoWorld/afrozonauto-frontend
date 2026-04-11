@@ -1,5 +1,9 @@
 import { apiClient } from "./client";
 import {
+  normalizeVehicleForUi,
+  normalizeVehiclesForUi,
+} from "../vehicleNormalize";
+import {
   Vehicle,
   VehicleCategory,
   VehicleFilters,
@@ -88,8 +92,9 @@ const defaultMeta: VehicleMeta = {
 const transformVehiclesResponse = (
   apiResponse?: VehiclesApiResponse | null,
 ): VehicleListResponse => {
+  const raw = apiResponse?.data?.data ?? [];
   return {
-    vehicles: apiResponse?.data?.data ?? [],
+    vehicles: normalizeVehiclesForUi(raw),
     meta: apiResponse?.data?.meta ?? defaultMeta,
   };
 };
@@ -136,7 +141,9 @@ export const vehiclesApi = {
       const response = await apiClient.get<SingleVehicleRes<Vehicle>>(
         `/vehicles/${id}`,
       );
-      return response?.data?.data?.data ?? response?.data?.data;
+      const raw =
+        response?.data?.data?.data ?? response?.data?.data;
+      return normalizeVehicleForUi(raw);
     } catch (error) {
       console.error(`Error fetching vehicle ${id}:`, error);
       throw new Error(`Failed to fetch vehicle with ID: ${id}`);
@@ -156,7 +163,8 @@ export const vehiclesApi = {
         payload,
       );
 
-      return response?.data?.data ?? response?.data;
+      const raw = response?.data?.data ?? response?.data;
+      return normalizeVehicleForUi(raw);
     } catch (error) {
       console.error("Error saving vehicle:", error);
       throw new Error("Failed to save vehicle");
@@ -184,7 +192,8 @@ export const vehiclesApi = {
       "/vehicles/trending",
     );
     const payload = response?.data?.data;
-    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+    const raw = Array.isArray(payload) ? payload : (payload?.data ?? []);
+    return normalizeVehiclesForUi(raw);
   },
 
   /** Recommended for you: admin-curated; when logged in, includes saved vehicles with reason "You saved this". */
@@ -196,7 +205,11 @@ export const vehiclesApi = {
       message: string;
     }>("/vehicles/recommended", { params });
     const payload = response?.data?.data;
-    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+    const raw = Array.isArray(payload) ? payload : (payload?.data ?? []);
+    return raw.map((row) => ({
+      ...row,
+      vehicle: normalizeVehicleForUi(row.vehicle),
+    }));
   },
 
   /** Specialty vehicles rail: rule-driven + DB specialty flag. */
@@ -208,7 +221,11 @@ export const vehiclesApi = {
       message: string;
     }>("/vehicles/specialty", { params });
     const payload = response?.data?.data;
-    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+    const raw = Array.isArray(payload) ? payload : (payload?.data ?? []);
+    return raw.map((row) => ({
+      ...row,
+      vehicle: normalizeVehicleForUi(row.vehicle),
+    }));
   },
 
   getCategories: async (): Promise<VehicleCategory[]> => {
@@ -227,7 +244,11 @@ export const vehiclesApi = {
       message: string;
     }>("/vehicles/saved");
     const payload = response?.data?.data;
-    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+    const raw = Array.isArray(payload) ? payload : (payload?.data ?? []);
+    return raw.map((row) => ({
+      ...row,
+      vehicle: normalizeVehicleForUi(row.vehicle),
+    }));
   },
 
   /** Add vehicle to saved list (auth required). Vehicle must exist in DB; use saveVehicle first for API-only listings. */

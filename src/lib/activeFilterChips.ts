@@ -75,6 +75,12 @@ export function buildActiveFilterChips(
       () => onFilterChange({ mileageMax: undefined })
     );
   }
+  if (baseFilters.featured === true) {
+    add('featured', 'Featured only', () => onFilterChange({ featured: undefined }));
+  }
+  if (baseFilters.source) {
+    add('source', `Source: ${baseFilters.source}`, () => onFilterChange({ source: undefined }));
+  }
 
   return chips;
 }

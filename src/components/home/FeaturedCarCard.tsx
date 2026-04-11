@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Settings2, Check, ArrowRight, Lightbulb, Heart, Star } from 'lucide-react';
+import { MapPin, Calendar, Settings2, Check, ArrowRight, Lightbulb, Heart, Star, ImageOff } from 'lucide-react';
 import type { Vehicle } from '@/types';
 import { formatCurrency } from '@/lib/pricingCalculator';
 import { getPrimaryImage } from '@/lib/vehicleUtils';
@@ -120,8 +120,7 @@ export function FeaturedCarCard({
 }: FeaturedCarCardProps) {
   const primaryImage = getPrimaryImage(vehicle);
   const [imageFailed, setImageFailed] = useState(false);
-
-  if (!primaryImage || imageFailed) return null;
+  const showPhoto = Boolean(primaryImage) && !imageFailed;
 
   const location = [vehicle.dealerCity, vehicle.dealerState].filter(Boolean).join(', ') || '—';
   const href = `/marketplace/${vehicle.id}`;
@@ -139,6 +138,7 @@ export function FeaturedCarCard({
     <article className="box-border flex flex-col items-start w-full max-w-[400px] bg-white border border-[#F1F5F9] rounded-2xl shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden isolate">
       {/* Image container */}
       <div className="relative w-full aspect-[398/215] flex-none bg-gray-100 shrink-0">
+        {showPhoto && primaryImage ? (
         <Image
           src={primaryImage}
           fill
@@ -147,6 +147,16 @@ export function FeaturedCarCard({
           className="object-cover"
           onError={() => setImageFailed(true)}
         />
+        ) : (
+          <div
+            className="flex absolute inset-0 flex-col gap-2 justify-center items-center bg-gradient-to-b from-[#E8ECF0] to-[#D8DEE6] text-[#64748B]"
+            role="img"
+            aria-label="No vehicle photo available"
+          >
+            <ImageOff className="w-10 h-10 opacity-70" strokeWidth={1.25} aria-hidden />
+            <span className="font-body text-xs font-medium">Photo unavailable</span>
+          </div>
+        )}
         <VehicleImageTags vehicle={vehicle} />
         {badgeElement}
         {onSaveClick != null && (
