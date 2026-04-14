@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Car, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Car, Mail, Lock, Eye, EyeOff, AlertCircle, User, Store } from 'lucide-react';
 import { useForm } from '../hooks/useForm';
 import { loginSchema } from '../lib/validation/auth.schema';
 import { signIn, useSession } from "next-auth/react";
@@ -19,9 +19,23 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Get callback URL from query params
-  const callbackUrl = searchParams.get('callbackUrl') || '/marketplace/buyer';
-  const isSellerLogin = searchParams.get('as') === 'seller';
+  const asParam = searchParams.get('as');
+  const [loginAs, setLoginAs] = useState<'BUYER' | 'SELLER'>(() =>
+    asParam === 'seller' ? 'SELLER' : 'BUYER',
+  );
+
+  useEffect(() => {
+    if (asParam === 'seller') setLoginAs('SELLER');
+    else if (asParam === 'buyer') setLoginAs('BUYER');
+  }, [asParam]);
+
+  const explicitCallback = searchParams.get('callbackUrl');
+  const callbackUrl = useMemo(() => {
+    if (explicitCallback) return explicitCallback;
+    return loginAs === 'SELLER' ? '/seller' : '/marketplace/buyer';
+  }, [explicitCallback, loginAs]);
+
+  const isSellerLogin = loginAs === 'SELLER';
   const forgotPasswordHref = isSellerLogin
     ? '/seller/forgot-password'
     : '/forgot-password';
@@ -47,7 +61,7 @@ export function Login() {
           email: values.email,
           password: values.password,
           callbackUrl,
-          ...(isSellerLogin ? { loginAs: "SELLER" } : {}),
+          loginAs,
         });
 
 
@@ -130,7 +144,7 @@ export function Login() {
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
           <p className="text-gray-400">
-            {isSellerLogin ? "Sign in as a seller (uses your existing password)" : "Sign in to your account"}
+            Choose how you want to use the platform, then sign in with your email and password.
           </p>
         </div>
 
@@ -145,6 +159,49 @@ export function Login() {
           )}
 
           <form onSubmit={form.handleSubmit} className="space-y-5">
+            <div>
+              <span className="block text-sm font-medium text-gray-700 mb-2">
+                Sign in as
+              </span>
+              <div
+                className="grid grid-cols-2 gap-3"
+                role="radiogroup"
+                aria-label="Account type"
+              >
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => setLoginAs('BUYER')}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-colors disabled:opacity-50 ${
+                    loginAs === 'BUYER'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <User className="h-6 w-6" aria-hidden />
+                  Buyer
+                  <span className="text-xs font-normal text-gray-500">Browse and buy</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => setLoginAs('SELLER')}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-colors disabled:opacity-50 ${
+                    loginAs === 'SELLER'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Store className="h-6 w-6" aria-hidden />
+                  Seller
+                  <span className="text-xs font-normal text-gray-500">List and manage</span>
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Your account must include this role. If login fails, switch the other option or contact support.
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
