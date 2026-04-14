@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { Car, Package, Download } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/pricingCalculator';
 import type { Order } from '@/lib/api/orders';
+import {
+  orderHasProcessingPayment,
+  sumPaymentsTowardPaid,
+} from '@/lib/orderPaymentUtils';
 
 type DepositPendingOrderViewProps = {
   order: Order;
@@ -37,7 +41,10 @@ export function DepositPendingOrderView({
 }: Readonly<DepositPendingOrderViewProps>) {
   const vehicleName = getVehicleName(order);
   const vehicleImage = getVehicleImage(order);
-  const exchangeRate = 1550;
+  const exchangeRate =
+    typeof order.exchangeRate === 'number' && order.exchangeRate > 0
+      ? order.exchangeRate
+      : 1550;
 
   const totalUsd =
     order.paymentBreakdown?.totalUsd ??
@@ -48,16 +55,13 @@ export function DepositPendingOrderView({
     order.totalLandedCostLocal ??
     toNgn(totalUsd, exchangeRate);
 
-  const paidUsd =
-    order.payments?.reduce((sum, payment) => {
-      return payment.status?.toUpperCase() === 'COMPLETED'
-        ? sum + (payment.amountUsd ?? payment.amount_usd ?? 0)
-        : sum;
-    }, 0) ?? 0;
+  const paidUsd = sumPaymentsTowardPaid(order.payments);
   const paidNgn = toNgn(paidUsd, exchangeRate);
   const balanceNgn = Math.max(totalNgn - paidNgn, 0);
   const progressPercent =
     totalNgn > 0 ? Math.min(100, Math.round((paidNgn / totalNgn) * 100)) : 0;
+
+  const hasProcessingPayment = orderHasProcessingPayment(order.payments);
 
   const breakdown = order.paymentBreakdown?.breakdown;
   const dealerParts = [
@@ -150,10 +154,15 @@ export function DepositPendingOrderView({
             <Row label="Paid" value={formatCurrency(paidNgn, 'NGN')} valueClassName="text-[#0D7A4A] font-semibold" />
             <div className="h-2.5 w-full rounded-full bg-[#D9D9D9]">
               <div
-                className="h-2.5 rounded-full bg-[#0D7A4A]"
+                className="h-2.5 rounded-full bg-[#0D7A4A] transition-[width] duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+            {hasProcessingPayment && (
+              <p className="text-xs text-[#6B7280]">
+                Includes at least one payment pending admin verification (still counts toward paid here).
+              </p>
+            )}
             <Row label="Balance" value={formatCurrency(balanceNgn, 'NGN')} valueClassName="text-[#D94B4B] font-semibold" />
           </div>
 

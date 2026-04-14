@@ -21,6 +21,7 @@ import { GradientPageBar } from '@/components/ui/GradientPageBar';
 import { formatCurrency, formatDate } from '../lib/pricingCalculator';
 import { useInitializePayment } from '@/hooks/usePaymentMutation';
 import { useOrder } from '@/hooks/useOrderQueries';
+import { sumPaymentsTowardPaid } from '@/lib/orderPaymentUtils';
 
 function getOrderPrimaryImage(order: any): string {
   const fallbackImage = 'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=800';
@@ -243,11 +244,7 @@ export function RequestDetail() {
 
   const depositAmount = order.depositAmountUsd ?? order.paymentBreakdown?.totalUsedDeposit ?? 0;
 
-  const totalPaid = order.payments?.reduce((sum: number, payment: any) => {
-    return payment.status?.toUpperCase() === 'COMPLETED'
-      ? sum + (payment.amountUsd ?? payment.amount_usd ?? 0)
-      : sum;
-  }, 0) ?? 0;
+  const totalPaid = sumPaymentsTowardPaid(order.payments);
 
   const remainingBalance = Math.max(totalCost - totalPaid, 0);
 

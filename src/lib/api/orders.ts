@@ -204,6 +204,8 @@ export interface Order {
   totalLandedCostUsd: number | null;
   totalLandedCostLocal: number | null;
   localCurrency: string | null;
+  exchangeRate?: number | null;
+  exchangeRateDate?: string | null;
   costBreakdown: {
     vehicle_price: number;
     sourcing_fee: number;
