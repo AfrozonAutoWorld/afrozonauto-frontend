@@ -68,6 +68,9 @@ const buildQueryString = (filters?: VehicleFilters): string => {
   };
 
   Object.entries(filters).forEach(([key, value]) => {
+    if (key === "browse") {
+      return;
+    }
     if (key === "fuelType") {
       if (value !== undefined && value !== null && value !== "") params.append("fuel", String(value));
       return;
@@ -196,6 +199,27 @@ export const vehiclesApi = {
     return normalizeVehiclesForUi(raw);
   },
 
+  /** Paginated trending (same ordering as home rail). */
+  getTrendingPaginated: async (page: number, limit: number = 24): Promise<VehicleListResponse> => {
+    const response = await apiClient.get(`/vehicles/trending`, { params: { page, limit } });
+    const envelope = (response as any)?.data?.data;
+    const raw = Array.isArray(envelope) ? envelope : (envelope?.data ?? []);
+    const m = Array.isArray(envelope) ? undefined : envelope?.meta;
+    return {
+      vehicles: normalizeVehiclesForUi(raw),
+      meta: {
+        page: m?.page ?? page,
+        limit: m?.limit ?? limit,
+        total: m?.total ?? raw.length,
+        pages: m?.pages ?? 1,
+        fromApi: 0,
+        filteredCount: 0,
+        hasMore: m?.hasMore ?? false,
+        apiUsed: false,
+      },
+    };
+  },
+
   /** Recommended for you: admin-curated; when logged in, includes saved vehicles with reason "You saved this". */
   getRecommended: async (limit?: number): Promise<Array<{ vehicle: Vehicle; reason?: string }>> => {
     const params = limit != null ? { limit } : undefined;
@@ -226,6 +250,67 @@ export const vehiclesApi = {
       ...row,
       vehicle: normalizeVehicleForUi(row.vehicle),
     }));
+  },
+
+  /** Paginated recommended browse (same blend as home rail). */
+  getRecommendedPaginated: async (page: number, limit: number = 24): Promise<VehicleListResponse> => {
+    const response = await apiClient.get("/vehicles/recommended", { params: { page, limit } });
+    const envelope = (response as any)?.data?.data;
+    const rows = Array.isArray(envelope) ? envelope : (envelope?.data ?? []);
+    const m = Array.isArray(envelope) ? undefined : envelope?.meta;
+    const vehicles = rows.map((row: { vehicle: Vehicle }) => normalizeVehicleForUi(row.vehicle));
+    return {
+      vehicles,
+      meta: {
+        page: m?.page ?? page,
+        limit: m?.limit ?? limit,
+        total: m?.total ?? vehicles.length,
+        pages: m?.pages ?? 1,
+        fromApi: 0,
+        filteredCount: 0,
+        hasMore: m?.hasMore ?? false,
+        apiUsed: false,
+      },
+    };
+  },
+
+  /** Paginated specialty browse (same blend as home rail). */
+  getSpecialtyPaginated: async (page: number, limit: number = 24): Promise<VehicleListResponse> => {
+    const response = await apiClient.get("/vehicles/specialty", { params: { page, limit } });
+    const envelope = (response as any)?.data?.data;
+    const rows = Array.isArray(envelope) ? envelope : (envelope?.data ?? []);
+    const m = Array.isArray(envelope) ? undefined : envelope?.meta;
+    const vehicles = rows.map((row: { vehicle: Vehicle }) => normalizeVehicleForUi(row.vehicle));
+    return {
+      vehicles,
+      meta: {
+        page: m?.page ?? page,
+        limit: m?.limit ?? limit,
+        total: m?.total ?? vehicles.length,
+        pages: m?.pages ?? 1,
+        fromApi: 0,
+        filteredCount: 0,
+        hasMore: m?.hasMore ?? false,
+        apiUsed: false,
+      },
+    };
+  },
+
+  getRailPage: async (
+    mode: "trending" | "recommended" | "specialty",
+    page: number,
+    limit: number = 24,
+  ): Promise<VehicleListResponse> => {
+    switch (mode) {
+      case "trending":
+        return vehiclesApi.getTrendingPaginated(page, limit);
+      case "recommended":
+        return vehiclesApi.getRecommendedPaginated(page, limit);
+      case "specialty":
+        return vehiclesApi.getSpecialtyPaginated(page, limit);
+      default:
+        return { vehicles: [], meta: { ...defaultMeta, page, limit } };
+    }
   },
 
   getCategories: async (): Promise<VehicleCategory[]> => {

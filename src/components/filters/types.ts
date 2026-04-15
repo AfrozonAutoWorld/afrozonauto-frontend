@@ -45,6 +45,7 @@ export interface FilterGroupRadio extends FilterGroupBase {
   indicator?: 'dot' | 'check';
   /** Optional shape of the control (defaults to 'square'). */
   shape?: 'square' | 'round';
+  helperText?: string;
 }
 
 export interface FilterGroupYearRange extends FilterGroupBase {

@@ -75,11 +75,21 @@ export function buildActiveFilterChips(
       () => onFilterChange({ mileageMax: undefined })
     );
   }
+  if (baseFilters.browse === 'trending') {
+    add('browse', 'Featured vehicles', () => onFilterChange({ browse: undefined }));
+  } else if (baseFilters.browse === 'recommended') {
+    add('browse', 'Recommended for you', () => onFilterChange({ browse: undefined }));
+  } else if (baseFilters.browse === 'specialty') {
+    add('browse', 'Specialty vehicles', () => onFilterChange({ browse: undefined }));
+  }
   if (baseFilters.featured === true) {
     add('featured', 'Featured only', () => onFilterChange({ featured: undefined }));
   }
-  if (baseFilters.source) {
-    add('source', `Source: ${baseFilters.source}`, () => onFilterChange({ source: undefined }));
+  /** DB-only catalog (all vehicles in our DB; no `Vehicle.source` filter). */
+  if (baseFilters.includeApi === false) {
+    add('dbOnly', 'Afrozon sellers', () =>
+      onFilterChange({ includeApi: true, status: undefined }),
+    );
   }
 
   return chips;

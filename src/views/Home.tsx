@@ -1,5 +1,6 @@
 import {
   FeaturedVehiclesSection,
+  HomeCatalogCta,
   HeroBreadcrumb,
   HeroSection,
   PopularMakesSection,
@@ -120,7 +121,7 @@ export function Home() {
     isLoading,
     isError,
     error,
-    refetch
+    refetch,
   } = useTrendingVehicles();
   const { items: recommendedItems, isLoading: recommendedLoading } =
     useRecommendedVehicles(12);
@@ -158,6 +159,8 @@ export function Home() {
         shouldShowSearch
         shouldShowFilters
       />
+
+      <HomeCatalogCta />
 
       <RecommendedForYouSection
         vehicles={recommendedItems}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { VehicleFilters as VehicleFilterType, VehicleType } from '../../types';
 import { VEHICLE_MAKES } from '../../lib/pricingCalculator';
@@ -9,6 +9,11 @@ import { useMakeModelsReference } from '../../hooks/useVehicles';
 import { AdvancedFilterSidebar } from '@/components/filters';
 import type { FilterCategoryConfig } from '@/components/filters';
 import type { FilterGroup } from '@/components/filters/types';
+
+/** All inventory + API merge (default). */
+const INVENTORY_VALUE_ALL = '';
+/** Full DB catalog only (no Auto.dev); does not use `Vehicle.source`. */
+const INVENTORY_VALUE_DB_ONLY = 'db_only';
 
 interface VehicleFiltersProps {
   filters: VehicleFilterType;
@@ -186,6 +191,27 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     setDebouncedMileage(value);
   };
 
+  const inventoryScopeValue = useMemo(() => {
+    if (filters.includeApi === false) return INVENTORY_VALUE_DB_ONLY;
+    return INVENTORY_VALUE_ALL;
+  }, [filters.includeApi]);
+
+  const handleInventoryScopeChange = useCallback(
+    (v: string) => {
+      if (v === INVENTORY_VALUE_DB_ONLY) {
+        onFilterChange({
+          ...filters,
+          source: undefined,
+          includeApi: false,
+          status: 'AVAILABLE',
+        });
+        return;
+      }
+      onFilterChange({ ...filters, source: undefined, includeApi: true, status: undefined });
+    },
+    [filters, onFilterChange],
+  );
+
   const clearFilters = () => {
     setLocalMileage('');
     setDebouncedMileage('');
@@ -195,8 +221,9 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
       onFilterChange({
         page: filters.page,
         limit: filters.limit,
-        includeApi: filters.includeApi,
-        status: filters.status,
+        includeApi: true,
+        source: undefined,
+        status: undefined,
         category: filters.category,
       });
     }
@@ -222,7 +249,7 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     filters.zip,
     filters.distance,
     filters.search,
-  ].filter((v) => v !== undefined && v !== '').length;
+  ].filter((v) => v !== undefined && v !== '').length + (inventoryScopeValue !== INVENTORY_VALUE_ALL ? 1 : 0);
 
   const categories = useMemo((): FilterCategoryConfig[] => {
     const conditionOpts = conditionOptions.map((o) => ({ value: o.value, label: o.label }));
@@ -230,6 +257,10 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     const makeOpts = makeOptions.map((m) => ({ value: m, label: m }));
     const modelOpts = availableModels.map((m) => ({ value: m, label: m }));
     const mileageOpts = mileagePresets.map((p) => ({ value: p.value, label: p.label }));
+    const inventoryOpts = [
+      { value: INVENTORY_VALUE_ALL, label: 'All inventory' },
+      { value: INVENTORY_VALUE_DB_ONLY, label: 'Afrozon sellers' },
+    ];
     const bodyOpts = bodyStyleOptions.map((b) => ({ value: b, label: b }));
     const fuelOpts = fuelOptions.map((f) => ({ value: f, label: f }));
     const transOpts = transmissionOptions.map((t) => ({ value: t, label: t }));
@@ -324,6 +355,19 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
             options: mileageOpts,
             value: filters.mileageMax?.toString() ?? '',
             onChange: handleMileageChange,
+          },
+          {
+            id: 'inventory',
+            type: 'radio',
+            title: 'Inventory source',
+            hasActiveFilters: inventoryScopeValue !== INVENTORY_VALUE_ALL,
+            options: inventoryOpts,
+            value: inventoryScopeValue,
+            onChange: handleInventoryScopeChange,
+            // helperText:
+            //   inventoryScopeValue === INVENTORY_VALUE_DB_ONLY
+            //     ? 'Every vehicle we have stored (seller uploads, imports, etc.). No live catalog fill.'
+            //     : undefined,
           },
         ],
       },

@@ -74,7 +74,7 @@ export function SpecialtyVehiclesSection({
             </p>
           </div>
           <Link
-            href="/marketplace?section=specialty"
+            href="/marketplace?browse=specialty"
             className="inline-flex gap-1 items-center mt-4 font-medium text-[#0D7A4A] transition-colors sm:mt-0 font-body hover:text-[#0C623C] shrink-0"
           >
             View all

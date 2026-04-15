@@ -46,7 +46,12 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
   // Sync from URL (shareable links + back button restores state)
   useEffect(() => {
     const { filters, sort } = parseMarketplaceSearchParams(searchParams);
-    setBaseFilters((prev) => ({ ...prev, ...filters }));
+    setBaseFilters((prev) => {
+      const merged = { ...prev, ...filters };
+      /** Marketplace inventory does not use `Vehicle.source`; drop stale state from old URLs. */
+      delete (merged as { source?: unknown }).source;
+      return merged;
+    });
     setSortBy(sort);
   }, [searchParamsString]);
 
@@ -109,6 +114,8 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
         baseFilters?.specialty ?? '',
         baseFilters?.source ?? '',
         baseFilters?.includeApi ?? '',
+        baseFilters?.browse ?? '',
+        baseFilters?.status ?? '',
       ].join('|'),
     [
       searchParamsString,
@@ -137,12 +144,21 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
       baseFilters?.specialty,
       baseFilters?.source,
       baseFilters?.includeApi,
+      baseFilters?.browse,
+      baseFilters?.status,
     ]
   );
 
   const handleFilterChange = useCallback(
     (newFilters: Partial<VehicleFilters>) => {
       const next = { ...baseFilters, ...newFilters };
+      const keys = Object.keys(newFilters);
+      const shouldDropBrowse =
+        baseFilters.browse &&
+        keys.some((k) => k !== 'includeApi');
+      if (shouldDropBrowse) {
+        delete (next as { browse?: undefined }).browse;
+      }
       setBaseFilters(next);
       updateUrlFromFilters(next);
     },
@@ -152,12 +168,7 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
   const handleClearFilters = useCallback(() => {
     router.replace('/marketplace', { scroll: false });
     setSortBy('newest');
-    setBaseFilters((prev) => ({
-      ...DEFAULT_FILTERS,
-      includeApi: prev.includeApi,
-      sortBy: 'createdAt',
-      sortOrder: 'asc',
-    }));
+    setBaseFilters({ ...DEFAULT_FILTERS });
     queryClient.invalidateQueries({ queryKey: VEHICLES_LIST_QUERY_KEY });
   }, [router, queryClient]);
 

@@ -71,7 +71,7 @@ export function FeaturedVehiclesSection({
             </p>
           </div>
           <Link
-            href="/marketplace?featured=true"
+            href="/marketplace?browse=trending"
             className="mt-4 sm:mt-0 inline-flex items-center gap-1 font-body font-medium text-[#0D7A4A] hover:text-[#0C623C] transition-colors shrink-0"
           >
             View all featured vehicles

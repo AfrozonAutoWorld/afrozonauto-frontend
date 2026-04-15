@@ -10,6 +10,8 @@ export interface ResultsSortBarProps {
   label: string;
   sortBy: SortOption;
   onSortChange: (value: SortOption) => void;
+  /** Hide sort controls (e.g. curated rail browse where order is fixed). */
+  hideSort?: boolean;
 }
 
 const sortLabelMap: Record<SortOption, string> = {
@@ -20,7 +22,14 @@ const sortLabelMap: Record<SortOption, string> = {
   mileage_asc: 'Mileage: Low to High',
 };
 
-export function ResultsSortBar({ total, isLoading, label, sortBy, onSortChange }: ResultsSortBarProps) {
+export function ResultsSortBar({
+  total,
+  isLoading,
+  label,
+  sortBy,
+  onSortChange,
+  hideSort = false,
+}: ResultsSortBarProps) {
   const countText =
     total != null && total > 0
       ? `Showing ${total.toLocaleString()} vehicles`
@@ -33,25 +42,27 @@ export function ResultsSortBar({ total, isLoading, label, sortBy, onSortChange }
       <p className="font-body text-sm font-medium leading-5 text-filter-muted truncate">
         {countText}
       </p>
-      <div className="flex flex-row items-center gap-4 shrink-0">
-        <span className="font-body text-sm font-medium leading-5 text-filter-muted">
-          Sort by
-        </span>
-        <div className="relative inline-flex items-center h-9 px-4 pr-8 bg-[#E8E8E8] border border-[#E5E7EB] rounded-lg">
-          <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as SortOption)}
-            className="pr-6 bg-transparent border-none outline-none font-body text-sm font-normal leading-5 text-[#484848] appearance-none"
-          >
-            <option value="newest">{sortLabelMap.newest}</option>
-            <option value="price_asc">{sortLabelMap.price_asc}</option>
-            <option value="price_desc">{sortLabelMap.price_desc}</option>
-            <option value="year_desc">{sortLabelMap.year_desc}</option>
-            <option value="mileage_asc">{sortLabelMap.mileage_asc}</option>
-          </select>
-          <ChevronDown className="absolute right-2 w-4 h-4 text-[#374151]" aria-hidden />
+      {!hideSort && (
+        <div className="flex flex-row items-center gap-4 shrink-0">
+          <span className="font-body text-sm font-medium leading-5 text-filter-muted">
+            Sort by
+          </span>
+          <div className="relative inline-flex items-center h-9 px-4 pr-8 bg-[#E8E8E8] border border-[#E5E7EB] rounded-lg">
+            <select
+              value={sortBy}
+              onChange={(e) => onSortChange(e.target.value as SortOption)}
+              className="pr-6 bg-transparent border-none outline-none font-body text-sm font-normal leading-5 text-[#484848] appearance-none"
+            >
+              <option value="newest">{sortLabelMap.newest}</option>
+              <option value="price_asc">{sortLabelMap.price_asc}</option>
+              <option value="price_desc">{sortLabelMap.price_desc}</option>
+              <option value="year_desc">{sortLabelMap.year_desc}</option>
+              <option value="mileage_asc">{sortLabelMap.mileage_asc}</option>
+            </select>
+            <ChevronDown className="absolute right-2 w-4 h-4 text-[#374151]" aria-hidden />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function RecommendedForYouSection({
             </p>
           </div>
           <Link
-            href="/marketplace?section=recommended"
+            href="/marketplace?browse=recommended"
             className="mt-4 sm:mt-0 inline-flex items-center gap-1 font-body font-medium text-[#0D7A4A] hover:text-[#0C623C] transition-colors shrink-0"
           >
             View all

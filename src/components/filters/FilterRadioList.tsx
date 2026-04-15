@@ -11,6 +11,11 @@ export interface FilterRadioListProps {
   indicator?: 'dot' | 'check';
   /** Shape of the control. Defaults to 'square'. */
   shape?: 'square' | 'round';
+  /**
+   * When true (default), clicking the already-selected option clears the filter (`onChange('')`).
+   * This matches checkbox-style check/uncheck UX while keeping a single active value per group.
+   */
+  allowUncheck?: boolean;
 }
 
 interface FilterRadioRowProps {
@@ -33,6 +38,8 @@ function FilterRadioRow({
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={selected}
       onClick={onSelect}
       className="flex flex-row justify-between items-center w-full h-[33px] py-2 px-4 pl-6 gap-2 bg-filter-surface focus:outline-none focus:ring-2 focus:ring-inset focus:ring-filter-primary text-left"
     >
@@ -74,19 +81,31 @@ export function FilterRadioList({
   onChange,
   indicator = 'check',
   shape = 'square',
+  allowUncheck = true,
 }: FilterRadioListProps) {
+  const normalizedValue = value ?? '';
+
   return (
-    <div className="flex flex-col items-start w-full">
-      {options.map((option) => (
-        <FilterRadioRow
-          key={option.value}
-          option={option}
-          selected={value === option.value}
-          onSelect={() => onChange(option.value)}
-          indicator={indicator}
-          shape={shape}
-        />
-      ))}
+    <div className="flex flex-col items-start w-full" role="group">
+      {options.map((option) => {
+        const selected = normalizedValue === option.value;
+        return (
+          <FilterRadioRow
+            key={option.value === '' ? '__all__' : option.value}
+            option={option}
+            selected={selected}
+            onSelect={() => {
+              if (allowUncheck && selected) {
+                onChange('');
+              } else {
+                onChange(option.value);
+              }
+            }}
+            indicator={indicator}
+            shape={shape}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+export { HomeCatalogCta } from './HomeCatalogCta';
 export { HeroSection } from './HeroSection';
 export { HeroBreadcrumb } from './HeroBreadcrumb';
 export { HeroHeadline } from './HeroHeadline';

@@ -7,6 +7,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.pexels.com', pathname: '/**' },
       { protocol: 'https', hostname: 'retail.photos.vin', pathname: '/**' },
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'api.auto.dev', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.thecarconnection.com', pathname: '/**' },
     ],
   },
 };

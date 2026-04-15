@@ -12,6 +12,7 @@ import { canUseSellerFeatures } from '@/lib/sellerAccess';
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -43,87 +44,52 @@ export function Header() {
               Browse Vehicles
             </Link>
 
-            <Link href="/marketplace/service-repair" className="font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600 whitespace-nowrap">
-              Service & Repair
-            </Link>
-
-            {user ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreMenuOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1 font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
-                >
-                  More
-                  <ChevronDown className={`h-4 w-4 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {moreMenuOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-52 rounded-xl border border-[#E5E7EB] bg-white p-2 shadow-lg">
-                    {!isSeller && (
-                      <Link
-                        href="/seller/landing"
-                        className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                        onClick={() => setMoreMenuOpen(false)}
-                      >
-                        Sell Your Vehicle
-                      </Link>
-                    )}
-                    <Link
-                      href="/marketplace/calculator"
-                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                      onClick={() => setMoreMenuOpen(false)}
-                    >
-                      Price Calculator
-                    </Link>
-                    <Link
-                      href="/marketplace/how-it-works"
-                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                      onClick={() => setMoreMenuOpen(false)}
-                    >
-                      How It Works
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreMenuOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1 font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
-                >
-                  More
-                  <ChevronDown className={`h-4 w-4 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {moreMenuOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-52 rounded-xl border border-[#E5E7EB] bg-white p-2 shadow-lg">
-                    {!isSeller && (
-                      <Link
-                        href="/seller/landing"
-                        className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                        onClick={() => setMoreMenuOpen(false)}
-                      >
-                        Sell Your Vehicle
-                      </Link>
-                    )}
-                    <Link
-                      href="/marketplace/calculator"
-                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                      onClick={() => setMoreMenuOpen(false)}
-                    >
-                      Price Calculator
-                    </Link>
-                    <Link
-                      href="/marketplace/how-it-works"
-                      className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
-                      onClick={() => setMoreMenuOpen(false)}
-                    >
-                      How It Works
-                    </Link>
-                  </div>
-                )}
-              </div>
+            {!isSeller && (
+              <Link
+                href="/seller/landing"
+                className="font-medium text-[#0D7A4A] text-sm transition-colors hover:text-emerald-700 whitespace-nowrap"
+              >
+                Sell Your Vehicle
+              </Link>
             )}
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1 font-medium text-[#1A1A1A] text-sm transition-colors hover:text-emerald-600"
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="true"
+              >
+                More
+                <ChevronDown className={`h-4 w-4 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {moreMenuOpen && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-52 rounded-xl border border-[#E5E7EB] bg-white p-2 shadow-lg">
+                  <Link
+                    href="/marketplace/service-repair"
+                    className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                    onClick={() => setMoreMenuOpen(false)}
+                  >
+                    Service & Repair
+                  </Link>
+                  <Link
+                    href="/marketplace/calculator"
+                    className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                    onClick={() => setMoreMenuOpen(false)}
+                  >
+                    Price Calculator
+                  </Link>
+                  <Link
+                    href="/marketplace/how-it-works"
+                    className="block rounded-lg px-3 py-2 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB]"
+                    onClick={() => setMoreMenuOpen(false)}
+                  >
+                    How It Works
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {user ? (
               <div className="flex gap-3 items-center">
@@ -178,7 +144,12 @@ export function Header() {
           <div className="flex gap-2 items-center md:hidden">
             {user && <NotificationBell />}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => {
+                setMobileMenuOpen((open) => {
+                  if (open) setMobileMoreOpen(false);
+                  return !open;
+                });
+              }}
               className="p-2 text-[#1A1A1A]"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -196,36 +167,60 @@ export function Header() {
               >
                 Browse Vehicles
               </Link>
-              <Link
-                href="/marketplace/calculator"
-                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Price Calculator
-              </Link>
-              <Link
-                href="/marketplace/how-it-works"
-                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                How It Works
-              </Link>
-              <Link
-                href="/marketplace/service-repair"
-                className="font-medium text-[#1A1A1A] hover:text-emerald-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Service & Repair
-              </Link>
               {!isSeller && (
                 <Link
                   href="/seller/landing"
-                  className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                  className="font-semibold text-[#0D7A4A] hover:text-emerald-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sell Your Vehicle
                 </Link>
               )}
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileMoreOpen((o) => !o)}
+                  className="flex items-center justify-between w-full py-1 font-medium text-left text-[#1A1A1A] hover:text-emerald-600"
+                  aria-expanded={mobileMoreOpen}
+                >
+                  More
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${mobileMoreOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileMoreOpen && (
+                  <div className="flex flex-col gap-3 pl-3 border-l-2 border-emerald-100">
+                    <Link
+                      href="/marketplace/service-repair"
+                      className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setMobileMoreOpen(false);
+                      }}
+                    >
+                      Service & Repair
+                    </Link>
+                    <Link
+                      href="/marketplace/calculator"
+                      className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setMobileMoreOpen(false);
+                      }}
+                    >
+                      Price Calculator
+                    </Link>
+                    <Link
+                      href="/marketplace/how-it-works"
+                      className="font-medium text-[#1A1A1A] hover:text-emerald-600"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setMobileMoreOpen(false);
+                      }}
+                    >
+                      How It Works
+                    </Link>
+                  </div>
+                )}
+              </div>
 
               {user ? (
                 <>

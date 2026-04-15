@@ -1,31 +1,27 @@
 'use client';
 
-import { useRef } from 'react';
-import { Search, Store } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { Search, Store, AlertCircle } from 'lucide-react';
 import { HeroSection, HeroBreadcrumb } from '@/components/home';
 import { FeaturedCarCard } from '../components/home/FeaturedCarCard';
 import { VehicleCardSkeleton } from '../components/vehicles/VehicleCardSkeleton';
 import { VehicleFilters } from '../components/vehicles/VehicleFilters';
 import { MarketplaceVehicleCard } from '../components/marketplace/MarketplaceVehicleCard';
-import { useInfiniteVehicles, useCategories } from '../hooks/useVehicles';
+import {
+  useInfiniteRailVehicles,
+  useInfiniteVehicles,
+  useCategories,
+} from '../hooks/useVehicles';
 import { useMarketplaceVehicles } from '../hooks/useMarketplace';
 import { useMarketplaceFilters } from '../hooks/useMarketplaceFilters';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
-import { useSavedVehiclesApi, useToggleSaved } from '../hooks/useSavedVehiclesApi';
 import { buildActiveFilterChips } from '../lib/activeFilterChips';
 import type { VehicleFilters as VehicleFilterType, Vehicle } from '../types';
 import { ActiveFiltersBar } from '../components/vehicles/ActiveFiltersBar';
 import { ResultsSortBar } from '../components/vehicles/ResultsSortBar';
-import { AlertCircle } from 'lucide-react';
 
 export function VehicleListing() {
-  const { status } = useSession();
   const { data: marketplaceVehicles } = useMarketplaceVehicles();
   const { categories } = useCategories();
-  const { isSaved } = useSavedVehiclesApi();
-  const { toggle, isPending } = useToggleSaved();
-  const showSave = status === 'authenticated';
 
   const {
     baseFilters,
@@ -35,23 +31,29 @@ export function VehicleListing() {
     handleFilterChange,
     handleClearFilters,
     handleSortChange,
-    setCategory,
   } = useMarketplaceFilters();
 
-  const {
-    vehicles,
-    reachedEnd,
-    loadMore,
-    isLoading,
-    isInitialLoading,
-    isFetching,
-    isFetchingMore,
-    isError,
-    error,
-    refetch,
-    meta,
-    isFetched,
-  } = useInfiniteVehicles(baseFilters, vehiclesFilterKey);
+  const browseMode = baseFilters.browse ?? null;
+
+  const catalogInfinite = useInfiniteVehicles(
+    baseFilters,
+    vehiclesFilterKey,
+    !browseMode,
+  );
+
+  const railInfinite = useInfiniteRailVehicles(browseMode, vehiclesFilterKey, !!browseMode);
+
+  const vehicles = browseMode ? railInfinite.vehicles : catalogInfinite.vehicles;
+  const reachedEnd = browseMode ? railInfinite.reachedEnd : catalogInfinite.reachedEnd;
+  const loadMore = browseMode ? railInfinite.loadMore : catalogInfinite.loadMore;
+  const isInitialLoading = browseMode ? railInfinite.isInitialLoading : catalogInfinite.isInitialLoading;
+  const isFetching = browseMode ? railInfinite.isFetching : catalogInfinite.isFetching;
+  const isFetchingMore = browseMode ? railInfinite.isFetchingMore : catalogInfinite.isFetchingMore;
+  const isError = browseMode ? railInfinite.isError : catalogInfinite.isError;
+  const error = browseMode ? railInfinite.error : catalogInfinite.error;
+  const refetch = browseMode ? railInfinite.refetch : catalogInfinite.refetch;
+  const meta = browseMode ? railInfinite.meta : catalogInfinite.meta;
+  const isFetched = browseMode ? railInfinite.isFetched : catalogInfinite.isFetched;
 
   const listShown = vehicles.length > 0 || isFetchingMore;
   const sentinelRef = useInfiniteScrollSentinel(loadMore, listShown);
@@ -62,9 +64,11 @@ export function VehicleListing() {
   const activeCategoryLabel = baseFilters?.category
     ? categories?.find((c) => c?.slug === baseFilters?.category)?.label ?? null
     : null;
-  const listingLabel = activeCategoryLabel
-    ? `${activeCategoryLabel} vehicles`
-    : 'All vehicle listings';
+  let listingLabel = 'All vehicle listings';
+  if (browseMode === 'trending') listingLabel = 'Featured vehicles';
+  else if (browseMode === 'recommended') listingLabel = 'Recommended for you';
+  else if (browseMode === 'specialty') listingLabel = 'Specialty vehicles';
+  else if (activeCategoryLabel) listingLabel = `${activeCategoryLabel} vehicles`;
 
   if (isError) {
     return (
@@ -122,7 +126,9 @@ export function VehicleListing() {
               filters={baseFilters as VehicleFilterType}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
-              resultCount={meta?.total ?? 0}
+              resultCount={
+                browseMode ? (meta?.total ?? vehicles.length) : (meta?.total ?? 0)
+              }
             />
           </aside>
 
@@ -132,10 +138,11 @@ export function VehicleListing() {
             )}
             <ResultsSortBar
               total={meta?.total}
-              isLoading={isLoading}
+              isLoading={isInitialLoading}
               label={listingLabel}
               sortBy={sortBy}
               onSortChange={handleSortChange}
+              hideSort={!!browseMode}
             />
 
             {isInitialLoading && (

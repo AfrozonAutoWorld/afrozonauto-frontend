@@ -64,13 +64,20 @@ export function FilterGroup({ group }: FilterGroupProps) {
             />
           )}
           {group.type === 'radio' && (
-            <FilterRadioList
-              options={group.options}
-              value={group.value}
-              onChange={group.onChange}
-              indicator={group.indicator}
-              shape={group.shape}
-            />
+            <>
+              <FilterRadioList
+                options={group.options}
+                value={group.value}
+                onChange={group.onChange}
+                indicator={group.indicator}
+                shape={group.shape}
+              />
+              {group.helperText && (
+                <p className="px-4 pb-3 text-xs leading-snug text-filter-muted font-body">
+                  {group.helperText}
+                </p>
+              )}
+            </>
           )}
           {group.type === 'yearRange' && (
             <FilterYearRange

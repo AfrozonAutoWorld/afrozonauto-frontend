@@ -33,15 +33,23 @@ export function buildMarketplaceQueryString(
   if (filters.exteriorColor) p.set('exteriorColor', filters.exteriorColor);
   if (filters.interiorColor) p.set('interiorColor', filters.interiorColor);
   if (filters.state) p.set('state', filters.state);
-  if (filters.section) p.set('section', filters.section);
+  if (filters.browse === 'trending') p.set('browse', 'trending');
+  else if (filters.browse === 'recommended') p.set('browse', 'recommended');
+  else if (filters.browse === 'specialty') p.set('browse', 'specialty');
+  if (!filters.browse && filters.section) p.set('section', filters.section);
   if (filters.yearMin != null) p.set('yearMin', String(filters.yearMin));
   if (filters.yearMax != null) p.set('yearMax', String(filters.yearMax));
   if (filters.priceMin != null) p.set('priceMin', String(filters.priceMin));
   if (filters.priceMax != null) p.set('priceMax', String(filters.priceMax));
   if (filters.mileageMax != null) p.set('mileageMax', String(filters.mileageMax));
-  if (filters.featured === true) p.set('featured', 'true');
-  if (filters.source) p.set('source', filters.source);
-  if (filters.includeApi === false) p.set('includeApi', 'false');
+  if (!filters.browse && filters.featured === true) p.set('featured', 'true');
+  if (filters.includeApi === false) {
+    p.set('includeApi', 'false');
+    /** Afrozon sellers: DB-only for-sale inventory. */
+    p.set('status', 'AVAILABLE');
+  } else if (filters.status) {
+    p.set('status', filters.status);
+  }
   p.set('sort', sortBy);
   return p.toString();
 }
@@ -77,6 +85,7 @@ export function parseMarketplaceSearchParams(
   const interiorColor = searchParams.get('interiorColor') ?? '';
   const state = searchParams.get('state') ?? '';
   const section = searchParams.get('section') ?? '';
+  const browseParam = searchParams.get('browse') ?? '';
   const priceMin = searchParams.get('priceMin');
   const priceMax = searchParams.get('priceMax');
   const yearMin = searchParams.get('yearMin');
@@ -84,8 +93,21 @@ export function parseMarketplaceSearchParams(
   const mileageMax = searchParams.get('mileageMax');
   const sortParam = searchParams.get('sort');
   const featured = searchParams.get('featured');
-  const source = searchParams.get('source');
+  /** Old links used `source=SELLER` for DB-only; marketplace no longer uses `source` for inventory. */
+  const legacySellerSource = (searchParams.get('source') ?? '') === 'SELLER';
   const includeApi = searchParams.get('includeApi');
+  const statusParam = searchParams.get('status') ?? '';
+
+  const browseFromUrl: FiltersForUrl['browse'] =
+    browseParam === 'trending' || browseParam === 'recommended' || browseParam === 'specialty'
+      ? (browseParam as FiltersForUrl['browse'])
+      : featured === 'true'
+        ? 'trending'
+        : section === 'recommended'
+          ? 'recommended'
+          : section === 'specialty'
+            ? 'specialty'
+            : undefined;
 
   const filters: Partial<FiltersForUrl> = {
     ...(q && { search: q }),
@@ -101,21 +123,31 @@ export function parseMarketplaceSearchParams(
     ...(exteriorColor && { exteriorColor }),
     ...(interiorColor && { interiorColor }),
     ...(state && { state }),
-    ...(section && { section: section as 'recommended' | 'specialty' }),
+    ...(browseFromUrl && { browse: browseFromUrl }),
+    ...(section && !browseFromUrl && { section: section as 'recommended' | 'specialty' }),
     ...(priceMin != null && { priceMin: Number(priceMin) }),
     ...(priceMax != null && { priceMax: Number(priceMax) }),
     ...(yearMin != null && { yearMin: Number(yearMin) }),
     ...(yearMax != null && { yearMax: Number(yearMax) }),
     ...(mileageMax != null && { mileageMax: Number(mileageMax) }),
-    ...(featured === 'true' && { featured: true }),
-    ...(source && { source: source as FiltersForUrl['source'] }),
-    ...(includeApi === 'false' && { includeApi: false }),
+    ...(featured === 'true' && !browseFromUrl && { featured: true }),
+    ...((includeApi === 'false' || legacySellerSource) && {
+      includeApi: false,
+      status: 'AVAILABLE' as FiltersForUrl['status'],
+    }),
+    ...(statusParam &&
+      includeApi !== 'false' &&
+      !legacySellerSource && { status: statusParam as FiltersForUrl['status'] }),
   };
 
   const sort: SortOption =
     sortParam && VALID_SORT_OPTIONS.includes(sortParam as SortOption)
       ? (sortParam as SortOption)
       : 'newest';
+
+  if (browseFromUrl && (make || model || category || q)) {
+    delete (filters as { browse?: FiltersForUrl['browse'] }).browse;
+  }
 
   return { filters, sort };
 }

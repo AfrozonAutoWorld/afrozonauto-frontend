@@ -296,6 +296,12 @@ export interface VehicleFilters {
   /** High-level section, used for deep links like section=recommended|specialty */
   section?: 'recommended' | 'specialty';
 
+  /**
+   * Marketplace browse mode: same UI as full catalog but data from rail endpoints
+   * (trending / recommended / specialty). Omit for normal GET /vehicles listing.
+   */
+  browse?: 'trending' | 'recommended' | 'specialty';
+
   // Pagination
   page?: number;
   limit?: number;
@@ -319,6 +325,7 @@ export interface VehicleMeta {
   filteredCount?: number;
   /** True when this response used the Auto.dev API (so fromApi is the raw API count). */
   apiUsed?: boolean;
+  /** True when more pages exist (trending / recommended / specialty paginated endpoints). */
   hasMore?: boolean;
 }
 
