@@ -20,6 +20,7 @@ import { useSellerListingDetail } from '@/hooks/useSellerListingDetail';
 import { showToast } from '@/lib/showNotification';
 import { buildSellVehicleFormData } from '@/lib/seller/buildSellVehicleFormData';
 import { prefillSellFormFromListing } from '@/lib/seller/prefillSellFormFromListing';
+import { canListSellerVehicles } from '@/lib/sellerAccess';
 
 const STEP_ORDER: SellStepKey[] = ['vehicle', 'condition', 'photos-price', 'contact'];
 
@@ -116,7 +117,7 @@ export function SellVehicle() {
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const { status: sessionStatus } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const submitSellerVehicle = useSubmitSellerVehicle();
   const updateSellerVehicle = useUpdateSellerVehicle();
   const queryClient = useQueryClient();
@@ -248,12 +249,48 @@ export function SellVehicle() {
           headerText="List your vehicle. Get the best offer."
           descriptionText="Sign in to edit your listing."
         />
-        <div className="mx-auto max-w-lg px-4 pb-16 text-center sm:px-6 lg:px-8">
+        <div className="px-4 pb-16 mx-auto max-w-lg text-center sm:px-6 lg:px-8">
           <Link
             href="/login"
             className="inline-block rounded-lg bg-[#0D7A4A] px-4 py-2 font-body text-sm font-medium text-white hover:opacity-90"
           >
             Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vehicleId && sessionStatus === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center px-4">
+        <p className="font-body text-sm text-gray-500">Loading…</p>
+      </div>
+    );
+  }
+
+  if (
+    sessionStatus === 'authenticated' &&
+    !vehicleId &&
+    !canListSellerVehicles(session?.user)
+  ) {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB]">
+        <HeroSellSection
+          breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
+          headerText="List your vehicle. Get the best offer."
+          descriptionText="New listings are available once your seller account is verified."
+        />
+        <div className="px-4 pb-16 mx-auto max-w-lg text-center sm:px-6 lg:px-8 space-y-4">
+          <p className="font-body text-[#4B5563] text-sm">
+            You can still manage existing listings from your dashboard after verification. If you
+            just applied, we will notify you when your account is ready.
+          </p>
+          <Link
+            href="/seller"
+            className="inline-block rounded-lg bg-[#0D7A4A] px-4 py-2 font-body text-sm font-medium text-white hover:opacity-90"
+          >
+            Back to dashboard
           </Link>
         </div>
       </div>
@@ -268,11 +305,11 @@ export function SellVehicle() {
           headerText="List your vehicle. Get the best offer."
           descriptionText="Loading your listing…"
         />
-        <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="animate-pulse space-y-4 rounded-xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
-            <div className="h-8 w-48 rounded bg-gray-200" />
-            <div className="h-4 w-full max-w-md rounded bg-gray-100" />
-            <div className="h-32 rounded-lg bg-gray-100" />
+        <div className="px-4 pb-16 mx-auto max-w-5xl sm:px-6 lg:px-8">
+          <div className="p-8 space-y-4 bg-white rounded-xl ring-1 ring-gray-100 shadow-sm animate-pulse">
+            <div className="w-48 h-8 bg-gray-200 rounded" />
+            <div className="w-full max-w-md h-4 bg-gray-100 rounded" />
+            <div className="h-32 bg-gray-100 rounded-lg" />
           </div>
         </div>
       </div>
@@ -287,7 +324,7 @@ export function SellVehicle() {
           headerText="List your vehicle. Get the best offer."
           descriptionText="We could not load this listing."
         />
-        <div className="mx-auto max-w-lg px-4 pb-16 text-center sm:px-6 lg:px-8">
+        <div className="px-4 pb-16 mx-auto max-w-lg text-center sm:px-6 lg:px-8">
           <p className="font-body text-[#4B5563]">
             Check that you are signed in and the link is correct, then try again.
           </p>
@@ -308,7 +345,7 @@ export function SellVehicle() {
         <HeroSellSection
           breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
           headerText="List your vehicle. Get the best offer."
-          descriptionText="Four quick steps. We'll review your listing and come back with a verified offer within 48 hours."
+          descriptionText="Four quick steps. Your listing goes live on the marketplace as soon as you submit."
         />
         <div className="flex flex-col gap-8 px-4 pb-16 mx-auto w-full max-w-5xl sm:px-6 lg:px-8">
           <SellVehicleSuccess referenceId={referenceId} />
@@ -322,13 +359,13 @@ export function SellVehicle() {
       <HeroSellSection
         breadcrumbs={<HeroSellBreadcrumb text="SELL YOUR CAR" />}
         headerText="List your vehicle. Get the best offer."
-        descriptionText="Four quick steps. We'll review your listing and come back with a verified offer within 48 hours."
+        descriptionText="Four quick steps. Your listing goes live on the marketplace as soon as you submit — only verified sellers can list."
       />
 
       <div className="px-4 pb-16 mx-auto w-full max-w-7xl sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8">
           {vehicleId && (
-            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-body text-sm text-emerald-900">
+            <p className="px-4 py-3 text-sm text-emerald-900 bg-emerald-50 rounded-lg border border-emerald-200 font-body">
               You are editing an existing listing. Changes are saved when you submit the final step.
             </p>
           )}

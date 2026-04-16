@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Copy, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 const WHAT_HAPPENS = [
-  'Team reviews your listing (within 24 hrs)',
-  'Matched with a verified buyer',
-  'You receive a formal offer via your preferred contact method',
-  'Accept, negotiate, or decline, the choice is yours.',
+  'Your listing is live on the Afrozon marketplace',
+  'Buyers can view your vehicle and reach out using your contact preferences',
+  'You may get offers or questions — respond in your preferred way',
+  'You can edit your listing anytime from your seller dashboard',
 ] as const;
 
 export interface SellVehicleSuccessProps {
@@ -45,11 +45,11 @@ export function SellVehicleSuccess({ referenceId, onGoHome }: Readonly<SellVehic
           </div>
           <div className="flex flex-col gap-3 items-center text-center">
             <h2 className="font-sans text-xl font-bold leading-7 text-[#1A1A1A]">
-              Listing Received
+              Listing published
             </h2>
             <p className="font-body text-base font-normal leading-6 text-[#666666] max-w-[397px]">
-              Our team will review your vehicle and get back to you with a verified offer within 48
-              hours.
+              Your vehicle is now visible to buyers on the marketplace. Keep your contact details up to
+              date so interested buyers can reach you.
             </p>
           </div>
         </div>

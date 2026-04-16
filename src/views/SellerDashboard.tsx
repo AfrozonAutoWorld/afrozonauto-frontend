@@ -10,7 +10,7 @@ import {
   useDeleteVehicle,
 } from '@/hooks/useMarketplace';
 import { showToast } from '@/lib/showNotification';
-import { canUseSellerFeatures } from '@/lib/sellerAccess';
+import { canListSellerVehicles, canUseSellerFeatures } from '@/lib/sellerAccess';
 import { SellerDashboardBanner } from '@/components/seller/dashboard/SellerDashboardBanner';
 import {
   SellerDashboardTopBar,
@@ -45,6 +45,7 @@ export function SellerDashboard() {
   const { data: session, status } = useSession();
   const user = session?.user as any;
   const canAccessSellerDashboard = canUseSellerFeatures(user);
+  const canCreateListing = canListSellerVehicles(user);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRangeFilter>('this_month');
   const [statusFilter, setStatusFilter] = useState<SellerStatusFilter>('all');
@@ -108,7 +109,7 @@ export function SellerDashboard() {
     setSubmittingId(id);
     try {
       await submitVehicle.mutateAsync(id);
-      showToast({ type: 'success', message: 'Vehicle submitted for review.' });
+      showToast({ type: 'success', message: 'Vehicle listed successfully.' });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to submit vehicle.';
       showToast({ type: 'error', message });
@@ -223,6 +224,7 @@ export function SellerDashboard() {
           firstName={user?.profile?.firstName}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
+          canCreateListing={canCreateListing}
         />
 
         <SellerDashboardStats

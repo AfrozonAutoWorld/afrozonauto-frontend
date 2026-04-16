@@ -9,6 +9,8 @@ type SellerDashboardTopBarProps = {
   firstName?: string;
   dateRange: DateRangeFilter;
   onDateRangeChange: (value: DateRangeFilter) => void;
+  /** When false, "New Listing" is shown disabled (e.g. seller not yet verified). */
+  canCreateListing: boolean;
 };
 
 const DATE_RANGE_OPTIONS: { value: DateRangeFilter; label: string }[] = [
@@ -21,6 +23,7 @@ export function SellerDashboardTopBar({
   firstName,
   dateRange,
   onDateRangeChange,
+  canCreateListing,
 }: SellerDashboardTopBarProps) {
   return (
     <div className="flex flex-col gap-5">
@@ -51,13 +54,24 @@ export function SellerDashboardTopBar({
           />
         </div>
 
-        <Link
-          href="/seller/sell-your-car"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] px-4 font-body text-sm font-medium text-white transition-colors hover:bg-[#0b6b41]"
-        >
-          <Plus className="h-4 w-4" />
-          New Listing
-        </Link>
+        {canCreateListing ? (
+          <Link
+            href="/seller/sell-your-car"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0D7A4A] px-4 font-body text-sm font-medium text-white transition-colors hover:bg-[#0b6b41]"
+          >
+            <Plus className="h-4 w-4" />
+            New Listing
+          </Link>
+        ) : (
+          <span
+            className="inline-flex h-10 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#9CA3AF] px-4 font-body text-sm font-medium text-white opacity-90"
+            title="New listings are available once your seller account is verified."
+            aria-disabled="true"
+          >
+            <Plus className="h-4 w-4" />
+            New Listing
+          </span>
+        )}
       </div>
     </div>
   );

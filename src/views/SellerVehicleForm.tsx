@@ -237,7 +237,7 @@ export function SellerVehicleForm({ vehicleId }: SellerVehicleFormProps) {
       if (id) {
         await submitVehicle.mutateAsync(id);
       }
-      showToast({ type: 'success', message: 'Listing submitted for review.' });
+        showToast({ type: 'success', message: 'Listing published successfully.' });
       router.push('/seller');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save and submit listing.';
