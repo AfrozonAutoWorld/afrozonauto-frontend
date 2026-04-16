@@ -269,7 +269,8 @@ export interface VehicleFilters {
   // Vehicle characteristics
   vehicleType?: VehicleType;
   bodyStyle?: string;
-  transmission?: TransmissionType;
+  /** Single or comma-separated values (e.g. Automatic,CVT) */
+  transmission?: string;
   fuelType?: string;
   drivetrain?: string;
   condition?: 'new' | 'used' | 'cpo';

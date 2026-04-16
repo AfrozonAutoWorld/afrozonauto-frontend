@@ -1,5 +1,6 @@
 import type { VehicleFilters } from '@/types';
 import type { ActiveFilterChip } from '@/components/vehicles/ActiveFiltersBar';
+import { formatMultiFilterLabel } from '@/lib/multiFilter';
 
 type Filters = Omit<VehicleFilters, 'page' | 'limit'>;
 type OnFilterChange = (newFilters: Partial<VehicleFilters>) => void;
@@ -41,22 +42,33 @@ export function buildActiveFilterChips(
     add('vehicleType', baseFilters.vehicleType, () => onFilterChange({ vehicleType: undefined }));
   }
   if (baseFilters.bodyStyle) {
-    add('bodyStyle', baseFilters.bodyStyle, () => onFilterChange({ bodyStyle: undefined }));
+    add('bodyStyle', formatMultiFilterLabel(baseFilters.bodyStyle), () =>
+      onFilterChange({ bodyStyle: undefined }),
+    );
   }
   if (baseFilters.fuelType) {
-    add('fuelType', baseFilters.fuelType, () => onFilterChange({ fuelType: undefined }));
+    add('fuelType', formatMultiFilterLabel(baseFilters.fuelType), () =>
+      onFilterChange({ fuelType: undefined }),
+    );
+  }
+  if (baseFilters.transmission) {
+    add('transmission', formatMultiFilterLabel(baseFilters.transmission), () =>
+      onFilterChange({ transmission: undefined }),
+    );
   }
   if (baseFilters.drivetrain) {
-    add('drivetrain', baseFilters.drivetrain, () => onFilterChange({ drivetrain: undefined }));
+    add('drivetrain', formatMultiFilterLabel(baseFilters.drivetrain), () =>
+      onFilterChange({ drivetrain: undefined }),
+    );
   }
   if (baseFilters.exteriorColor) {
-    add('exteriorColor', baseFilters.exteriorColor, () =>
-      onFilterChange({ exteriorColor: undefined })
+    add('exteriorColor', formatMultiFilterLabel(baseFilters.exteriorColor), () =>
+      onFilterChange({ exteriorColor: undefined }),
     );
   }
   if (baseFilters.interiorColor) {
-    add('interiorColor', baseFilters.interiorColor, () =>
-      onFilterChange({ interiorColor: undefined })
+    add('interiorColor', formatMultiFilterLabel(baseFilters.interiorColor), () =>
+      onFilterChange({ interiorColor: undefined }),
     );
   }
   if (baseFilters.priceMin != null || baseFilters.priceMax != null) {

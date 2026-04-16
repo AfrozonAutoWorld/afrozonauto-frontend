@@ -9,6 +9,18 @@ import { useMakeModelsReference } from '../../hooks/useVehicles';
 import { AdvancedFilterSidebar } from '@/components/filters';
 import type { FilterCategoryConfig } from '@/components/filters';
 import type { FilterGroup } from '@/components/filters/types';
+import { joinMultiFilter, splitMultiFilter } from '@/lib/multiFilter';
+
+function toggleCsvValue(
+  current: string | undefined,
+  value: string,
+  checked: boolean
+): string | undefined {
+  const set = new Set(splitMultiFilter(current));
+  if (checked) set.add(value);
+  else set.delete(value);
+  return joinMultiFilter([...set]);
+}
 
 /** All inventory + API merge (default). */
 const INVENTORY_VALUE_ALL = '';
@@ -142,34 +154,10 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     onFilterChange({ ...filters, condition: value });
   };
 
-  const handleBodyStyleChange = (v: string) => {
-    onFilterChange({ ...filters, bodyStyle: v || undefined });
-  };
-
   const handleVehicleTypeChange = (v: string) => {
     const allowed = new Set<VehicleType>(vehicleTypes.map((t) => t.value));
     const next = allowed.has(v as VehicleType) ? (v as VehicleType) : undefined;
     onFilterChange({ ...filters, vehicleType: next });
-  };
-
-  const handleFuelChange = (v: string) => {
-    onFilterChange({ ...filters, fuelType: v || undefined });
-  };
-
-  const handleTransmissionChange = (v: string) => {
-    onFilterChange({ ...filters, transmission: (v || undefined) as VehicleFilterType['transmission'] });
-  };
-
-  const handleDrivetrainChange = (v: string) => {
-    onFilterChange({ ...filters, drivetrain: v || undefined });
-  };
-
-  const handleExteriorColorChange = (v: string) => {
-    onFilterChange({ ...filters, exteriorColor: v || undefined });
-  };
-
-  const handleInteriorColorChange = (v: string) => {
-    onFilterChange({ ...filters, interiorColor: v || undefined });
   };
 
   const handleYearFromChange = (year: number | undefined) => {
@@ -265,6 +253,12 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     const fuelOpts = fuelOptions.map((f) => ({ value: f, label: f }));
     const transOpts = transmissionOptions.map((t) => ({ value: t, label: t }));
     const driveOpts = drivetrainOptions.map((d) => ({ value: d, label: d }));
+    const bodySelected = splitMultiFilter(filters.bodyStyle);
+    const fuelSelected = splitMultiFilter(filters.fuelType);
+    const transSelected = splitMultiFilter(filters.transmission);
+    const driveSelected = splitMultiFilter(filters.drivetrain);
+    const extColorSelected = splitMultiFilter(filters.exteriorColor);
+    const intColorSelected = splitMultiFilter(filters.interiorColor);
     const extColorOpts = exteriorColorOptions.map((c) => ({
       value: c,
       label: c,
@@ -377,34 +371,42 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
         groups: [
           {
             id: 'bodyStyle',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Body style',
-            hasActiveFilters: !!filters.bodyStyle,
+            hasActiveFilters: bodySelected.length > 0,
             options: bodyOpts,
-            value: filters.bodyStyle ?? undefined,
-            onChange: handleBodyStyleChange,
+            selected: bodySelected,
+            onChange: (value, checked) =>
+              onFilterChange({
+                ...filters,
+                bodyStyle: toggleCsvValue(filters.bodyStyle, value, checked),
+              }),
           },
           {
             id: 'exteriorColor',
             type: 'colorSwatches',
             title: 'Exterior color',
-            hasActiveFilters: !!filters.exteriorColor,
+            hasActiveFilters: extColorSelected.length > 0,
             options: extColorOpts,
-            selected: filters.exteriorColor ? [filters.exteriorColor] : [],
-            onChange: (value, selected) => {
-              handleExteriorColorChange(selected ? value : '');
-            },
+            selected: extColorSelected,
+            onChange: (value, selected) =>
+              onFilterChange({
+                ...filters,
+                exteriorColor: toggleCsvValue(filters.exteriorColor, value, selected),
+              }),
           },
           {
             id: 'interiorColor',
             type: 'colorSwatches',
             title: 'Interior color',
-            hasActiveFilters: !!filters.interiorColor,
+            hasActiveFilters: intColorSelected.length > 0,
             options: intColorOpts,
-            selected: filters.interiorColor ? [filters.interiorColor] : [],
-            onChange: (value, selected) => {
-              handleInteriorColorChange(selected ? value : '');
-            },
+            selected: intColorSelected,
+            onChange: (value, selected) =>
+              onFilterChange({
+                ...filters,
+                interiorColor: toggleCsvValue(filters.interiorColor, value, selected),
+              }),
           },
         ],
       },
@@ -414,30 +416,42 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
         groups: [
           {
             id: 'fuelType',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Fuel type',
-            hasActiveFilters: !!filters.fuelType,
+            hasActiveFilters: fuelSelected.length > 0,
             options: fuelOpts,
-            value: filters.fuelType ?? undefined,
-            onChange: handleFuelChange,
+            selected: fuelSelected,
+            onChange: (value, checked) =>
+              onFilterChange({
+                ...filters,
+                fuelType: toggleCsvValue(filters.fuelType, value, checked),
+              }),
           },
           {
             id: 'transmission',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Transmission',
-            hasActiveFilters: !!filters.transmission,
+            hasActiveFilters: transSelected.length > 0,
             options: transOpts,
-            value: filters.transmission ?? undefined,
-            onChange: handleTransmissionChange,
+            selected: transSelected,
+            onChange: (value, checked) =>
+              onFilterChange({
+                ...filters,
+                transmission: toggleCsvValue(filters.transmission, value, checked),
+              }),
           },
           {
             id: 'drivetrain',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Drive train',
-            hasActiveFilters: !!filters.drivetrain,
+            hasActiveFilters: driveSelected.length > 0,
             options: driveOpts,
-            value: filters.drivetrain ?? undefined,
-            onChange: handleDrivetrainChange,
+            selected: driveSelected,
+            onChange: (value, checked) =>
+              onFilterChange({
+                ...filters,
+                drivetrain: toggleCsvValue(filters.drivetrain, value, checked),
+              }),
           },
         ],
       },
