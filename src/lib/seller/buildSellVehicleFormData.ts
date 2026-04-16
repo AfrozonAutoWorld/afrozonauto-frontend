@@ -11,6 +11,7 @@ type VehicleDetails = {
   transmission?: string;
   fuelType?: string;
   exteriorColor?: string;
+  interiorColor?: string;
   keysCount?: string | null;
 };
 
@@ -51,8 +52,6 @@ export function buildSellVehicleFormData(
 ): FormData {
   const formData = new FormData();
 
-  formData.append('vehicleType', 'OTHER');
-
   formData.append('year', vehicleDetails.year);
   formData.append('make', vehicleDetails.make);
   formData.append('model', vehicleDetails.model);
@@ -63,6 +62,9 @@ export function buildSellVehicleFormData(
   if (vehicleDetails.transmission) formData.append('transmission', vehicleDetails.transmission);
   if (vehicleDetails.fuelType) formData.append('fuelType', vehicleDetails.fuelType);
   if (vehicleDetails.exteriorColor) formData.append('exteriorColor', vehicleDetails.exteriorColor);
+  if (vehicleDetails.interiorColor?.trim()) {
+    formData.append('interiorColor', vehicleDetails.interiorColor.trim());
+  }
   if (vehicleDetails.keysCount) {
     const parsedKeys =
       vehicleDetails.keysCount === '1 key'

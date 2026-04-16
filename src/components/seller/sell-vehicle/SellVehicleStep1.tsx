@@ -56,6 +56,7 @@ export interface SellVehicleStep1Value {
   transmission?: string;
   fuelType?: string;
   exteriorColor?: string;
+  interiorColor?: string;
   keysCount?: string | null;
 }
 
@@ -240,6 +241,17 @@ export function SellVehicleStep1({ value, onChange }: Readonly<SellVehicleStep1P
           />
         </Field>
       </div>
+
+      {/* Interior color — matches marketplace interior filter */}
+      <Field label="Interior Color (optional)">
+        <input
+          type="text"
+          className={inputBase}
+          placeholder="e.g. Black leather, Beige"
+          value={value.interiorColor ?? ''}
+          onChange={(e) => handleFieldChange('interiorColor', e.target.value)}
+        />
+      </Field>
 
       {/* Number of Keys */}
       <fieldset className="flex flex-col gap-2">

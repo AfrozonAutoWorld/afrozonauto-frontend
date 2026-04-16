@@ -75,6 +75,7 @@ export function prefillSellFormFromListing(raw: SellerListingVehicle): Prefilled
       transmission: raw.transmission ?? '',
       fuelType: raw.fuelType ?? '',
       exteriorColor: raw.exteriorColor ?? '',
+      interiorColor: raw.interiorColor ?? '',
       keysCount: keysNumberToLabel(raw.keys ?? undefined),
     },
     condition: {

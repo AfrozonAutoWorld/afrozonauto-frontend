@@ -39,6 +39,7 @@ type VehicleDetails = {
   transmission?: string;
   fuelType?: string;
   exteriorColor?: string;
+  interiorColor?: string;
   keysCount?: string | null;
 };
 
@@ -84,6 +85,7 @@ export function SellVehicle() {
     transmission: '',
     fuelType: '',
     exteriorColor: '',
+    interiorColor: '',
     keysCount: null,
   });
 
