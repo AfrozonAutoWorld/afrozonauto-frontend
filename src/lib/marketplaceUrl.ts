@@ -10,6 +10,26 @@ export const VALID_SORT_OPTIONS: SortOption[] = [
   'mileage_asc',
 ];
 
+/** Single mapping from UI sort → API fields (avoids a second React effect fighting URL sync). */
+export function sortOptionToApiSort(
+  sort: SortOption
+): Pick<VehicleFilters, 'sortBy' | 'sortOrder'> {
+  return {
+    sortBy:
+      sort === 'newest'
+        ? 'createdAt'
+        : sort === 'price_asc' || sort === 'price_desc'
+          ? 'price'
+          : sort === 'year_desc'
+            ? 'year'
+            : 'mileage',
+    sortOrder:
+      sort === 'newest' || sort === 'price_desc' || sort === 'year_desc'
+        ? 'desc'
+        : 'asc',
+  };
+}
+
 type FiltersForUrl = Omit<VehicleFilters, 'page' | 'limit'>;
 
 /**

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { VehicleFilters as VehicleFilterType, VehicleType } from '../../types';
-import { VEHICLE_MAKES } from '../../lib/pricingCalculator';
-import { carModels } from '../../lib/carModels';
+import { mergeMakeOptionsWithReference } from '../../lib/pricingCalculator';
+import { getModelNamesForMake } from '../../lib/carModels';
 import { useMakeModelsReference } from '../../hooks/useVehicles';
 import { AdvancedFilterSidebar } from '@/components/filters';
 import type { FilterCategoryConfig } from '@/components/filters';
@@ -98,67 +98,65 @@ const PRICE_MAX = 150000;
 
 export function VehicleFilters({ filters, onFilterChange, onClearFilters, resultCount = 0 }: VehicleFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [localMileage, setLocalMileage] = useState<string>(filters.mileageMax?.toString() || '');
-  const [debouncedMileage, setDebouncedMileage] = useState<string>(filters.mileageMax?.toString() || '');
 
   const { makeModels } = useMakeModelsReference();
 
-  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const resolveMakeKey = (make: string) => {
-    if (makeModels[make]) return make;
-    const target = normalize(make);
-    const hit = Object.keys(makeModels).find((k) => normalize(k) === target);
-    return hit ?? make;
-  };
+  const selectedMakes = useMemo(() => splitMultiFilter(filters.make), [filters.make]);
 
-  const resolvedMakeKey = filters.make ? resolveMakeKey(filters.make) : undefined;
-  const availableModels =
-    resolvedMakeKey && makeModels[resolvedMakeKey]?.length
-      ? makeModels[resolvedMakeKey]
-      : (filters.make && carModels[filters.make as keyof typeof carModels]
-        ? carModels[filters.make as keyof typeof carModels]
-        : []);
-
-  const makeOptions = Object.keys(makeModels).length > 0 ? Object.keys(makeModels).sort() : VEHICLE_MAKES;
-
-  useEffect(() => {
-    const externalMileage = filters.mileageMax?.toString() || '';
-    if (externalMileage !== localMileage) {
-      setLocalMileage(externalMileage);
-      setDebouncedMileage(externalMileage);
+  /** Union of model names across selected makes; filter value stays flat CSV OR semantics. */
+  const mergedModelNames = useMemo(() => {
+    if (selectedMakes.length === 0) return [];
+    const set = new Set<string>();
+    for (const make of selectedMakes) {
+      for (const m of getModelNamesForMake(make, makeModels)) {
+        set.add(m);
+      }
     }
-  }, [filters.mileageMax]);
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [selectedMakes, makeModels]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedMileage(localMileage), 500);
-    return () => clearTimeout(timer);
-  }, [localMileage]);
+  const makeOptions = useMemo(
+    () => mergeMakeOptionsWithReference(makeModels),
+    [makeModels]
+  );
 
-  useEffect(() => {
-    const mileage = debouncedMileage ? parseInt(debouncedMileage, 10) : undefined;
-    if ((mileage === undefined || !isNaN(mileage)) && mileage !== filters.mileageMax) {
-      onFilterChange({ ...filters, mileageMax: mileage });
-    }
-  }, [debouncedMileage]);
+  const handleMakeToggle = useCallback(
+    (value: string, checked: boolean) => {
+      onFilterChange({
+        ...filters,
+        make: toggleCsvValue(filters.make, value, checked),
+        model: undefined,
+      });
+    },
+    [filters, onFilterChange]
+  );
 
-  const handleMakeChange = (make: string) => {
-    onFilterChange({ ...filters, make: make || undefined, model: undefined });
-  };
-
-  const handleModelChange = (model: string) => {
-    onFilterChange({ ...filters, model: model || undefined });
-  };
+  const handleModelToggle = useCallback(
+    (value: string, checked: boolean) => {
+      onFilterChange({
+        ...filters,
+        model: toggleCsvValue(filters.model, value, checked),
+      });
+    },
+    [filters, onFilterChange]
+  );
 
   const handleConditionChange = (v: string) => {
     const value = (v === 'new' || v === 'used' || v === 'cpo' ? v : undefined) as VehicleFilterType['condition'];
     onFilterChange({ ...filters, condition: value });
   };
 
-  const handleVehicleTypeChange = (v: string) => {
-    const allowed = new Set<VehicleType>(vehicleTypes.map((t) => t.value));
-    const next = allowed.has(v as VehicleType) ? (v as VehicleType) : undefined;
-    onFilterChange({ ...filters, vehicleType: next });
-  };
+  const handleVehicleTypeToggle = useCallback(
+    (value: string, checked: boolean) => {
+      const allowed = new Set<string>(vehicleTypes.map((t) => t.value));
+      if (!allowed.has(value)) return;
+      onFilterChange({
+        ...filters,
+        vehicleType: toggleCsvValue(filters.vehicleType as string | undefined, value, checked) as VehicleFilterType['vehicleType'],
+      });
+    },
+    [filters, onFilterChange]
+  );
 
   const handleYearFromChange = (year: number | undefined) => {
     onFilterChange({ ...filters, yearMin: year });
@@ -173,10 +171,8 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
   };
 
   const handleMileageChange = (value: string) => {
-    const num = value ? parseInt(value, 10) : undefined;
-    onFilterChange({ ...filters, mileageMax: num });
-    setLocalMileage(value);
-    setDebouncedMileage(value);
+    const num = value ? Number.parseInt(value, 10) : undefined;
+    onFilterChange({ mileageMax: num });
   };
 
   const inventoryScopeValue = useMemo(() => {
@@ -201,8 +197,6 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
   );
 
   const clearFilters = () => {
-    setLocalMileage('');
-    setDebouncedMileage('');
     if (onClearFilters) {
       onClearFilters();
     } else {
@@ -243,7 +237,6 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     const conditionOpts = conditionOptions.map((o) => ({ value: o.value, label: o.label }));
     const vehicleTypeOpts = vehicleTypes.map((t) => ({ value: t.value, label: t.label }));
     const makeOpts = makeOptions.map((m) => ({ value: m, label: m }));
-    const modelOpts = availableModels.map((m) => ({ value: m, label: m }));
     const mileageOpts = mileagePresets.map((p) => ({ value: p.value, label: p.label }));
     const inventoryOpts = [
       { value: INVENTORY_VALUE_ALL, label: 'All inventory' },
@@ -253,6 +246,9 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
     const fuelOpts = fuelOptions.map((f) => ({ value: f, label: f }));
     const transOpts = transmissionOptions.map((t) => ({ value: t, label: t }));
     const driveOpts = drivetrainOptions.map((d) => ({ value: d, label: d }));
+    const makeSelected = splitMultiFilter(filters.make);
+    const modelSelected = splitMultiFilter(filters.model);
+    const vehicleTypeSelected = splitMultiFilter(filters.vehicleType as string | undefined);
     const bodySelected = splitMultiFilter(filters.bodyStyle);
     const fuelSelected = splitMultiFilter(filters.fuelType);
     const transSelected = splitMultiFilter(filters.transmission);
@@ -270,17 +266,17 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
       hex: exteriorColorHex[c] ?? '#999',
     }));
 
-    const modelGroup: FilterGroup[] =
-      filters.make && modelOpts.length > 0
+    const modelGroups: FilterGroup[] =
+      mergedModelNames.length > 0
         ? [
             {
               id: 'model',
-              type: 'radio',
+              type: 'checkbox' as const,
               title: 'Model',
-              hasActiveFilters: !!filters.model,
-              options: modelOpts,
-              value: filters.model ?? undefined,
-              onChange: handleModelChange,
+              hasActiveFilters: mergedModelNames.some((m) => modelSelected.includes(m)),
+              options: mergedModelNames.map((m) => ({ value: m, label: m })),
+              selected: modelSelected.filter((m) => mergedModelNames.includes(m)),
+              onChange: handleModelToggle,
             },
           ]
         : [];
@@ -301,23 +297,23 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
           },
           {
             id: 'vehicleType',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Vehicle type',
-            hasActiveFilters: !!filters.vehicleType,
+            hasActiveFilters: vehicleTypeSelected.length > 0,
             options: vehicleTypeOpts,
-            value: filters.vehicleType ?? undefined,
-            onChange: handleVehicleTypeChange,
+            selected: vehicleTypeSelected,
+            onChange: handleVehicleTypeToggle,
           },
           {
             id: 'make',
-            type: 'radio',
+            type: 'checkbox',
             title: 'Make',
-            hasActiveFilters: !!filters.make,
+            hasActiveFilters: makeSelected.length > 0,
             options: makeOpts,
-            value: filters.make ?? undefined,
-            onChange: handleMakeChange,
+            selected: makeSelected,
+            onChange: handleMakeToggle,
           },
-          ...modelGroup,
+          ...modelGroups,
           {
             id: 'year',
             type: 'yearRange',
@@ -459,8 +455,11 @@ export function VehicleFilters({ filters, onFilterChange, onClearFilters, result
   }, [
     filters,
     makeOptions,
-    availableModels,
+    mergedModelNames,
     yearOptions,
+    handleMakeToggle,
+    handleModelToggle,
+    handleVehicleTypeToggle,
   ]);
 
   const sidebarContent = (

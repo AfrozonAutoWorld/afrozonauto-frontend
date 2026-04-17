@@ -56,7 +56,9 @@ export function VehicleListing() {
   const isFetched = browseMode ? railInfinite.isFetched : catalogInfinite.isFetched;
 
   const listShown = vehicles.length > 0 || isFetchingMore;
-  const sentinelRef = useInfiniteScrollSentinel(loadMore, listShown);
+  /** Disable sentinel while any vehicles request is in flight so IntersectionObserver cannot chain +page (+4) before `isFetching` updates. */
+  const sentinelEnabled = listShown && !isFetching;
+  const sentinelRef = useInfiniteScrollSentinel(loadMore, sentinelEnabled);
 
   const activeFilterChips = buildActiveFilterChips(baseFilters, handleFilterChange);
   const hasActiveFilters = activeFilterChips.length > 0;
@@ -127,7 +129,11 @@ export function VehicleListing() {
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
               resultCount={
-                browseMode ? (meta?.total ?? vehicles.length) : (meta?.total ?? 0)
+                browseMode
+                  ? (meta?.total ?? vehicles.length)
+                  : meta?.total != null && meta.total > 0
+                    ? meta.total
+                    : vehicles.length
               }
             />
           </aside>

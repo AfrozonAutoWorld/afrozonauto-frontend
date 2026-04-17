@@ -214,8 +214,10 @@ export function useInfiniteVehicles(
   // 1) API returned short (fromApi < limit) → true end.
   // 2) Not using API and short page → true end.
   // 3) API returned full page but we showed 0 (all filtered out): after N consecutive such pages, stop to avoid infinite "Load more" with no new items.
+  // Only apply when the query for this page has settled — avoids processing stale rows while isFetching is true.
   useEffect(() => {
     if (!enabled) return;
+    if (isFetching) return;
     if (vehicles == null) return;
     const usedApi = meta?.apiUsed === true;
     const apiReturnedShort = usedApi && (meta?.fromApi ?? 0) < VEHICLES_PAGE_SIZE;
@@ -232,6 +234,10 @@ export function useInfiniteVehicles(
       if ((apiReturnedShort || shortPageNoApi) && (vehicles.length > 0 || (page === 1 && isFetched))) {
         setReachedEnd(true);
       }
+      // Page 2+ with nothing to show and a short backend page — no more data to paginate (fixes runaway requests).
+      if (page > 1 && vehicles.length === 0 && (apiReturnedShort || shortPageNoApi)) {
+        setReachedEnd(true);
+      }
     }
 
     if (page === 1) {
@@ -241,7 +247,7 @@ export function useInfiniteVehicles(
       lastAppliedPageRef.current = page;
       setAccumulated((prev) => [...prev, ...vehicles]);
     }
-  }, [enabled, page, vehicles, isFetched, meta]);
+  }, [enabled, page, vehicles, isFetched, meta, isFetching]);
 
   const stableKey = filterKey ?? "";
   const prevFilterKeyRef = useRef<string | null>(null);
@@ -261,19 +267,10 @@ export function useInfiniteVehicles(
   // Show accumulated when we have it, else current query result.
   const displayVehicles = !enabled ? [] : accumulated.length > 0 ? accumulated : vehicles;
 
-  const isFetchingRef = useRef(false);
-  const reachedEndRef = useRef(false);
-  useEffect(() => {
-    isFetchingRef.current = isFetching;
-  }, [isFetching]);
-  useEffect(() => {
-    reachedEndRef.current = reachedEnd;
-  }, [reachedEnd]);
-  // Keep fetching until we get a short page; then we show "You have reached the end". Don't rely on backend hasMore.
   const loadMore = useCallback(() => {
-    if (!enabled || isFetchingRef.current || reachedEndRef.current) return;
+    if (!enabled || reachedEnd || isFetching) return;
     setPage((p) => p + 1);
-  }, [enabled]);
+  }, [enabled, reachedEnd, isFetching]);
 
   const isInitialLoading = enabled && isLoading && page === 1;
 
@@ -368,19 +365,10 @@ export function useInfiniteRailVehicles(
 
   const displayVehicles = !enabled ? [] : accumulated.length > 0 ? accumulated : vehicles;
 
-  const isFetchingRef = useRef(false);
-  const reachedEndRef = useRef(false);
-  useEffect(() => {
-    isFetchingRef.current = isFetching;
-  }, [isFetching]);
-  useEffect(() => {
-    reachedEndRef.current = reachedEnd;
-  }, [reachedEnd]);
-
   const loadMore = useCallback(() => {
-    if (!enabled || isFetchingRef.current || reachedEndRef.current) return;
+    if (!enabled || reachedEnd || isFetching) return;
     setPage((p) => p + 1);
-  }, [enabled]);
+  }, [enabled, reachedEnd, isFetching]);
 
   const isInitialLoading = enabled && isLoading && page === 1;
 

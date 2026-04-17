@@ -97,7 +97,8 @@ export function useToggleSaved() {
       const payload = createPayload(vehicle);
       const savedVehicle = await saveToDb.mutateAsync(payload);
       await addSaved.mutateAsync(savedVehicle.id);
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles', 'recommended'] });
     } else {
       await addSaved.mutateAsync(id);
     }

@@ -271,4 +271,12 @@ export const VEHICLE_MAKES = [
   "Porsche",
 ];
 
+/** Union of Auto.dev reference keys + our static list so partial API data never hides common makes. */
+export function mergeMakeOptionsWithReference(makeModels: Record<string, string[]>): string[] {
+  const keys = Object.keys(makeModels ?? {});
+  if (keys.length === 0) return [...VEHICLE_MAKES];
+  const merged = new Set<string>([...keys, ...VEHICLE_MAKES]);
+  return [...merged].sort((a, b) => a.localeCompare(b));
+}
+
 export { DEFAULT_CONFIG };

@@ -58,7 +58,7 @@ export function useSaveVehicle() {
       }
 
       refetchSaved();
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles", "list"] });
 
       showToast({
         type: "success",

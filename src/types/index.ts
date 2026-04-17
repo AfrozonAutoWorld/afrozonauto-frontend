@@ -251,7 +251,7 @@ export interface VehicleCategory {
 }
 
 export interface VehicleFilters {
-  // Basic filters
+  // Basic filters (comma-separated = OR, e.g. make=Toyota,Honda)
   make?: string;
   model?: string;
   year?: number;
@@ -267,7 +267,8 @@ export interface VehicleFilters {
   mileageMax?: number;
 
   // Vehicle characteristics
-  vehicleType?: VehicleType;
+  /** Single type or comma-separated OR (multi-select in marketplace filters). */
+  vehicleType?: VehicleType | string;
   bodyStyle?: string;
   /** Single or comma-separated values (e.g. Automatic,CVT) */
   transmission?: string;

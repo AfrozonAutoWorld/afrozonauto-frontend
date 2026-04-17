@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { ChevronDown, SlidersHorizontal } from 'lucide-react';
-import { VEHICLE_MAKES } from '@/lib/pricingCalculator';
+import { getModelNamesForMake } from '@/lib/carModels';
+import { mergeMakeOptionsWithReference } from '@/lib/pricingCalculator';
 import { useMakeModelsReference } from '@/hooks/useVehicles';
 
 const BODY_STYLES = [
@@ -32,23 +33,21 @@ export function HeroFilters() {
   const searchParams = useSearchParams();
   const { makeModels } = useMakeModelsReference();
 
-  const currentMake = searchParams?.get('make') ?? '';
-  const currentModel = searchParams?.get('model') ?? '';
-  const currentBodyStyle = searchParams?.get('bodyStyle') ?? '';
+  /** Hero uses single-value filters only (multi-select lives in marketplace sidebar). */
+  const rawMake = searchParams?.get('make') ?? '';
+  const rawModel = searchParams?.get('model') ?? '';
+  const rawBodyStyle = searchParams?.get('bodyStyle') ?? '';
+  const currentMake = rawMake.split(',')[0]?.trim() ?? '';
+  const currentModel = rawModel.split(',')[0]?.trim() ?? '';
+  const currentBodyStyle = rawBodyStyle.split(',')[0]?.trim() ?? '';
   const currentPriceMax = searchParams?.get('priceMax') ?? '';
 
-  const makeOptions = useMemo(
-    () => (Object.keys(makeModels).length ? Object.keys(makeModels).sort() : VEHICLE_MAKES),
-    [makeModels],
-  );
+  const makeOptions = useMemo(() => mergeMakeOptionsWithReference(makeModels), [makeModels]);
 
-  const modelOptions = useMemo(
-    () =>
-      currentMake && makeModels[currentMake]?.length
-        ? makeModels[currentMake]
-        : [],
-    [currentMake, makeModels],
-  );
+  const modelOptions = useMemo(() => {
+    if (!currentMake) return [];
+    return getModelNamesForMake(currentMake, makeModels);
+  }, [currentMake, makeModels]);
 
   const applyParam = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
@@ -69,7 +68,7 @@ export function HeroFilters() {
 
   return (
     <div className="flex flex-row flex-nowrap gap-4 items-center w-full overflow-x-auto pb-1 -mx-1 scroll-smooth">
-      {/* Make */}
+      {/* Make — single select */}
       <div className={`${wrapperClasses} min-w-[140px]`}>
         <select
           value={currentMake}
@@ -89,7 +88,7 @@ export function HeroFilters() {
         <ChevronDown className="absolute right-2.5 w-4 h-4 text-white pointer-events-none" aria-hidden />
       </div>
 
-      {/* Model */}
+      {/* Model — single select */}
       <div className={`${wrapperClasses} min-w-[150px]`}>
         <select
           value={currentModel}
@@ -118,7 +117,7 @@ export function HeroFilters() {
         <ChevronDown className="absolute right-2.5 w-4 h-4 text-white pointer-events-none" aria-hidden />
       </div>
 
-      {/* Body style */}
+      {/* Body style — single select */}
       <div className={`${wrapperClasses} min-w-[160px]`}>
         <select
           value={currentBodyStyle}
@@ -158,7 +157,6 @@ export function HeroFilters() {
         <ChevronDown className="absolute right-2.5 w-4 h-4 text-white pointer-events-none" aria-hidden />
       </div>
 
-      {/* Advanced search */}
       <Link
         href="/marketplace"
         className="shrink-0 flex flex-row justify-center items-center gap-2.5 py-2.5 px-2.5 h-11 backdrop-blur-[6px] rounded-lg font-body font-normal text-[14px] leading-5 text-white hover:bg-white/10 transition-colors whitespace-nowrap"

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import type { VehicleFilters } from '@/types';
 import {
   buildMarketplaceQueryString,
   parseMarketplaceSearchParams,
+  sortOptionToApiSort,
   type SortOption,
 } from '@/lib/marketplaceUrl';
 
@@ -43,37 +44,17 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
 
   const searchParamsString = searchParams?.toString() ?? '';
 
-  // Sync from URL (shareable links + back button restores state)
+  // One sync from URL: filters + sort UI + API sort fields in a single setState (no chained effect).
   useEffect(() => {
     const { filters, sort } = parseMarketplaceSearchParams(searchParams);
-    setBaseFilters((prev) => {
-      const merged = { ...prev, ...filters };
-      /** Marketplace inventory does not use `Vehicle.source`; drop stale state from old URLs. */
-      delete (merged as { source?: unknown }).source;
-      return merged;
-    });
+    const apiSort = sortOptionToApiSort(sort);
     setSortBy(sort);
+    setBaseFilters(() => {
+      const next = { ...DEFAULT_FILTERS, ...filters, ...apiSort };
+      delete (next as { source?: unknown }).source;
+      return next;
+    });
   }, [searchParamsString]);
-
-  // Map sortBy UI option to API sortBy/sortOrder
-  useEffect(() => {
-    setBaseFilters((prev) => ({
-      ...prev,
-      sortBy:
-        sortBy === 'newest'
-          ? 'createdAt'
-          : sortBy === 'price_asc' || sortBy === 'price_desc'
-            ? 'price'
-            : sortBy === 'year_desc'
-              ? 'year'
-              : 'mileage',
-      // Newest = createdAt desc. Price/year use desc only for *_desc options; otherwise asc.
-      sortOrder:
-        sortBy === 'newest' || sortBy === 'price_desc' || sortBy === 'year_desc'
-          ? 'desc'
-          : 'asc',
-    }));
-  }, [sortBy]);
 
   const updateUrlFromFilters = useCallback(
     (filters: Omit<VehicleFilters, 'page' | 'limit'>, sortOverride?: SortOption) => {
@@ -85,69 +66,8 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
     [router, sortBy]
   );
 
-  const vehiclesFilterKey = useMemo(
-    () =>
-      [
-        searchParamsString,
-        sortBy,
-        baseFilters?.category ?? '',
-        baseFilters?.make ?? '',
-        baseFilters?.model ?? '',
-        baseFilters?.bodyStyle ?? '',
-        baseFilters?.fuelType ?? '',
-        baseFilters?.drivetrain ?? '',
-        baseFilters?.yearMin ?? '',
-        baseFilters?.yearMax ?? '',
-        baseFilters?.priceMin ?? '',
-        baseFilters?.priceMax ?? '',
-        baseFilters?.search ?? '',
-        baseFilters?.vehicleType ?? '',
-        baseFilters?.condition ?? '',
-        baseFilters?.transmission ?? '',
-        baseFilters?.exteriorColor ?? '',
-        baseFilters?.interiorColor ?? '',
-        baseFilters?.mileageMax ?? '',
-        baseFilters?.state ?? '',
-        baseFilters?.section ?? '',
-        baseFilters?.featured ?? '',
-        baseFilters?.recommended ?? '',
-        baseFilters?.specialty ?? '',
-        baseFilters?.source ?? '',
-        baseFilters?.includeApi ?? '',
-        baseFilters?.browse ?? '',
-        baseFilters?.status ?? '',
-      ].join('|'),
-    [
-      searchParamsString,
-      sortBy,
-      baseFilters?.category,
-      baseFilters?.make,
-      baseFilters?.model,
-      baseFilters?.bodyStyle,
-      baseFilters?.fuelType,
-      baseFilters?.drivetrain,
-      baseFilters?.yearMin,
-      baseFilters?.yearMax,
-      baseFilters?.priceMin,
-      baseFilters?.priceMax,
-      baseFilters?.search,
-      baseFilters?.vehicleType,
-      baseFilters?.condition,
-      baseFilters?.transmission,
-      baseFilters?.exteriorColor,
-      baseFilters?.interiorColor,
-      baseFilters?.mileageMax,
-      baseFilters?.state,
-      baseFilters?.section,
-      baseFilters?.featured,
-      baseFilters?.recommended,
-      baseFilters?.specialty,
-      baseFilters?.source,
-      baseFilters?.includeApi,
-      baseFilters?.browse,
-      baseFilters?.status,
-    ]
-  );
+  /** Pagination reset: URL is the only source of truth for “which list query”. */
+  const vehiclesFilterKey = searchParamsString;
 
   const handleFilterChange = useCallback(
     (newFilters: Partial<VehicleFilters>) => {
@@ -166,19 +86,20 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
   );
 
   const handleClearFilters = useCallback(() => {
-    router.replace('/marketplace', { scroll: false });
     setSortBy('newest');
-    setBaseFilters({ ...DEFAULT_FILTERS });
+    setBaseFilters({ ...DEFAULT_FILTERS, ...sortOptionToApiSort('newest') });
+    router.replace('/marketplace', { scroll: false });
     queryClient.invalidateQueries({ queryKey: VEHICLES_LIST_QUERY_KEY });
   }, [router, queryClient]);
 
-  const handleSortChange = useCallback(
-    (value: SortOption) => {
-      setSortBy(value);
-      updateUrlFromFilters(baseFilters, value);
-    },
-    [baseFilters, updateUrlFromFilters]
-  );
+  const handleSortChange = useCallback((value: SortOption) => {
+    setSortBy(value);
+    setBaseFilters((prev) => {
+      const next = { ...prev, ...sortOptionToApiSort(value) };
+      router.replace(`/marketplace?${buildMarketplaceQueryString(next, value)}`, { scroll: false });
+      return next;
+    });
+  }, [router]);
 
   const setCategory = useCallback(
     (slug: string) => {

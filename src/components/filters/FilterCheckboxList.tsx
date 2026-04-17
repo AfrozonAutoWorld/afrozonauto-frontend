@@ -77,9 +77,9 @@ export function FilterCheckboxList({
 }: FilterCheckboxListProps) {
   return (
     <div className="flex flex-col items-start w-full" role="group">
-      {options.map((option) => (
+      {options.map((option, index) => (
         <FilterCheckboxRow
-          key={option.value}
+          key={`${index}-${option.value}`}
           option={option}
           checked={selected.includes(option.value)}
           onToggle={() => onChange(option.value, !selected.includes(option.value))}
