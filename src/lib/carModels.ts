@@ -1,3 +1,5 @@
+import { getExtendedModelNamesForMake } from './vehicleModelsCatalog';
+
 export const carModels = {
   Toyota: [
     "4Runner",
@@ -498,11 +500,15 @@ export function getModelNamesForMake(uiMake: string, makeModels: Record<string, 
   if (ck && carModels[ck]?.length) {
     return [...carModels[ck]].sort((a, b) => a.localeCompare(b));
   }
+  const extended = getExtendedModelNamesForMake(ui);
+  if (extended.length) return extended;
   if (apiKey) {
     ck = resolveCarModelsCatalogKey(apiKey);
     if (ck && carModels[ck]?.length) {
       return [...carModels[ck]].sort((a, b) => a.localeCompare(b));
     }
+    const extApi = getExtendedModelNamesForMake(apiKey);
+    if (extApi.length) return extApi;
   }
   return [];
 }

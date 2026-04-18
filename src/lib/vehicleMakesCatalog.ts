@@ -1,6 +1,10 @@
 /**
  * Broad make list for marketplace / filters. Auto.dev’s `/models` reference does not include every
  * global OEM; we union this with API keys so users can still pick e.g. BYD, Lucid, etc.
+ *
+ * **Models for these makes:** add lineups in `vehicleModelsCatalog.ts` (`MODELS_BY_MAKE_EXTENDED`);
+ * the main `carModels` map covers many common brands separately. When Auto.dev returns models for
+ * a make, those take precedence in the UI.
  */
 const MAKES_BY_LETTER: Record<string, readonly string[]> = {
   A: ['Acura', 'Alfa Romeo', 'Aston Martin', 'Audi'],
