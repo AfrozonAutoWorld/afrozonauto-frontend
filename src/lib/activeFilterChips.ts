@@ -18,6 +18,9 @@ export function buildActiveFilterChips(
     chips.push({ id, label, onRemove: clear });
   };
 
+  if (baseFilters.search?.trim()) {
+    add('search', `“${baseFilters.search.trim()}”`, () => onFilterChange({ search: undefined }));
+  }
   if (baseFilters.make) {
     add('make', baseFilters.make, () => onFilterChange({ make: undefined, model: undefined }));
   }

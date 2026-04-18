@@ -1,18 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, ArrowRight } from 'lucide-react';
 
 export function HeroSearchBar() {
-  const [query, setQuery] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const qFromUrl = searchParams?.get('q') ?? '';
+  const [query, setQuery] = useState(qFromUrl);
+
+  useEffect(() => {
+    setQuery(qFromUrl);
+  }, [qFromUrl]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (query.trim()) params.set('q', query.trim());
-    router.push(`/marketplace${params.toString() ? `?${params.toString()}` : ''}`);
+    const p = new URLSearchParams(searchParams?.toString() ?? '');
+    const trimmed = query.trim();
+    if (trimmed) p.set('q', trimmed);
+    else p.delete('q');
+    const qs = p.toString();
+    router.push(`/marketplace${qs ? `?${qs}` : ''}`);
   };
 
   return (
@@ -30,7 +39,7 @@ export function HeroSearchBar() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by VIN, make, model, body style or fuel (e.g. '10ARJYBS7RC154562', 'Honda Civic', 'SUV', 'Electric')"
+            placeholder="Search by VIN, make, or model (e.g. VIN, Toyota, Civic)"
             className="flex-1 w-full min-w-0 pl-12 pr-4 py-[18px] bg-white rounded-xl font-body text-[16px] leading-6 text-gray-900 placeholder:text-[#B8B8B8] border-0 focus:outline-none focus:ring-2 focus:ring-[#0D7A4A]/30"
             aria-label="Search vehicles"
           />
