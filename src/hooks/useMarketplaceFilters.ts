@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import type { VehicleFilters } from '@/types';
@@ -42,6 +42,9 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const baseFiltersRef = useRef(baseFilters);
+  baseFiltersRef.current = baseFilters;
+
   const searchParamsString = searchParams?.toString() ?? '';
 
   // One sync from URL: filters + sort UI + API sort fields in a single setState (no chained effect).
@@ -66,8 +69,47 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
     [router, sortBy]
   );
 
-  /** Pagination reset: URL is the only source of truth for “which list query”. */
-  const vehiclesFilterKey = searchParamsString;
+  /**
+   * Must track live filter state (not only the URL string). `router.replace` is async, so
+   * `searchParams` can lag behind `baseFilters` for a frame — infinite scroll would miss resets.
+   * Align with `vehiclesQueryKey` fields (excluding page/limit).
+   */
+  const vehiclesFilterKey = useMemo(
+    () =>
+      [
+        sortBy,
+        baseFilters.category ?? '',
+        baseFilters.make ?? '',
+        baseFilters.model ?? '',
+        baseFilters.vehicleType ?? '',
+        baseFilters.bodyStyle ?? '',
+        baseFilters.condition ?? '',
+        baseFilters.transmission ?? '',
+        baseFilters.fuelType ?? '',
+        baseFilters.drivetrain ?? '',
+        baseFilters.exteriorColor ?? '',
+        baseFilters.interiorColor ?? '',
+        baseFilters.mileageMax ?? '',
+        baseFilters.zip ?? '',
+        baseFilters.distance ?? '',
+        baseFilters.sortBy ?? '',
+        baseFilters.sortOrder ?? '',
+        baseFilters.search ?? '',
+        baseFilters.yearMin ?? '',
+        baseFilters.yearMax ?? '',
+        baseFilters.priceMin ?? '',
+        baseFilters.priceMax ?? '',
+        baseFilters.state ?? '',
+        baseFilters.featured ?? '',
+        baseFilters.recommended ?? '',
+        baseFilters.specialty ?? '',
+        baseFilters.source ?? '',
+        baseFilters.includeApi ?? '',
+        baseFilters.browse ?? '',
+        baseFilters.status ?? '',
+      ].join('|'),
+    [sortBy, baseFilters]
+  );
 
   const handleFilterChange = useCallback(
     (newFilters: Partial<VehicleFilters>) => {
@@ -93,12 +135,10 @@ export function useMarketplaceFilters(): UseMarketplaceFiltersResult {
   }, [router, queryClient]);
 
   const handleSortChange = useCallback((value: SortOption) => {
+    const next = { ...baseFiltersRef.current, ...sortOptionToApiSort(value) };
     setSortBy(value);
-    setBaseFilters((prev) => {
-      const next = { ...prev, ...sortOptionToApiSort(value) };
-      router.replace(`/marketplace?${buildMarketplaceQueryString(next, value)}`, { scroll: false });
-      return next;
-    });
+    setBaseFilters(next);
+    router.replace(`/marketplace?${buildMarketplaceQueryString(next, value)}`, { scroll: false });
   }, [router]);
 
   const setCategory = useCallback(

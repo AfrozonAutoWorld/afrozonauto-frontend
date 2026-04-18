@@ -1,4 +1,5 @@
 import type { VehicleType, CostBreakdown, PricingConfig } from "../types";
+import { VEHICLE_MAKES_EXTENDED } from "./vehicleMakesCatalog";
 
 const DEFAULT_CONFIG: PricingConfig = {
   sourcing_fee_percent: 5,
@@ -271,11 +272,15 @@ export const VEHICLE_MAKES = [
   "Porsche",
 ];
 
-/** Union of Auto.dev reference keys + our static list so partial API data never hides common makes. */
+/** Union of Auto.dev reference keys + shortlist + extended catalog (Auto.dev does not list every OEM). */
 export function mergeMakeOptionsWithReference(makeModels: Record<string, string[]>): string[] {
   const keys = Object.keys(makeModels ?? {});
-  if (keys.length === 0) return [...VEHICLE_MAKES];
-  const merged = new Set<string>([...keys, ...VEHICLE_MAKES]);
+  if (keys.length === 0) {
+    return Array.from(
+      new Set<string>([...VEHICLE_MAKES, ...VEHICLE_MAKES_EXTENDED])
+    ).sort((a, b) => a.localeCompare(b));
+  }
+  const merged = new Set<string>([...keys, ...VEHICLE_MAKES, ...VEHICLE_MAKES_EXTENDED]);
   return [...merged].sort((a, b) => a.localeCompare(b));
 }
 
